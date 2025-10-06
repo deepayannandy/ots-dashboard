@@ -1,78 +1,170 @@
 <template>
-  <UCard class="w-96 flex-shrink-0 overflow-auto shadow-xl rounded-2xl border border-slate-200 p-4">
+  <UCard
+    class="flex-shrink-0 rounded-none border-none overflow-scroll h-screen"
+  >
     <template #header>
-      <div class="text-xl font-semibold text-slate-800">Reactor Configuration</div>
+      <div class="text-xl font-semibold text-slate-800">
+        Reactor Configuration
+      </div>
     </template>
 
-    <UForm :state="local" class="space-y-6">
+    <UForm class="space-y-6">
       <!-- Reactor Shape -->
-      <UFormField label="Reactor Shape">
-        <USelectMenu v-model="local.shape" :items="[
-          'circle',
-          'square',
-          'rectangle',
-          'hexagon',
-          'doughnut',
-        ]" @update:modelValue="emitChange" />
+      <UFormField label="Reactor shape" class="w-full">
+        <UFieldGroup
+          label="Reactor Shape"
+          class="space-x-2 justify-between w-full"
+          variant="outline"
+        >
+          <UButton
+            icon="i-mdi-circle"
+            @click="localState.shape = 'circle'"
+            :variant="localState?.shape === 'circle' ? 'solid' : 'outline'"
+          >
+          </UButton>
+          <UButton
+            icon="i-mdi-square"
+            @click="localState.shape = 'square'"
+            :variant="localState?.shape === 'square' ? 'solid' : 'outline'"
+          >
+          </UButton>
+          <UButton
+            icon="i-mdi-rectangle"
+            @click="localState.shape = 'rectangle'"
+            :variant="localState?.shape === 'rectangle' ? 'solid' : 'outline'"
+          ></UButton>
+          <UButton
+            icon="i-mdi-hexagon"
+            @click="localState.shape = 'hexagon'"
+            :variant="localState?.shape === 'hexagon' ? 'solid' : 'outline'"
+          >
+          </UButton>
+          <UButton
+            icon="lucide:torus"
+            @click="localState.shape = 'doughnut'"
+            :variant="localState?.shape === 'doughnut' ? 'solid' : 'outline'"
+          >
+          </UButton>
+        </UFieldGroup>
       </UFormField>
 
       <!-- Shape Dimensions -->
-      <template v-if="local.shape === 'rectangle'">
-        <UFormField label="Reactor Width">
-          <UInput v-model.number="local.width" type="number" @input="emitChange" />
+      <template v-if="localState.shape === 'rectangle'">
+        <UFormField class="w-full" label="Reactor Width">
+          <UInputNumber
+            v-model.number="localState.width"
+            type="number"
+            class="w-full"
+          />
         </UFormField>
-        <UFormField label="Reactor Height">
-          <UInput v-model.number="local.height" type="number" @input="emitChange" />
+        <UFormField class="w-full" label="Reactor Height">
+          <UInputNumber
+            v-model.number="localState.height"
+            type="number"
+            class="w-full"
+          />
         </UFormField>
       </template>
 
-      <template v-if="local.shape === 'doughnut'">
-        <UFormField label="Inner Radius">
-          <UInput v-model.number="local.innerRadius" type="number" @input="emitChange" />
+      <template v-if="localState.shape === 'doughnut'">
+        <UFormField class="w-full" label="Inner Radius">
+          <UInputNumber
+            v-model.number="localState.innerRadius"
+            type="number"
+            class="w-full"
+          />
         </UFormField>
       </template>
 
-      <UFormField label="Reactor Dimension / Radius">
-        <UInput v-model.number="local.outerDimension" type="number" @input="emitChange" />
+      <UFormField class="w-full" label="Reactor Dimension / Radius">
+        <UInputNumber
+          v-model.number="localState.outerDimension"
+          type="number"
+          class="w-full"
+        />
       </UFormField>
 
-      <UFormField label="Tube Radius">
-        <UInput v-model.number="local.tubeRadius" type="number" @input="emitChange" />
+      <UFormField class="w-full" label="Tube Radius">
+        <UInputNumber
+          v-model.number="localState.tubeRadius"
+          type="number"
+          class="w-full"
+        />
       </UFormField>
 
-      <UFormField label="Reactor Padding">
-        <UInput v-model.number="local.padding" type="number" @input="emitChange" />
+      <UFormField class="w-full" label="Reactor Padding">
+        <UInputNumber
+          v-model.number="localState.padding"
+          type="number"
+          class="w-full"
+        />
         <template #description>
-          <span class="text-xs text-slate-500">Padding size: {{ local.padding }} units</span>
+          <span class="text-xs text-slate-500"
+            >Padding size: {{ localState.padding }} units</span
+          >
         </template>
       </UFormField>
 
       <div class="grid grid-cols-2 gap-3">
-        <UFormField label="Reactor Color">
-          <UInput type="color" v-model="local.shapeColor" @input="emitChange" class="h-10 p-1" />
+        <UFormField class="w-full" label="Reactor Color">
+          <UInput
+            type="color"
+            v-model="localState.shapeColor"
+            class="h-10 p-1 w-full"
+          />
         </UFormField>
-        <UFormField label="Padding Color">
-          <UInput type="color" v-model="local.paddingColor" @input="emitChange" class="h-10 p-1" />
+        <UFormField class="w-full" label="Padding Color">
+          <UInput
+            type="color"
+            v-model="localState.paddingColor"
+            class="h-10 p-1 w-full"
+          />
         </UFormField>
       </div>
 
-      <UFormField label="Pitch">
-        <UInput v-model.number="local.pitch" type="number" @input="emitChange" />
+      <UFormField class="w-full" label="Pitch">
+        <UInputNumber
+          v-model.number="localState.pitch"
+          type="number"
+          class="w-full"
+        />
       </UFormField>
 
-      <UFormField label="Arrangement">
-        <USelectMenu v-model="local.lattice" :options="[
-          { label: 'Triangular (30° / 60°)', value: 'triangular' },
-          { label: 'Square (45° / 90°)', value: 'square' }
-        ]" @update:modelValue="emitChange" />
+      <UFormField class="w-full" label="Arrangement">
+        <UFieldGroup
+          label="Reactor Shape"
+          class="space-x-2 justify-between w-full"
+          variant="outline"
+        >
+          <UButton
+            icon="i-mdi-triangle"
+            @click="localState.lattice = 'triangular'"
+            label=" 30° / 60°"
+            :variant="
+              localState?.lattice === 'triangular' ? 'solid' : 'outline'
+            "
+          >
+          </UButton>
+          <UButton
+            icon="i-mdi-square"
+            @click="localState.lattice = 'square'"
+            label=" 45° / 90°"
+            :variant="localState?.lattice === 'square' ? 'solid' : 'outline'"
+          >
+          </UButton>
+        </UFieldGroup>
       </UFormField>
 
       <!-- Tube actions -->
       <div class="space-y-3">
         <div class="text-sm font-medium">Selected Tube Actions</div>
         <div class="grid grid-cols-2 gap-3">
-          <UButton @click="$emit('cap')">Cap</UButton>
-          <UInput v-model="local.capColor" type="color" class="rounded-md border p-1 h-10" />
+          <UButton @click="$emit('cap', localState.capColor)">Cap</UButton>
+          <UInput
+            v-model="localState.capColor"
+            type="color"
+            class="rounded-md border p-1 h-10"
+          />
           <UButton @click="$emit('block')">Block</UButton>
           <UButton @click="$emit('delete')">Delete</UButton>
         </div>
@@ -80,7 +172,7 @@
 
       <!-- Bottom buttons -->
       <div class="flex flex-wrap gap-3 mt-4">
-        <UButton @click="$emit('generate')">Generate</UButton>
+        <UButton @click="applyConfig">Generate</UButton>
         <UButton @click="$emit('download')">Download SVG</UButton>
         <UButton variant="soft" @click="$emit('copyJson')">Copy JSON</UButton>
       </div>
@@ -94,30 +186,36 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, watch } from 'vue'
-import type { ReactorConfig } from '@/types'
+import { reactive, watch } from "vue";
+import type { ReactorConfig } from "@/types";
 
-const props = defineProps<{ model: ReactorConfig; tubesCount: number; error: string | null }>()
-const emit = defineEmits(['update:model', 'generate', 'cap', 'block', 'delete', 'download', 'copyJson'])
+const props = defineProps<{
+  model: ReactorConfig;
+  tubesCount: number;
+  error: string | null;
+}>();
+const emit = defineEmits([
+  "update:model",
+  "generate",
+  "cap",
+  "block",
+  "delete",
+  "download",
+  "copyJson",
+]);
 
-const local = reactive({ ...props.model, capColor: '#facc15' })
+const localState = reactive({
+  ...props.model,
+  capColor: "#facc15",
+});
 
-watch(() => props.model, (v) => Object.assign(local, v))
+watch(
+  () => props.model,
+  (v) => Object.assign(localState, v)
+);
 
-function emitChange() {
-  const out: ReactorConfig = {
-    shape: local.shape,
-    outerDimension: local.outerDimension,
-    width: local.width,
-    height: local.height,
-    innerRadius: local.innerRadius,
-    tubeRadius: local.tubeRadius,
-    padding: local.padding,
-    shapeColor: local.shapeColor,
-    paddingColor: local.paddingColor,
-    pitch: local.pitch,
-    lattice: local.lattice,
-  }
-  emit('update:model', out)
+function applyConfig() {
+  emit("update:model", { ...localState });
+  emit("generate");
 }
 </script>

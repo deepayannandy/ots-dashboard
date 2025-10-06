@@ -10,7 +10,7 @@ export function useReactorGenerator() {
     height: 100,
     innerRadius: 50,
     tubeRadius: 2,
-    padding: 10,
+    padding: 5,
     shapeColor: '#60a5fa',
     paddingColor: '#fde047',
     pitch: 1.25,
