@@ -28,7 +28,7 @@ export function useReactorGenerator() {
       error.value = null
     } catch (e: any) {
       tubes.value = []
-      error.value = e?.message || 'Error generating tubes'
+      useToast().add({title:error.value ?? 'Error generating tubes',color:'error'})
     }
   }
 
