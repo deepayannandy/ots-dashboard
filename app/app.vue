@@ -11,10 +11,10 @@
         <NuxtPage />
       </NuxtLayout>
     </UMain>
-    <UFooter>
+    <!-- <UFooter>
       <p class="text-muted text-sm">
         Copyright © {{ new Date().getFullYear() }}
       </p>
-    </UFooter>
+    </UFooter> -->
   </UApp>
 </template>

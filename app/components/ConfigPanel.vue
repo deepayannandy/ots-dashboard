@@ -133,6 +133,18 @@
         </UFieldGroup>
       </UFormField>
 
+      <UFormField label="Angle">
+        <UFieldGroup class="flex justify-between w-full" variant="outline">
+          <UButton
+            v-for="deg in localState.lattice === 'square' ? [45, 90] : [30, 60]"
+            :key="deg"
+            :label="`${deg}°`"
+            :variant="localState.angle === deg ? 'solid' : 'outline'"
+            @click="localState.angle = deg as 30 | 45 | 60 | 90"
+          />
+        </UFieldGroup>
+      </UFormField>
+
       <!-- Tube Actions -->
       <div class="space-y-3">
         <div class="text-sm font-medium text-slate-700">Tube Actions</div>
@@ -201,6 +213,7 @@ const emit = defineEmits([
 const localState = reactive({
   ...props.model,
   capColor: "#facc15",
+  angle: props.model.angle as 30 | 45 | 60 | 90 | undefined,
 });
 
 watch(

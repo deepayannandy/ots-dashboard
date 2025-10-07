@@ -5,11 +5,17 @@
     >
       <div class="flex items-center justify-between gap-3 w-full">
         Total Tubes: {{ tubes.length }}
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-2 flex-wrap justify-end">
           <span class="text-xs sm:text-sm text-slate-600">Auto Zoom</span>
           <USwitch v-model="autoZoom" />
+
           <span class="text-xs sm:text-sm text-slate-600">Multi Select</span>
           <USwitch v-model="multiSelect" />
+
+          <span class="text-xs sm:text-sm text-slate-600"
+            >Show Measurements</span
+          >
+          <USwitch v-model="showMeasurements" />
         </div>
         <SearchBar @search="onSearch" class="w-full sm:w-auto" />
       </div>
@@ -72,12 +78,14 @@ const transformStr = computed(
   () => `translate(${tx.value} ${ty.value}) scale(${scale.value})`
 );
 
-const selectedIds = ref<string[]>([]); // ✅ multiple selection support
+const selectedIds = ref<string[]>([]);
 const autoZoom = ref(true);
 const multiSelect = ref(false);
+const showMeasurements = ref(false);
 
 watch(() => props.tubes, renderAll, { deep: true });
 watch(() => props.config, renderAll, { deep: true });
+watch(showMeasurements, renderAll);
 
 function renderAll() {
   const svg = svgRef.value;
@@ -89,6 +97,8 @@ function renderAll() {
   drawBoundary(vp, props.config, centerX, centerY, scalePx);
 
   const frag = document.createDocumentFragment();
+
+  // Draw tubes
   props.tubes.forEach((t) => {
     if (t.deleted) return;
     const c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
@@ -105,7 +115,6 @@ function renderAll() {
     c.setAttribute("stroke", "#0f172a");
     c.setAttribute("stroke-width", "0.2");
 
-    // highlight previously selected
     if (selectedIds.value.includes(t.id)) c.classList.add("highlight");
 
     // Tooltip
@@ -127,12 +136,11 @@ function renderAll() {
       if (tip) tip.remove();
     });
 
-    // ✅ Click select (multi or single)
+    // Selection
     c.addEventListener("click", () => {
       const id = t.id;
       if (multiSelect.value) {
         if (selectedIds.value.includes(id)) {
-          // deselect if already selected
           selectedIds.value = selectedIds.value.filter((sid) => sid !== id);
           c.classList.remove("highlight");
         } else {
@@ -146,13 +154,17 @@ function renderAll() {
         selectedIds.value = [id];
         c.classList.add("highlight");
       }
+      if (showMeasurements.value) drawMeasurements(vp);
     });
 
     frag.appendChild(c);
   });
 
   vp.appendChild(frag);
+  if (showMeasurements.value) drawMeasurements(vp);
 }
+
+// 📏 Draw distance lines and labels between selected tubes
 
 onMounted(() => renderAll());
 
@@ -292,6 +304,58 @@ onBeforeUnmount(() => {
   isDownloading = false;
 });
 
+function drawMeasurements(vp: SVGGElement) {
+  const sel = props.tubes.filter((t) => selectedIds.value.includes(t.id));
+  vp.querySelectorAll(".measure-line, .measure-text").forEach((e) =>
+    e.remove()
+  );
+  if (sel.length < 2) return;
+
+  for (let i = 0; i < sel.length - 1; i++) {
+    for (let j = i + 1; j < sel.length; j++) {
+      const a = sel[i];
+      const b = sel[j];
+      if (!a || !b) continue;
+      const x1 = centerX + a.x * scalePx;
+      const y1 = centerY + a.y * scalePx;
+      const x2 = centerX + b.x * scalePx;
+      const y2 = centerY + b.y * scalePx;
+      const dx = b.x - a.x;
+      const dy = b.y - a.y;
+      const dist = Math.sqrt(dx * dx + dy * dy).toFixed(2);
+
+      // Line
+      const line = document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        "line"
+      );
+      line.setAttribute("x1", String(x1));
+      line.setAttribute("y1", String(y1));
+      line.setAttribute("x2", String(x2));
+      line.setAttribute("y2", String(y2));
+      line.setAttribute("stroke", "#f43f5e");
+      line.setAttribute("stroke-width", "0.8");
+      line.setAttribute("class", "measure-line");
+      vp.appendChild(line);
+
+      // Label
+      const midX = (x1 + x2) / 2;
+      const midY = (y1 + y2) / 2;
+      const txt = document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        "text"
+      );
+      txt.textContent = `${dist}`;
+      txt.setAttribute("x", String(midX + 5));
+      txt.setAttribute("y", String(midY - 5));
+      txt.setAttribute("fill", "#dc2626");
+      txt.setAttribute("font-size", "10");
+      txt.setAttribute("class", "measure-text");
+      vp.appendChild(txt);
+    }
+  }
+}
+
 defineExpose({
   capSelected,
   blockSelected,
@@ -302,15 +366,19 @@ defineExpose({
 </script>
 
 <style>
-.tooltip {
-  font-size: 12px;
-  fill: #334155;
-  pointer-events: none;
-}
-
 .highlight {
   stroke: #f43f5e;
   stroke-width: 2 !important;
   filter: drop-shadow(0 0 4px #f43f5e88);
+}
+
+.measure-line {
+  stroke-dasharray: 3 3;
+}
+
+.measure-text {
+  font-size: 5px;
+  fill: #dc2626;
+  user-select: none;
 }
 </style>

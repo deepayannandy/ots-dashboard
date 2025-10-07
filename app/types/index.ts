@@ -13,6 +13,7 @@ export interface ReactorConfig {
   paddingColor: string
   pitch: number
   lattice: LatticeType
+  angle?: 30 | 45 | 60 | 90;
 }
 
 export interface Tube {

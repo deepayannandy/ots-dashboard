@@ -14,7 +14,8 @@ export function useReactorGenerator() {
     shapeColor: '#60a5fa',
     paddingColor: '#fde047',
     pitch: 1.25,
-    lattice: 'triangular'
+    lattice: 'triangular',
+    angle:30
   })
 
   const tubes = ref<Tube[]>([])
