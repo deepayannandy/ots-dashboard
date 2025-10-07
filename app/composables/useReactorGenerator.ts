@@ -20,11 +20,13 @@ export function useReactorGenerator() {
   const tubes = ref<Tube[]>([])
   const error = ref<string | null>(null)
 
+
+
   function validateAndGenerate() {
     // validation lives in geometry too; generateTubes will throw if invalid
     try {
       const generated = generateTubes(config.value)
-      tubes.value = generated
+      tubes.value = generated.filter((t: Tube) => !t.deleted);
       error.value = null
     } catch (e: any) {
       tubes.value = []

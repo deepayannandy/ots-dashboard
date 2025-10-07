@@ -247,14 +247,17 @@ function blockSelected() {
 function deleteSelected() {
   if (selectedIds.value.length === 0)
     return useToast().add({ title: "No Tube Selected", color: "error" });
-  props.tubes.forEach((t) => {
-    if (selectedIds.value.includes(t.id)) {
-      t.deleted = true;
-      useToast().add({ title: `${t.id} Deleted` });
-    }
+  const updatedTubes = props.tubes.map((t) => ({
+    ...t,
+    deleted: selectedIds.value.includes(t.id) ? true : t.deleted,
+  }));
+
+  selectedIds.value.forEach((id) => {
+    useToast().add({ title: `${id} Deleted` });
   });
-  renderAll();
-  emits("updateTubes", props.tubes);
+  selectedIds.value = [];
+
+  emits("updateTubes", updatedTubes);
 }
 
 function copyJson() {
