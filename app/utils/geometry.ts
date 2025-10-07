@@ -40,7 +40,7 @@ function pointInShape(
   y: number,
   cfg: ReactorConfig
 ): boolean {
-  const eps = 1e-9
+  const eps = 0
   const r = cfg.tubeRadius
   const pad = cfg.padding
   if (shape === 'circle') {

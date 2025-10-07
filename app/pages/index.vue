@@ -32,6 +32,12 @@ import ReactorCanvas from "@/components/ReactorCanvas.vue";
 import { useReactorGenerator } from "@/composables/useReactorGenerator";
 import type { Tube } from "~/types";
 
+defineShortcuts({
+  meta_backspace: () => onDelete(),
+  meta_b: () => onBlock(),
+  meta_d: () => onDownload(),
+});
+
 const { config, tubes, validateAndGenerate, setConfig } = useReactorGenerator();
 
 const canvasRef = ref<InstanceType<typeof ReactorCanvas> | null>(null);

@@ -51,32 +51,41 @@
       <!-- Dimensions -->
       <template v-if="localState.shape === 'rectangle'">
         <UFormField label="Width">
-          <UInputNumber v-model.number="localState.width" type="number" />
+          <UInputNumber :step="0.5" v-model="localState.width" type="number" />
         </UFormField>
         <UFormField label="Height">
-          <UInputNumber v-model.number="localState.height" type="number" />
+          <UInputNumber :step="0.5" v-model="localState.height" type="number" />
         </UFormField>
       </template>
 
       <template v-if="localState.shape === 'doughnut'">
         <UFormField label="Inner Radius">
-          <UInputNumber v-model.number="localState.innerRadius" type="number" />
+          <UInputNumber
+            :step="0.5"
+            v-model="localState.innerRadius"
+            type="number"
+          />
         </UFormField>
       </template>
 
       <UFormField label="Reactor Dimension / Radius">
         <UInputNumber
-          v-model.number="localState.outerDimension"
+          :step="0.5"
+          v-model="localState.outerDimension"
           type="number"
         />
       </UFormField>
 
       <UFormField label="Tube Radius">
-        <UInputNumber v-model.number="localState.tubeRadius" type="number" />
+        <UInputNumber
+          :step="0.5"
+          v-model="localState.tubeRadius"
+          type="number"
+        />
       </UFormField>
 
       <UFormField label="Reactor Padding">
-        <UInputNumber v-model.number="localState.padding" type="number" />
+        <UInputNumber :step="0.5" v-model="localState.padding" type="number" />
         <template #description>
           <span class="text-xs text-slate-500"
             >Size: {{ localState.padding }} units</span
@@ -102,7 +111,7 @@
       </div>
 
       <UFormField label="Pitch">
-        <UInputNumber v-model.number="localState.pitch" type="number" />
+        <UInputNumber :step="0.5" v-model="localState.pitch" type="number" />
       </UFormField>
 
       <UFormField label="Arrangement">
