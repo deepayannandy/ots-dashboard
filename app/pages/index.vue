@@ -81,23 +81,37 @@ function onDownload() {
 
 function handleUpdateTubes(updated: Tube[]) {
   const active = updated.filter((t) => !t.deleted);
+  if (active.length === 0) {
+    tubes.value = [];
+    return;
+  }
 
-  let row = 1;
-  let col = 1;
-  let lastY: number | null = null;
+  // Sort by Y first
+  const sorted = [...active].sort((a, b) => a.y - b.y || a.x - b.x);
 
-  const reassigned = active
-    .sort((a, b) => a.y - b.y || a.x - b.x)
-    .map((tube) => {
-      if (lastY !== null && Math.abs(tube.y - lastY) > 1e-6) {
-        row++;
-        col = 1;
-      }
-      const newTube = { ...tube, id: `R${row}C${col}` };
-      lastY = tube.y;
-      col++;
-      return newTube;
+  const grouped: Tube[][] = [];
+  let currentRow: Tube[] = [];
+  let lastY = sorted[0]?.y || 0;
+  const tolerance = 1e-3; // small Y difference threshold
+
+  for (const t of sorted) {
+    if (Math.abs(t.y - lastY) > tolerance) {
+      grouped.push(currentRow);
+      currentRow = [];
+    }
+    currentRow.push(t);
+    lastY = t.y;
+  }
+  if (currentRow.length) grouped.push(currentRow);
+
+  // Sort each row left→right and assign new IDs
+  const reassigned: Tube[] = [];
+  grouped.forEach((row, i) => {
+    const sortedRow = row.sort((a, b) => a.x - b.x);
+    sortedRow.forEach((tube, j) => {
+      reassigned.push({ ...tube, id: `R${i + 1}C${j + 1}` });
     });
+  });
 
   tubes.value = reassigned;
 }
