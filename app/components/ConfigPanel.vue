@@ -51,41 +51,29 @@
       <!-- Dimensions -->
       <template v-if="localState.shape === 'rectangle'">
         <UFormField label="Width">
-          <UInputNumber :step="0.5" v-model="localState.width" type="number" />
+          <UInput v-model="localState.width" type="number" />
         </UFormField>
         <UFormField label="Height">
-          <UInputNumber :step="0.5" v-model="localState.height" type="number" />
+          <UInput v-model="localState.height" type="number" />
         </UFormField>
       </template>
 
       <template v-if="localState.shape === 'doughnut'">
         <UFormField label="Inner Radius">
-          <UInputNumber
-            :step="0.5"
-            v-model="localState.innerRadius"
-            type="number"
-          />
+          <UInput v-model="localState.innerRadius" type="number" />
         </UFormField>
       </template>
 
       <UFormField label="Reactor Dimension / Radius">
-        <UInputNumber
-          :step="0.5"
-          v-model="localState.outerDimension"
-          type="number"
-        />
+        <UInput v-model="localState.outerDimension" type="number" />
       </UFormField>
 
       <UFormField label="Tube Radius">
-        <UInputNumber
-          :step="0.5"
-          v-model="localState.tubeRadius"
-          type="number"
-        />
+        <UInput v-model="localState.tubeRadius" type="number" />
       </UFormField>
 
       <UFormField label="Reactor Padding">
-        <UInputNumber :step="0.5" v-model="localState.padding" type="number" />
+        <UInput v-model="localState.padding" type="number" />
         <template #description>
           <span class="text-xs text-slate-500"
             >Size: {{ localState.padding }} units</span
@@ -111,7 +99,7 @@
       </div>
 
       <UFormField label="Pitch">
-        <UInputNumber :step="0.5" v-model="localState.pitch" type="number" />
+        <UInput v-model="localState.pitch" type="number" />
       </UFormField>
 
       <UFormField label="Arrangement">

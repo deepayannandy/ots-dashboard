@@ -35,6 +35,41 @@
         <g id="viewport" :transform="transformStr"></g>
       </svg>
 
+
+      <div
+        class="absolute top-3 right-3 bg-white/90 rounded-xl p-2 shadow-md text-xs sm:text-sm w-48"
+      >
+        <div
+          class="flex items-center justify-between cursor-pointer select-none"
+          @click="isRowCountCollapsed = !isRowCountCollapsed"
+        >
+          <span class="font-medium text-slate-700">Row Counts</span>
+          <span
+            class="text-slate-500 text-[10px] transition-transform"
+            :class="{ 'rotate-90': isRowCountCollapsed }"
+          >
+            ▶
+          </span>
+        </div>
+
+        <transition name="fade">
+          <div
+            v-if="!isRowCountCollapsed"
+            class="mt-2 max-h-96 overflow-y-auto pr-1"
+          >
+            <div
+              v-for="(count, idx) in props.rowCount"
+              :key="idx"
+              class="flex justify-between border-b border-slate-200 py-0.5"
+            >
+              <span>Row {{ idx + 1 }}</span>
+              <span class="font-medium text-slate-600">{{ count }}</span>
+            </div>
+          </div>
+        </transition>
+      </div>
+
+      <!-- Bottom Controls -->
       <div
         class="absolute bottom-3 right-3 sm:bottom-4 sm:right-4 bg-white/90 rounded-xl p-2 shadow-md flex flex-col items-center gap-2"
       >
@@ -56,14 +91,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed, onMounted } from "vue";
+import { ref, watch, computed, onMounted, onBeforeUnmount } from "vue";
 import type { ReactorConfig, Tube } from "~/types";
 import { drawBoundary } from "~/utils/svgHelpers";
 import ZoomControls from "@/components/Controls/ZoomControls.vue";
 import SearchBar from "@/components/Controls/SearchBar.vue";
 import GridRuler from "@/components/GridRuler.vue";
 
-const props = defineProps<{ config: ReactorConfig; tubes: Tube[] }>();
+const props = defineProps<{ config: ReactorConfig; tubes: Tube[]; rowCount: number[] }>();
 const emits = defineEmits(["updateTubes", "copyJson", "download"]);
 
 const svgRef = ref<SVGSVGElement | null>(null);
@@ -82,6 +117,11 @@ const selectedIds = ref<string[]>([]);
 const autoZoom = ref(true);
 const multiSelect = ref(false);
 const showMeasurements = ref(false);
+const isRowCountCollapsed = ref(true);
+
+const isDragging = ref(false);
+const dragStart = ref<{ x: number; y: number } | null>(null);
+const dragRect = ref<SVGRectElement | null>(null);
 
 watch(() => props.tubes, renderAll, { deep: true });
 watch(() => props.config, renderAll, { deep: true });
@@ -98,7 +138,6 @@ function renderAll() {
 
   const frag = document.createDocumentFragment();
 
-  // Draw tubes
   props.tubes.forEach((t) => {
     if (t.deleted) return;
     const c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
@@ -119,10 +158,7 @@ function renderAll() {
 
     // Tooltip
     c.addEventListener("mouseenter", () => {
-      const txt = document.createElementNS(
-        "http://www.w3.org/2000/svg",
-        "text"
-      );
+      const txt = document.createElementNS("http://www.w3.org/2000/svg", "text");
       txt.setAttribute("id", `tip-${t.id}`);
       txt.setAttribute("x", String(centerX + t.x * scalePx + 10));
       txt.setAttribute("y", String(centerY + t.y * scalePx - 4));
@@ -136,7 +172,7 @@ function renderAll() {
       if (tip) tip.remove();
     });
 
-    // Selection
+    // Click selection
     c.addEventListener("click", () => {
       const id = t.id;
       if (multiSelect.value) {
@@ -164,9 +200,14 @@ function renderAll() {
   if (showMeasurements.value) drawMeasurements(vp);
 }
 
-// 📏 Draw distance lines and labels between selected tubes
+onMounted(() => {
+  renderAll();
+  initDragSelection();
+});
 
-onMounted(() => renderAll());
+onBeforeUnmount(() => {
+  isDownloading = false;
+});
 
 function zoomIn() {
   zoom(1.15);
@@ -189,9 +230,7 @@ function onSearch(term: string) {
   vp.querySelectorAll("circle[data-name]").forEach((c) =>
     c.classList.remove("highlight")
   );
-  const el = vp.querySelector(
-    `circle[data-name='${term}']`
-  ) as SVGCircleElement | null;
+  const el = vp.querySelector(`circle[data-name='${term}']`) as SVGCircleElement | null;
   if (!el) return alert("Tube not found");
 
   selectedIds.value = [term];
@@ -205,11 +244,7 @@ function onSearch(term: string) {
   }
 }
 
-function smoothZoomAndPan(
-  targetX: number,
-  targetY: number,
-  targetZoom: number
-) {
+function smoothZoomAndPan(targetX: number, targetY: number, targetZoom: number) {
   const steps = 20;
   const startZoom = scale.value;
   const startTx = tx.value;
@@ -228,6 +263,8 @@ function smoothZoomAndPan(
   }
   animate();
 }
+
+// --- CAP / BLOCK / DELETE / COPY / DOWNLOAD ---
 
 function capSelected(capColor = "#facc15") {
   if (selectedIds.value.length === 0)
@@ -294,28 +331,22 @@ function downloadSvg() {
     a.download = "ots_layout.svg";
     a.click();
   } finally {
-    setTimeout(() => (isDownloading = false), 1000); // reset guard
+    setTimeout(() => (isDownloading = false), 1000);
   }
 
   emits("download");
 }
 
-onBeforeUnmount(() => {
-  isDownloading = false;
-});
-
+// --- MEASUREMENT LINES ---
 function drawMeasurements(vp: SVGGElement) {
   const sel = props.tubes.filter((t) => selectedIds.value.includes(t.id));
-  vp.querySelectorAll(".measure-line, .measure-text").forEach((e) =>
-    e.remove()
-  );
+  vp.querySelectorAll(".measure-line, .measure-text").forEach((e) => e.remove());
   if (sel.length < 2) return;
 
   for (let i = 0; i < sel.length - 1; i++) {
     for (let j = i + 1; j < sel.length; j++) {
       const a = sel[i];
       const b = sel[j];
-      if (!a || !b) continue;
       const x1 = centerX + a.x * scalePx;
       const y1 = centerY + a.y * scalePx;
       const x2 = centerX + b.x * scalePx;
@@ -324,11 +355,7 @@ function drawMeasurements(vp: SVGGElement) {
       const dy = b.y - a.y;
       const dist = Math.sqrt(dx * dx + dy * dy).toFixed(2);
 
-      // Line
-      const line = document.createElementNS(
-        "http://www.w3.org/2000/svg",
-        "line"
-      );
+      const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
       line.setAttribute("x1", String(x1));
       line.setAttribute("y1", String(y1));
       line.setAttribute("x2", String(x2));
@@ -338,13 +365,9 @@ function drawMeasurements(vp: SVGGElement) {
       line.setAttribute("class", "measure-line");
       vp.appendChild(line);
 
-      // Label
       const midX = (x1 + x2) / 2;
       const midY = (y1 + y2) / 2;
-      const txt = document.createElementNS(
-        "http://www.w3.org/2000/svg",
-        "text"
-      );
+      const txt = document.createElementNS("http://www.w3.org/2000/svg", "text");
       txt.textContent = `${dist}`;
       txt.setAttribute("x", String(midX + 5));
       txt.setAttribute("y", String(midY - 5));
@@ -353,6 +376,101 @@ function drawMeasurements(vp: SVGGElement) {
       txt.setAttribute("class", "measure-text");
       vp.appendChild(txt);
     }
+  }
+}
+
+function initDragSelection() {
+  const svg = svgRef.value;
+  if (!svg) return;
+
+  const vp = svg.querySelector("#viewport") as SVGGElement;
+  if (!vp) return;
+
+  let currentRect: SVGRectElement | null = null;
+  const inverseMatrix = () => svg.getScreenCTM()?.inverse();
+
+  svg.addEventListener("mousedown", (e) => {
+    if ((e.target as SVGElement).tagName === "circle") return;
+
+    isDragging.value = true;
+    const pt = getSvgCoords(e, svg);
+    dragStart.value = pt;
+
+    currentRect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    currentRect.setAttribute("x", String(pt.x));
+    currentRect.setAttribute("y", String(pt.y));
+    currentRect.setAttribute("width", "0");
+    currentRect.setAttribute("height", "0");
+    currentRect.setAttribute("fill", "rgba(59,130,246,0.15)");
+    currentRect.setAttribute("stroke", "#2563eb");
+    currentRect.setAttribute("stroke-width", "1");
+    currentRect.setAttribute("class", "selection-box");
+    vp.appendChild(currentRect);
+  });
+
+  svg.addEventListener("mousemove", (e) => {
+    if (!isDragging.value || !dragStart.value || !currentRect) return;
+    const pt = getSvgCoords(e, svg);
+    const x = Math.min(pt.x, dragStart.value.x);
+    const y = Math.min(pt.y, dragStart.value.y);
+    const w = Math.abs(pt.x - dragStart.value.x);
+    const h = Math.abs(pt.y - dragStart.value.y);
+    currentRect.setAttribute("x", String(x));
+    currentRect.setAttribute("y", String(y));
+    currentRect.setAttribute("width", String(w));
+    currentRect.setAttribute("height", String(h));
+  });
+
+  svg.addEventListener("mouseup", () => {
+    if (!isDragging.value || !currentRect || !dragStart.value) return;
+    isDragging.value = false;
+
+    const { x, y, width, height } = currentRect.getBBox();
+    currentRect.remove();
+
+    const xMin = x,
+      xMax = x + width,
+      yMin = y,
+      yMax = y + height;
+    const newlySelected: string[] = [];
+
+    vp.querySelectorAll("circle[data-name]").forEach((el) => {
+      const cx = parseFloat(el.getAttribute("cx") || "0");
+      const cy = parseFloat(el.getAttribute("cy") || "0");
+
+      if (cx >= xMin && cx <= xMax && cy >= yMin && cy <= yMax) {
+        newlySelected.push(el.getAttribute("data-name")!);
+        el.classList.add("highlight");
+      } else if (!multiSelect.value) {
+        el.classList.remove("highlight");
+      }
+    });
+
+    if (multiSelect.value) {
+      selectedIds.value = Array.from(new Set([...selectedIds.value, ...newlySelected]));
+    } else {
+      selectedIds.value = newlySelected;
+    }
+
+    dragRect.value = null;
+    dragStart.value = null;
+    if (showMeasurements.value) drawMeasurements(vp);
+  });
+
+  svg.addEventListener("mouseleave", () => {
+    if (isDragging.value && currentRect) {
+      currentRect.remove();
+      isDragging.value = false;
+    }
+  });
+
+  function getSvgCoords(evt: MouseEvent, svgEl: SVGSVGElement) {
+    const pt = svgEl.createSVGPoint();
+    pt.x = evt.clientX;
+    pt.y = evt.clientY;
+    const m = inverseMatrix();
+    const transformed = pt.matrixTransform(m);
+    return { x: transformed.x, y: transformed.y };
   }
 }
 
@@ -371,14 +489,27 @@ defineExpose({
   stroke-width: 2 !important;
   filter: drop-shadow(0 0 4px #f43f5e88);
 }
-
 .measure-line {
   stroke-dasharray: 3 3;
 }
-
 .measure-text {
   font-size: 5px;
   fill: #dc2626;
   user-select: none;
+}
+.selection-box {
+  pointer-events: none;
+  stroke-dasharray: 4 2;
+}
+
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: all 0.2s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
 }
 </style>

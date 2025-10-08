@@ -20,6 +20,7 @@
         :tubes="tubes"
         @copyJson="onCopyJson"
         @download="onDownload"
+        :rowCount="rowCount"
         @updateTubes="handleUpdateTubes"
       />
     </div>
@@ -38,7 +39,7 @@ defineShortcuts({
   meta_d: () => onDownload(),
 });
 
-const { config, tubes, validateAndGenerate, setConfig } = useReactorGenerator();
+const { config, tubes, validateAndGenerate, setConfig,rowCount } = useReactorGenerator();
 
 const canvasRef = ref<InstanceType<typeof ReactorCanvas> | null>(null);
 function onGenerate() {
