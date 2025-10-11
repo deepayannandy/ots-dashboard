@@ -44,6 +44,7 @@
           @click="isRowCountCollapsed = !isRowCountCollapsed"
         >
           <span class="font-medium text-slate-700">Row Counts</span>
+          <UIcon name="i-mdi-shape-plus-outline" @click="copyTubes"></UIcon>
           <span
             class="text-slate-500 text-[10px] transition-transform"
             :class="{ 'rotate-90': isRowCountCollapsed }"
@@ -313,6 +314,11 @@ function copyJson() {
   const payload = JSON.stringify(props.tubes, null, 2);
   navigator.clipboard?.writeText(payload);
   emits("copyJson");
+}
+
+function copyTubes() {
+  const payload = JSON.stringify(props.rowCount, null, 2).replaceAll('[','').replaceAll(']','');;
+  navigator.clipboard?.writeText(payload);
 }
 
 let isDownloading = false;
