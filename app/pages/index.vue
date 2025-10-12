@@ -115,5 +115,30 @@ function handleUpdateTubes(updated: Tube[]) {
   });
 
   tubes.value = reassigned;
+
+  // Auto-update shape dimensions to fit tubes while keeping padding
+  const xs = reassigned.map((t) => t.x);
+  const ys = reassigned.map((t) => t.y);
+  const pad = config.value.padding ?? 0;
+  const tubeR = config.value.tubeRadius ?? 0;
+
+  if (config.value.shape === 'circle' || config.value.shape === 'hexagon' || config.value.shape === 'doughnut') {
+    // Use radial distance so diagonal rows don't overflow the boundary
+    const maxTubeEdgeRadius = reassigned.reduce((m, t) => Math.max(m, Math.hypot(t.x, t.y) + tubeR), 0);
+    const newOuter = maxTubeEdgeRadius + pad;
+    config.value.outerDimension = Math.max(newOuter, config.value.outerDimension);
+  } else if (config.value.shape === 'square') {
+    const extentX = xs.reduce((m, x) => Math.max(m, Math.abs(x)), 0);
+    const extentY = ys.reduce((m, y) => Math.max(m, Math.abs(y)), 0);
+    const half = Math.max(extentX, extentY) + pad + tubeR;
+    config.value.outerDimension = Math.max(half * 2, config.value.outerDimension);
+  } else if (config.value.shape === 'rectangle') {
+    const extentX = xs.reduce((m, x) => Math.max(m, Math.abs(x)), 0);
+    const extentY = ys.reduce((m, y) => Math.max(m, Math.abs(y)), 0);
+    const halfW = extentX + pad + tubeR;
+    const halfH = extentY + pad + tubeR;
+    config.value.width = Math.max((config.value.width ?? 0), halfW * 2);
+    config.value.height = Math.max((config.value.height ?? 0), halfH * 2);
+  }
 }
 </script>

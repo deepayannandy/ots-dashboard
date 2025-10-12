@@ -59,12 +59,23 @@
             class="mt-2 max-h-96 overflow-y-auto pr-1"
           >
             <div
-              v-for="(count, idx) in props.rowCount"
+              v-for="(count, idx) in rowCountsLocal"
               :key="idx"
-              class="flex justify-between border-b border-slate-200 py-0.5"
+              class="flex justify-between border-b border-slate-200 py-0.5 cursor-pointer"
+              @click="selectRowByDisplayIndex(idx)"
             >
-              <span>Row {{ idx + 1 }}</span>
+              <span :class="{ 'text-blue-600 font-semibold': selectedRowDisplayIndex === idx }">Row {{ idx + 1 }}</span>
               <span class="font-medium text-slate-600">{{ count }}</span>
+            </div>
+
+            <div class="mt-2 grid grid-cols-2 gap-1">
+              <UFormField label="Add Tubes" class="col-span-2">
+                <UInput v-model.number="rowAddCount" type="number" min="1" />
+              </UFormField>
+              <UButton size="xs" variant="solid" @click="addTubesToSelectedRow">Add to row</UButton>
+              <UButton size="xs" variant="outline" color="error" @click="deleteSelectedRow">Delete row</UButton>
+              <UButton size="xs" variant="soft" @click="addRowAbove">Add row ↑</UButton>
+              <UButton size="xs" variant="soft" @click="addRowBelow">Add row ↓</UButton>
             </div>
           </div>
         </transition>
@@ -119,6 +130,10 @@ const autoZoom = ref(true);
 const multiSelect = ref(false);
 const showMeasurements = ref(false);
 const isRowCountCollapsed = ref(true);
+const selectedRowDisplayIndex = ref<number | null>(null);
+const selectedRowIndex = ref<number | null>(null); // base-grid i index
+const rowAddCount = ref<number>(1);
+const rowCountsLocal = computed(() => groupRows().map((r) => r.length));
 
 const isDragging = ref(false);
 const dragStart = ref<{ x: number; y: number } | null>(null);
@@ -317,7 +332,7 @@ function copyJson() {
 }
 
 function copyTubes() {
-  const payload = JSON.stringify(props.rowCount, null, 2).replaceAll('[','').replaceAll(']','');;
+  const payload = JSON.stringify(rowCountsLocal.value, null, 2).replaceAll('[','').replaceAll(']','');
   navigator.clipboard?.writeText(payload);
 }
 
@@ -351,8 +366,8 @@ function drawMeasurements(vp: SVGGElement) {
 
   for (let i = 0; i < sel.length - 1; i++) {
     for (let j = i + 1; j < sel.length; j++) {
-      const a = sel[i];
-      const b = sel[j];
+      const a = sel[i]!;
+      const b = sel[j]!;
       const x1 = centerX + a.x * scalePx;
       const y1 = centerY + a.y * scalePx;
       const x2 = centerX + b.x * scalePx;
@@ -384,6 +399,137 @@ function drawMeasurements(vp: SVGGElement) {
     }
   }
 }
+
+// --- ROW OPERATIONS ---
+function groupRows(): Tube[][] {
+  const active = props.tubes.filter((t) => !t.deleted);
+  if (active.length === 0) return [];
+  const sorted = [...active].sort((a, b) => a.y - b.y || a.x - b.x);
+  const rows: Tube[][] = [];
+  let current: Tube[] = [];
+  // Guard against potential empty array to satisfy TypeScript's safety checks
+  if (sorted.length === 0) return [];
+  let lastY = sorted[0].y;
+  const rowThreshold = (props.config.pitch ?? 1) * 0.3;
+  for (const t of sorted) {
+    if (Math.abs(t.y - lastY) > rowThreshold) {
+      rows.push(current);
+      current = [];
+    }
+    current.push(t);
+    lastY = t.y;
+  }
+  if (current.length) rows.push(current);
+  return rows;
+}
+
+function selectRowByDisplayIndex(idx: number) {
+  const rows = groupRows();
+  if (!rows[idx]) return;
+  selectedRowDisplayIndex.value = idx;
+  selectedRowIndex.value = idx;
+  const ids = rows[idx].map((t) => t.id);
+  selectedIds.value = ids;
+  const svg = svgRef.value;
+  const vp = svg?.querySelector("#viewport") as SVGGElement | null;
+  if (vp && showMeasurements.value) drawMeasurements(vp);
+}
+
+function estimateRowOffset(row: Tube[]): number {
+  const pitch = props.config.pitch;
+  if (!pitch || row.length === 0) return 0;
+  const mods = row.map((t) => ((t.x % pitch) + pitch) % pitch);
+  const avg = mods.reduce((s, v) => s + v, 0) / mods.length;
+  if (Math.abs(avg - pitch / 2) < pitch * 0.25) return pitch / 2;
+  return 0;
+}
+
+function addTubesToSelectedRow() {
+  if (selectedRowIndex.value === null) {
+    useToast().add({ title: "Select a row first", color: "error" });
+    return;
+  }
+  const rows = groupRows();
+  const row = rows[selectedRowIndex.value];
+  if (!row || row.length === 0) return;
+
+  const pitch = props.config.pitch;
+  if (!(pitch > 0)) {
+    useToast().add({ title: "Invalid pitch", color: "error" });
+    return;
+  }
+  const r = props.config.tubeRadius;
+  const add = Math.max(1, rowAddCount.value | 0);
+
+  const xs = row.map((t) => t.x).sort((a, b) => a - b);
+  const y = row[0]!.y;
+  const minX = xs[0]!;
+  const maxX = xs[xs.length - 1]!;
+
+  const newTubes: Tube[] = [];
+  for (let i = 1; i <= add; i++) {
+    newTubes.push({ id: "", x: maxX + i * pitch, y, r, capped: false, capColor: null, blocked: false, deleted: false });
+  }
+  for (let i = 1; i <= add; i++) {
+    newTubes.push({ id: "", x: minX - i * pitch, y, r, capped: false, capColor: null, blocked: false, deleted: false });
+  }
+
+  const updated = [...props.tubes, ...newTubes];
+  emits("updateTubes", updated);
+}
+
+function deleteSelectedRow() {
+  if (selectedRowIndex.value === null) {
+    useToast().add({ title: "Select a row first", color: "error" });
+    return;
+  }
+  const rows = groupRows();
+  const row = rows[selectedRowIndex.value];
+  if (!row) return;
+  const ids = new Set(row.map((t) => t.id));
+  const updated = props.tubes.map((t) => ({ ...t, deleted: ids.has(t.id) ? true : t.deleted }));
+  emits("updateTubes", updated);
+  selectedIds.value = [];
+}
+
+function addRow(offsetSign: 1 | -1) {
+  if (selectedRowIndex.value === null) {
+    useToast().add({ title: "Select a row first", color: "error" });
+    return;
+  }
+  const rows = groupRows();
+  const row = rows[selectedRowIndex.value];
+  if (!row || row.length === 0) return;
+
+  const pitch = props.config.pitch;
+  if (!(pitch > 0)) {
+    useToast().add({ title: "Invalid pitch", color: "error" });
+    return;
+  }
+  const vspace = props.config.lattice === "triangular" ? (pitch * Math.sqrt(3)) / 2 : pitch;
+  const currentOffset = estimateRowOffset(row);
+  const targetOffset = props.config.lattice === "triangular" ? (currentOffset === 0 ? pitch / 2 : 0) : 0;
+
+  const dy = offsetSign * vspace;
+  const dx = targetOffset - currentOffset;
+
+  const newRow: Tube[] = row.map((t) => ({
+    id: "",
+    x: t.x + dx,
+    y: t.y + dy,
+    r: props.config.tubeRadius,
+    capped: false,
+    capColor: null,
+    blocked: false,
+    deleted: false,
+  }));
+
+  const updated = [...props.tubes, ...newRow];
+  emits("updateTubes", updated);
+}
+
+function addRowAbove() { addRow(-1); }
+function addRowBelow() { addRow(1); }
 
 function initDragSelection() {
   const svg = svgRef.value;
@@ -475,8 +621,11 @@ function initDragSelection() {
     pt.x = evt.clientX;
     pt.y = evt.clientY;
     const m = inverseMatrix();
-    const transformed = pt.matrixTransform(m);
-    return { x: transformed.x, y: transformed.y };
+    if (m) {
+      const transformed = pt.matrixTransform(m);
+      return { x: transformed.x, y: transformed.y };
+    }
+    return { x: pt.x, y: pt.y };
   }
 }
 
@@ -486,6 +635,7 @@ defineExpose({
   deleteSelected,
   downloadSvg,
   copyJson,
+  // Row operations are internal via UI
 });
 </script>
 
@@ -519,3 +669,8 @@ defineExpose({
   transform: translateY(-4px);
 }
 </style>
+
+<script lang="ts">
+// Helper functions colocated to avoid polluting script setup scope
+export default {}
+</script>
