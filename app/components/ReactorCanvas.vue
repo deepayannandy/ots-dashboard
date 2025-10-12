@@ -12,6 +12,9 @@
           <span class="text-xs sm:text-sm text-slate-600">Multi Select</span>
           <USwitch v-model="multiSelect" />
 
+          <span class="text-xs sm:text-sm text-slate-600">Mirror</span>
+          <USwitch v-model="mirrorMode" />
+
           <span class="text-xs sm:text-sm text-slate-600"
             >Show Measurements</span
           >
@@ -64,7 +67,7 @@
               class="flex justify-between border-b border-slate-200 py-0.5 cursor-pointer"
               @click="selectRowByDisplayIndex(idx)"
             >
-              <span :class="{ 'text-blue-600 font-semibold': selectedRowDisplayIndex === idx, 'text-red-500 font-bold': idx === Math.floor(rowCountsLocal.length / 2) }">Row {{ idx + 1 }}</span>
+              <span :class="{ 'text-blue-600 font-semibold': selectedRowDisplayIndex === idx || selectedRowSecondaryIndex === idx, 'text-red-500 font-bold': idx === Math.floor(rowCountsLocal.length / 2) }">Row {{ idx + 1 }}</span>
               <span class="font-medium text-slate-600">{{ count }}</span>
             </div>
           </div>
@@ -139,15 +142,32 @@ const selectedIds = ref<string[]>([]);
 const autoZoom = ref(true);
 const multiSelect = ref(false);
 const showMeasurements = ref(false);
+const mirrorMode = ref(false);
 const isRowCountCollapsed = ref(true);
 const selectedRowDisplayIndex = ref<number | null>(null);
 const selectedRowIndex = ref<number | null>(null); // base-grid i index
 const rowCountsLocal = computed(() => groupRows().map((r) => r.length));
 const selectedRowTargetCount = ref<number | null>(null);
+const selectedRowSecondaryIndex = computed(() => {
+  if (!mirrorMode.value) return null;
+  if (selectedRowDisplayIndex.value === null) return null;
+  const len = rowCountsLocal.value.length;
+  const idx = selectedRowDisplayIndex.value;
+  const mirrorIdx = len - 1 - idx;
+  if (mirrorIdx === idx) return null; // same row, avoid duplicate
+  return mirrorIdx;
+});
 
 watch(rowCountsLocal, (counts) => {
   if (selectedRowDisplayIndex.value !== null) {
     selectedRowTargetCount.value = counts[selectedRowDisplayIndex.value] ?? null;
+  }
+});
+
+watch(mirrorMode, (enabled) => {
+  // Re-apply selection to include/exclude mirrored row
+  if (selectedRowDisplayIndex.value !== null) {
+    selectRowByDisplayIndex(selectedRowDisplayIndex.value);
   }
 });
 
@@ -158,6 +178,8 @@ const dragRect = ref<SVGRectElement | null>(null);
 watch(() => props.tubes, renderAll, { deep: true });
 watch(() => props.config, renderAll, { deep: true });
 watch(showMeasurements, renderAll);
+// Redraw when row selection changes so highlight bands update immediately
+watch(selectedRowDisplayIndex, renderAll);
 
 function renderAll() {
   const svg = svgRef.value;
@@ -167,6 +189,9 @@ function renderAll() {
   vp.innerHTML = "";
 
   drawBoundary(vp, props.config, centerX, centerY, scalePx);
+
+  // Row highlight bands (draw behind circles)
+  drawRowHighlights(vp);
 
   const frag = document.createDocumentFragment();
 
@@ -446,13 +471,22 @@ function selectRowByDisplayIndex(idx: number) {
   if (!rows[idx]) return;
   selectedRowDisplayIndex.value = idx;
   selectedRowIndex.value = idx;
-  const ids = rows[idx].map((t) => t.id);
+  let ids = rows[idx].map((t) => t.id);
+  if (mirrorMode.value) {
+    const mirrorIdx = rows.length - 1 - idx;
+    if (rows[mirrorIdx] && mirrorIdx !== idx) {
+      const mirrorIds = rows[mirrorIdx].map((t) => t.id);
+      ids = Array.from(new Set([...ids, ...mirrorIds]));
+    }
+  }
   selectedIds.value = ids;
   const svg = svgRef.value;
   const vp = svg?.querySelector("#viewport") as SVGGElement | null;
   if (vp && showMeasurements.value) drawMeasurements(vp);
   // sync floating control input with current count
   selectedRowTargetCount.value = rowCountsLocal.value[idx] ?? null;
+  // Redraw to apply row highlight bands and selection state immediately
+  renderAll();
 }
 
 function estimateRowOffset(row: Tube[]): number {
@@ -551,7 +585,21 @@ function applySelectedRowCount() {
   if (selectedRowDisplayIndex.value === null) return;
   const val = selectedRowTargetCount.value;
   if (val === null || isNaN(val as number)) return;
-  setRowCount(selectedRowDisplayIndex.value, Math.max(0, (val as number) | 0));
+  const target = Math.max(0, (val as number) | 0);
+  if (!mirrorMode.value) {
+    setRowCount(selectedRowDisplayIndex.value, target);
+    return;
+  }
+  // Apply to both primary and mirrored rows in one combined update
+  const rows = groupRows();
+  const primaryIdx = selectedRowDisplayIndex.value;
+  const mirrorIdx = rows.length - 1 - primaryIdx;
+  const updatedOnce = computeSetRowCountUpdate(props.tubes, primaryIdx, target);
+  let updatedFinal = updatedOnce;
+  if (mirrorIdx !== primaryIdx && mirrorIdx >= 0 && mirrorIdx < rows.length) {
+    updatedFinal = computeSetRowCountUpdate(updatedOnce, mirrorIdx, target);
+  }
+  emits("updateTubes", updatedFinal);
 }
 
 function deleteSelectedRow() {
@@ -560,10 +608,17 @@ function deleteSelectedRow() {
     return;
   }
   const rows = groupRows();
-  const row = rows[selectedRowIndex.value];
-  if (!row) return;
-  const ids = new Set(row.map((t) => t.id));
-  const updated = props.tubes.map((t) => ({ ...t, deleted: ids.has(t.id) ? true : t.deleted }));
+  const primaryIdx = selectedRowIndex.value;
+  const primary = rows[primaryIdx];
+  if (!primary) return;
+  let idsToDelete = new Set(primary.map((t) => t.id));
+  if (mirrorMode.value) {
+    const mirrorIdx = rows.length - 1 - primaryIdx;
+    if (rows[mirrorIdx] && mirrorIdx !== primaryIdx) {
+      rows[mirrorIdx].forEach((t) => idsToDelete.add(t.id));
+    }
+  }
+  const updated = props.tubes.map((t) => ({ ...t, deleted: idsToDelete.has(t.id) ? true : t.deleted }));
   emits("updateTubes", updated);
   selectedIds.value = [];
 }
@@ -574,8 +629,9 @@ function addRow(offsetSign: 1 | -1) {
     return;
   }
   const rows = groupRows();
-  const row = rows[selectedRowIndex.value];
-  if (!row || row.length === 0) return;
+  const primaryIdx = selectedRowIndex.value;
+  const primary = rows[primaryIdx];
+  if (!primary || primary.length === 0) return;
 
   const pitch = props.config.pitch;
   if (!(pitch > 0)) {
@@ -583,24 +639,16 @@ function addRow(offsetSign: 1 | -1) {
     return;
   }
   const vspace = props.config.lattice === "triangular" ? (pitch * Math.sqrt(3)) / 2 : pitch;
-  const currentOffset = estimateRowOffset(row);
-  const targetOffset = props.config.lattice === "triangular" ? (currentOffset === 0 ? pitch / 2 : 0) : 0;
 
-  const dy = offsetSign * vspace;
-  const dx = targetOffset - currentOffset;
-
-  const newRow: Tube[] = row.map((t) => ({
-    id: "",
-    x: t.x + dx,
-    y: t.y + dy,
-    r: props.config.tubeRadius,
-    capped: false,
-    capColor: null,
-    blocked: false,
-    deleted: false,
-  }));
-
-  const updated = [...props.tubes, ...newRow];
+  const newRowPrimary = computeAddRowForIndex(rows, primaryIdx, offsetSign, vspace);
+  let newRowMirror: Tube[] = [];
+  if (mirrorMode.value) {
+    const mirrorIdx = rows.length - 1 - primaryIdx;
+    if (rows[mirrorIdx] && mirrorIdx !== primaryIdx) {
+      newRowMirror = computeAddRowForIndex(rows, mirrorIdx, offsetSign, vspace);
+    }
+  }
+  const updated = [...props.tubes, ...newRowPrimary, ...newRowMirror];
   emits("updateTubes", updated);
 }
 
@@ -705,7 +753,7 @@ function initDragSelection() {
   }
 }
 
-// Toolbar fixed at top: no anchor or drag logic needed
+  // Toolbar fixed at top: no anchor or drag logic needed
 
 defineExpose({
   capSelected,
@@ -715,6 +763,122 @@ defineExpose({
   copyJson,
   // Row operations are internal via UI
 });
+
+function drawRowHighlights(vp: SVGGElement) {
+  if (selectedRowDisplayIndex.value === null) return;
+  const rows = groupRows();
+  if (rows.length === 0) return;
+  const pitchVal = props.config.pitch ?? 0;
+  const vspace = props.config.lattice === "triangular"
+    ? (pitchVal * Math.sqrt(3)) / 2
+    : pitchVal;
+  const bandHeightPx = (vspace ?? 0) * scalePx;
+
+  const indices: number[] = [selectedRowDisplayIndex.value];
+  const mirrorIdx = selectedRowSecondaryIndex.value;
+  if (mirrorIdx !== null && mirrorIdx !== selectedRowDisplayIndex.value) {
+    indices.push(mirrorIdx);
+  }
+
+  for (const idx of indices) {
+    const row = rows[idx];
+    if (!row || row.length === 0) continue;
+    const yModel = row[0]?.y;
+    if (typeof yModel !== "number") continue;
+    const yPxCenter = centerY + yModel * scalePx;
+    const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    rect.setAttribute("x", "0");
+    rect.setAttribute("y", String(yPxCenter - bandHeightPx / 2));
+    rect.setAttribute("width", String(svgWidth));
+    rect.setAttribute("height", String(bandHeightPx));
+    rect.setAttribute("class", "row-highlight");
+    vp.appendChild(rect);
+  }
+}
+// Local helpers for mirrored operations
+function groupRowsFrom(tubesArr: Tube[]): Tube[][] {
+  const active = tubesArr.filter((t) => !t.deleted);
+  if (active.length === 0) return [];
+  const sorted = [...active].sort((a, b) => a.y - b.y || a.x - b.x);
+  const rows: Tube[][] = [];
+  let current: Tube[] = [];
+  const first = sorted[0];
+  if (!first) return [];
+  let lastY = first.y;
+  const rowThreshold = (props.config.pitch ?? 1) * 0.3;
+  for (const t of sorted) {
+    if (Math.abs(t.y - lastY) > rowThreshold) {
+      rows.push(current);
+      current = [];
+    }
+    current.push(t);
+    lastY = t.y;
+  }
+  if (current.length) rows.push(current);
+  return rows;
+}
+
+function computeSetRowCountUpdate(tubesArr: Tube[], rowIdx: number, targetCount: number): Tube[] {
+  const rows = groupRowsFrom(tubesArr);
+  const row = rows[rowIdx];
+  if (!row) return tubesArr;
+  const current = row.length;
+  const pitch = props.config.pitch;
+  const r = props.config.tubeRadius;
+  if (!(pitch > 0)) return tubesArr;
+  if (targetCount < 0) targetCount = 0;
+
+  const xs = row.map((t) => t.x).sort((a, b) => a - b);
+  const y = row[0]?.y ?? 0;
+  const minX = xs[0] ?? 0;
+  const maxX = xs[xs.length - 1] ?? 0;
+
+  if (targetCount === current) return tubesArr;
+
+  if (targetCount > current) {
+    const delta = targetCount - current;
+    const addRight = Math.ceil(delta / 2);
+    const addLeft = Math.floor(delta / 2);
+    const newTubes: Tube[] = [];
+    for (let i = 1; i <= addRight; i++) {
+      newTubes.push({ id: "", x: maxX + i * pitch, y, r, capped: false, capColor: null, blocked: false, deleted: false });
+    }
+    for (let i = 1; i <= addLeft; i++) {
+      newTubes.push({ id: "", x: minX - i * pitch, y, r, capped: false, capColor: null, blocked: false, deleted: false });
+    }
+    return [...tubesArr, ...newTubes];
+  }
+
+  // targetCount < current: delete from ends
+  const removeDelta = current - targetCount;
+  const sortedRow = [...row].sort((a, b) => a.x - b.x);
+  const leftToDelete = Math.floor(removeDelta / 2);
+  const rightToDelete = Math.ceil(removeDelta / 2);
+  const leftIds = sortedRow.slice(0, Math.max(0, leftToDelete)).map((t) => t.id);
+  const rightIds = sortedRow.slice(Math.max(sortedRow.length - rightToDelete, 0)).map((t) => t.id);
+  const idsToDelete = new Set<string>([...leftIds, ...rightIds]);
+  return tubesArr.map((t) => (idsToDelete.has(t.id) ? { ...t, deleted: true } : t));
+}
+
+function computeAddRowForIndex(rows: Tube[][], rowIdx: number, offsetSign: 1 | -1, vspace: number): Tube[] {
+  const row = rows[rowIdx];
+  if (!row || row.length === 0) return [];
+  const pitch = props.config.pitch!;
+  const currentOffset = estimateRowOffset(row);
+  const targetOffset = props.config.lattice === "triangular" ? (currentOffset === 0 ? pitch / 2 : 0) : 0;
+  const dy = offsetSign * vspace;
+  const dx = targetOffset - currentOffset;
+  return row.map((t) => ({
+    id: "",
+    x: t.x + dx,
+    y: t.y + dy,
+    r: props.config.tubeRadius,
+    capped: false,
+    capColor: null,
+    blocked: false,
+    deleted: false,
+  }));
+}
 </script>
 
 <style>
@@ -734,6 +898,12 @@ defineExpose({
 .selection-box {
   pointer-events: none;
   stroke-dasharray: 4 2;
+}
+
+.row-highlight {
+  fill: rgba(59, 130, 246, 0.12);
+  stroke: rgba(59, 130, 246, 0.3);
+  stroke-width: 0.5;
 }
 
 
