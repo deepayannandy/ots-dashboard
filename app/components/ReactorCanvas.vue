@@ -40,7 +40,7 @@
 
 
       <div
-        class="absolute top-3 right-3 bg-white/90 rounded-xl p-2 shadow-md text-xs sm:text-sm w-48"
+        class="absolute top-3 right-3 bg-white/90 rounded-xl p-2 shadow-md text-xs sm:text-sm w-56"
       >
         <div
           class="flex items-center justify-between cursor-pointer select-none"
@@ -64,35 +64,37 @@
             <div
               v-for="(count, idx) in rowCountsLocal"
               :key="idx"
-              class="flex justify-between border-b border-slate-200 py-0.5 cursor-pointer"
-              @click="selectRowByDisplayIndex(idx)"
+              class="flex items-center justify-between gap-2 border-b border-slate-200 py-1"
+              :class="{ 'opacity-60 line-through': rowsToDelete.includes(idx) }"
             >
-              <span :class="{ 'text-blue-600 font-semibold': selectedRowDisplayIndex === idx || selectedRowSecondaryIndex === idx, 'text-red-500 font-bold': idx === Math.floor(rowCountsLocal.length / 2) }">Row {{ idx + 1 }}</span>
-              <span class="font-medium text-slate-600">{{ count }}</span>
+              <button class="text-left flex-1" @click="selectRowByDisplayIndex(idx)">
+                <span :class="{ 'text-blue-600 font-semibold': selectedRowDisplayIndex === idx || selectedRowSecondaryIndex === idx, 'text-red-500 font-bold': idx === Math.floor(rowCountsLocal.length / 2) }">Row {{ idx + 1 }}</span>
+              </button>
+              <UInput
+                v-model.number="rowCountsEdits[idx]"
+                type="number"
+                min="0"
+                class="w-16"
+                @click.stop
+                @update:modelValue="(val) => onRowCountEdit(idx, Number(val))"
+              />
+              <UButton
+                size="xs"
+                variant="outline"
+                color="error"
+                @click.stop="toggleDeleteRow(idx)"
+              >
+                {{ rowsToDelete.includes(idx) ? 'Undo' : 'Delete' }}
+              </UButton>
+            </div>
+            <div class="mt-2 flex justify-end">
+              <UButton size="xs" variant="solid" @click="applyAllRowUpdates">Apply All</UButton>
             </div>
           </div>
         </transition>
       </div>
 
-      <!-- Fixed toolbar at top -->
-      <div
-        v-if="selectedRowDisplayIndex !== null"
-        class="absolute z-20 top-3 left-1/2 -translate-x-1/2 transform"
-      >
-        <div class="bg-white/90 rounded-md shadow-sm p-1 flex items-center gap-1">
-          <span class="text-[10px] sm:text-xs text-slate-700">Row {{ (selectedRowDisplayIndex ?? 0) + 1 }}</span>
-          <UInput
-            v-model.number="selectedRowTargetCount"
-            type="number"
-            min="0"
-            class="w-16"
-          />
-          <UButton size="xs" variant="solid" @click="applySelectedRowCount">Apply</UButton>
-          <UButton size="xs" variant="soft" @click="addRowAbove">↑</UButton>
-          <UButton size="xs" variant="soft" @click="addRowBelow">↓</UButton>
-          <UButton size="xs" variant="outline" color="error" @click="deleteSelectedRow">Delete</UButton>
-        </div>
-      </div>
+      <!-- Toolbar removed; inline controls moved to Row Counts panel -->
 
       <!-- Bottom Controls -->
       <div
@@ -157,6 +159,71 @@ const selectedRowSecondaryIndex = computed(() => {
   if (mirrorIdx === idx) return null; // same row, avoid duplicate
   return mirrorIdx;
 });
+
+// Inline row edits and batch apply/delete tracking
+const rowCountsEdits = ref<number[]>([]);
+const rowsToDelete = ref<number[]>([]);
+
+// Initialize and sync edits when rows change
+watch(rowCountsLocal, (counts) => {
+  rowCountsEdits.value = counts.slice();
+  // Ensure delete indexes remain valid
+  rowsToDelete.value = rowsToDelete.value.filter((i) => i < counts.length);
+}, { immediate: true });
+
+function toggleDeleteRow(idx: number) {
+  const i = rowsToDelete.value.indexOf(idx);
+  if (i >= 0) rowsToDelete.value.splice(i, 1);
+  else rowsToDelete.value.push(idx);
+}
+
+function applyAllRowUpdates() {
+  const originalCounts = rowCountsLocal.value.slice();
+  let tubesArr = props.tubes.slice();
+
+  // First, apply count changes per row (based on current grouping indices)
+  for (let idx = 0; idx < rowCountsEdits.value.length; idx++) {
+    const target = rowCountsEdits.value[idx] ?? originalCounts[idx] ?? 0;
+    const current = originalCounts[idx] ?? 0;
+    if (target !== current && target >= 0) {
+      tubesArr = computeSetRowCountUpdate(tubesArr, idx, target);
+    }
+  }
+
+  // Then, apply deletions per row using original grouping to avoid index drift
+  const rows = groupRowsFrom(tubesArr);
+  const deleteSet = new Set<string>();
+  rowsToDelete.value.forEach((idx) => {
+    const row = rows[idx];
+    if (row && row.length) {
+      row.forEach((t) => deleteSet.add(t.id));
+    }
+  });
+  if (deleteSet.size > 0) {
+    tubesArr = tubesArr.map((t) => (deleteSet.has(t.id) ? { ...t, deleted: true } : t));
+  }
+
+  // Emit updated tubes and redraw
+  emits("updateTubes", tubesArr);
+  renderAll();
+  useToast().add({ title: "Row updates applied" });
+}
+
+// When two rows are selected in mirror mode, keep their counts in sync
+function onRowCountEdit(idx: number, val: number) {
+  // Update local edit at idx is already handled by v-model; we mirror to opposite when applicable
+  if (!mirrorMode.value) return;
+  const primary = selectedRowDisplayIndex.value;
+  const secondary = selectedRowSecondaryIndex.value;
+  if (primary === null || secondary === null) return; // not both selected
+
+  // Only mirror when editing one of the selected pair
+  if (idx !== primary && idx !== secondary) return;
+  const len = rowCountsEdits.value.length;
+  const mirrorIdx = len - 1 - idx;
+  if (mirrorIdx < 0 || mirrorIdx >= len) return;
+  rowCountsEdits.value[mirrorIdx] = val;
+}
 
 watch(rowCountsLocal, (counts) => {
   if (selectedRowDisplayIndex.value !== null) {
