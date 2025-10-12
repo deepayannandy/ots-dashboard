@@ -56,6 +56,17 @@
           </span>
         </div>
 
+        <!-- Add rows at ends controls -->
+        <div class="mt-2 flex items-center justify-end gap-2" v-if="!isRowCountCollapsed">
+          <template v-if="mirrorMode">
+            <UButton size="xs" variant="soft" @click="addRowEnds">Add Ends</UButton>
+          </template>
+          <template v-else>
+            <UButton size="xs" variant="soft" @click="addRowTop">Add Top</UButton>
+            <UButton size="xs" variant="soft" @click="addRowBottom">Add Bottom</UButton>
+          </template>
+        </div>
+
         <transition name="fade">
           <div
             v-if="!isRowCountCollapsed"
@@ -223,6 +234,45 @@ function onRowCountEdit(idx: number, val: number) {
   const mirrorIdx = len - 1 - idx;
   if (mirrorIdx < 0 || mirrorIdx >= len) return;
   rowCountsEdits.value[mirrorIdx] = val;
+}
+
+function addRowTop() {
+  const rows = groupRows();
+  if (rows.length === 0) return;
+  const vspace = props.config.lattice === "triangular"
+    ? (props.config.pitch ?? 0) * Math.sqrt(3) / 2
+    : (props.config.pitch ?? 0);
+  const newRow = computeAddRowForIndex(rows, 0, -1, vspace);
+  if (newRow.length === 0) return;
+  const updated = [...props.tubes, ...newRow];
+  emits("updateTubes", updated);
+  renderAll();
+}
+
+function addRowBottom() {
+  const rows = groupRows();
+  if (rows.length === 0) return;
+  const vspace = props.config.lattice === "triangular"
+    ? (props.config.pitch ?? 0) * Math.sqrt(3) / 2
+    : (props.config.pitch ?? 0);
+  const newRow = computeAddRowForIndex(rows, rows.length - 1, 1, vspace);
+  if (newRow.length === 0) return;
+  const updated = [...props.tubes, ...newRow];
+  emits("updateTubes", updated);
+  renderAll();
+}
+
+function addRowEnds() {
+  const rows = groupRows();
+  if (rows.length === 0) return;
+  const vspace = props.config.lattice === "triangular"
+    ? (props.config.pitch ?? 0) * Math.sqrt(3) / 2
+    : (props.config.pitch ?? 0);
+  const top = computeAddRowForIndex(rows, 0, -1, vspace);
+  const bottom = computeAddRowForIndex(rows, rows.length - 1, 1, vspace);
+  const updated = [...props.tubes, ...top, ...bottom];
+  emits("updateTubes", updated);
+  renderAll();
 }
 
 watch(rowCountsLocal, (counts) => {
