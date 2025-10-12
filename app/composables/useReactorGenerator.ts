@@ -9,13 +9,13 @@ export function useReactorGenerator() {
     width: 160,
     height: 100,
     innerRadius: 50,
-    tubeRadius: 2,
+    tubeRadius: 5,
     padding: 5,
     shapeColor: "#60a5fa",
     paddingColor: "#fde047",
-    pitch: 4,
+    pitch: 15,
     lattice: "triangular",
-    angle: 30,
+    angle: 60,
   });
 
   const tubes = ref<Tube[]>([]);
