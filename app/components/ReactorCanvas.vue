@@ -64,7 +64,7 @@
               class="flex justify-between border-b border-slate-200 py-0.5 cursor-pointer"
               @click="selectRowByDisplayIndex(idx)"
             >
-              <span :class="{ 'text-blue-600 font-semibold': selectedRowDisplayIndex === idx }">Row {{ idx + 1 }}</span>
+              <span :class="{ 'text-blue-600 font-semibold': selectedRowDisplayIndex === idx, 'text-red-500 font-bold': idx === Math.floor(rowCountsLocal.length / 2) }">Row {{ idx + 1 }}</span>
               <span class="font-medium text-slate-600">{{ count }}</span>
             </div>
           </div>
