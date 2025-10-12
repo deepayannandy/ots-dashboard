@@ -67,18 +67,28 @@
               <span :class="{ 'text-blue-600 font-semibold': selectedRowDisplayIndex === idx }">Row {{ idx + 1 }}</span>
               <span class="font-medium text-slate-600">{{ count }}</span>
             </div>
-
-            <div class="mt-2 grid grid-cols-2 gap-1">
-              <UFormField label="Add Tubes" class="col-span-2">
-                <UInput v-model.number="rowAddCount" type="number" min="1" />
-              </UFormField>
-              <UButton size="xs" variant="solid" @click="addTubesToSelectedRow">Add to row</UButton>
-              <UButton size="xs" variant="outline" color="error" @click="deleteSelectedRow">Delete row</UButton>
-              <UButton size="xs" variant="soft" @click="addRowAbove">Add row ↑</UButton>
-              <UButton size="xs" variant="soft" @click="addRowBelow">Add row ↓</UButton>
-            </div>
           </div>
         </transition>
+      </div>
+
+      <!-- Fixed toolbar at top -->
+      <div
+        v-if="selectedRowDisplayIndex !== null"
+        class="absolute z-20 top-3 left-1/2 -translate-x-1/2 transform"
+      >
+        <div class="bg-white/90 rounded-md shadow-sm p-1 flex items-center gap-1">
+          <span class="text-[10px] sm:text-xs text-slate-700">Row {{ (selectedRowDisplayIndex ?? 0) + 1 }}</span>
+          <UInput
+            v-model.number="selectedRowTargetCount"
+            type="number"
+            min="0"
+            class="w-16"
+          />
+          <UButton size="xs" variant="solid" @click="applySelectedRowCount">Apply</UButton>
+          <UButton size="xs" variant="soft" @click="addRowAbove">↑</UButton>
+          <UButton size="xs" variant="soft" @click="addRowBelow">↓</UButton>
+          <UButton size="xs" variant="outline" color="error" @click="deleteSelectedRow">Delete</UButton>
+        </div>
       </div>
 
       <!-- Bottom Controls -->
@@ -132,8 +142,14 @@ const showMeasurements = ref(false);
 const isRowCountCollapsed = ref(true);
 const selectedRowDisplayIndex = ref<number | null>(null);
 const selectedRowIndex = ref<number | null>(null); // base-grid i index
-const rowAddCount = ref<number>(1);
 const rowCountsLocal = computed(() => groupRows().map((r) => r.length));
+const selectedRowTargetCount = ref<number | null>(null);
+
+watch(rowCountsLocal, (counts) => {
+  if (selectedRowDisplayIndex.value !== null) {
+    selectedRowTargetCount.value = counts[selectedRowDisplayIndex.value] ?? null;
+  }
+});
 
 const isDragging = ref(false);
 const dragStart = ref<{ x: number; y: number } | null>(null);
@@ -409,7 +425,9 @@ function groupRows(): Tube[][] {
   let current: Tube[] = [];
   // Guard against potential empty array to satisfy TypeScript's safety checks
   if (sorted.length === 0) return [];
-  let lastY = sorted[0].y;
+  const first = sorted[0];
+  if (!first) return [];
+  let lastY = first.y;
   const rowThreshold = (props.config.pitch ?? 1) * 0.3;
   for (const t of sorted) {
     if (Math.abs(t.y - lastY) > rowThreshold) {
@@ -433,6 +451,8 @@ function selectRowByDisplayIndex(idx: number) {
   const svg = svgRef.value;
   const vp = svg?.querySelector("#viewport") as SVGGElement | null;
   if (vp && showMeasurements.value) drawMeasurements(vp);
+  // sync floating control input with current count
+  selectedRowTargetCount.value = rowCountsLocal.value[idx] ?? null;
 }
 
 function estimateRowOffset(row: Tube[]): number {
@@ -459,12 +479,13 @@ function addTubesToSelectedRow() {
     return;
   }
   const r = props.config.tubeRadius;
-  const add = Math.max(1, rowAddCount.value | 0);
+  // Default to adding one tube on each side when invoked from floating controls
+  const add = 1;
 
   const xs = row.map((t) => t.x).sort((a, b) => a - b);
-  const y = row[0]!.y;
-  const minX = xs[0]!;
-  const maxX = xs[xs.length - 1]!;
+  const y = row[0]?.y ?? 0;
+  const minX = xs[0] ?? 0;
+  const maxX = xs[xs.length - 1] ?? 0;
 
   const newTubes: Tube[] = [];
   for (let i = 1; i <= add; i++) {
@@ -476,6 +497,61 @@ function addTubesToSelectedRow() {
 
   const updated = [...props.tubes, ...newTubes];
   emits("updateTubes", updated);
+}
+
+function setRowCount(rowIdx: number, targetCount: number) {
+  const rows = groupRows();
+  const row = rows[rowIdx];
+  if (!row) return;
+  const current = row.length;
+  const pitch = props.config.pitch;
+  const r = props.config.tubeRadius;
+  if (!(pitch > 0)) {
+    useToast().add({ title: "Invalid pitch", color: "error" });
+    return;
+  }
+  if (targetCount < 0) targetCount = 0;
+
+  const xs = row.map((t) => t.x).sort((a, b) => a - b);
+  const y = row[0]?.y ?? 0;
+  const minX = xs[0] ?? 0;
+  const maxX = xs[xs.length - 1] ?? 0;
+
+  if (targetCount === current) return;
+
+  if (targetCount > current) {
+    const delta = targetCount - current;
+    const addRight = Math.ceil(delta / 2);
+    const addLeft = Math.floor(delta / 2);
+    const newTubes: Tube[] = [];
+    for (let i = 1; i <= addRight; i++) {
+      newTubes.push({ id: "", x: maxX + i * pitch, y, r, capped: false, capColor: null, blocked: false, deleted: false });
+    }
+    for (let i = 1; i <= addLeft; i++) {
+      newTubes.push({ id: "", x: minX - i * pitch, y, r, capped: false, capColor: null, blocked: false, deleted: false });
+    }
+    const updated = [...props.tubes, ...newTubes];
+    emits("updateTubes", updated);
+    return;
+  }
+
+  // targetCount < current: delete from ends
+  const removeDelta = current - targetCount;
+  const sortedRow = [...row].sort((a, b) => a.x - b.x);
+  const leftToDelete = Math.floor(removeDelta / 2);
+  const rightToDelete = Math.ceil(removeDelta / 2);
+  const leftIds = sortedRow.slice(0, Math.max(0, leftToDelete)).map((t) => t.id);
+  const rightIds = sortedRow.slice(Math.max(sortedRow.length - rightToDelete, 0)).map((t) => t.id);
+  const idsToDelete = new Set<string>([...leftIds, ...rightIds]);
+  const updated = props.tubes.map((t) => (idsToDelete.has(t.id) ? { ...t, deleted: true } : t));
+  emits("updateTubes", updated);
+}
+
+function applySelectedRowCount() {
+  if (selectedRowDisplayIndex.value === null) return;
+  const val = selectedRowTargetCount.value;
+  if (val === null || isNaN(val as number)) return;
+  setRowCount(selectedRowDisplayIndex.value, Math.max(0, (val as number) | 0));
 }
 
 function deleteSelectedRow() {
@@ -628,6 +704,8 @@ function initDragSelection() {
     return { x: pt.x, y: pt.y };
   }
 }
+
+// Toolbar fixed at top: no anchor or drag logic needed
 
 defineExpose({
   capSelected,
