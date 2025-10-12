@@ -67,6 +67,20 @@
           </template>
         </div>
 
+        <!-- Bulk apply from counts array -->
+        <div v-if="!isRowCountCollapsed" class="mt-2 space-y-2">
+          <label class="text-[10px] sm:text-xs text-slate-600">Counts Array (comma-separated or JSON)</label>
+          <textarea
+            v-model="rowCountsArrayInput"
+            rows="3"
+            class="w-full text-xs border border-slate-300 rounded p-1 focus:outline-none focus:ring-1 focus:ring-blue-300"
+            placeholder="e.g., 7,12,15,... or [7,12,15,...]"
+          ></textarea>
+          <div  class="flex items-center justify-end">
+            <UButton size="xs" variant="solid" @click="applyCountsArray">Apply Counts Array</UButton>
+          </div>
+        </div>
+
         <transition name="fade">
           <div
             v-if="!isRowCountCollapsed"
@@ -100,7 +114,7 @@
                 @click.stop="toggleDeleteRow(idx)"
               />
             </div>
-            <div class="mt-2 flex justify-end absolute bottom-0 right-10 bg-white shadow-2xl">
+            <div v-if="rowCountsLocal.length" class="mt-2 flex justify-end absolute bottom-0 right-10 bg-white shadow-2xl">
               <UButton size="xs" variant="solid" @click="applyAllRowUpdates">Apply All</UButton>
             </div>
           </div>
@@ -163,6 +177,9 @@ const selectedRowDisplayIndex = ref<number | null>(null);
 const selectedRowIndex = ref<number | null>(null); // base-grid i index
 const rowCountsLocal = computed(() => groupRows().map((r) => r.length));
 const selectedRowTargetCount = ref<number | null>(null);
+
+// Bulk counts array input
+const rowCountsArrayInput = ref<string>("");
 const selectedRowSecondaryIndex = computed(() => {
   if (!mirrorMode.value) return null;
   if (selectedRowDisplayIndex.value === null) return null;
@@ -274,6 +291,91 @@ function applyAllRowUpdates() {
   selectedRowTargetCount.value = null;
   renderAll();
   useToast().add({ title: "Row updates applied" });
+}
+
+// Parse counts array from text input (comma-separated or JSON array)
+function parseCountsInput(str: string): number[] {
+  const s = (str || "").trim();
+  if (!s) return [];
+  try {
+    if (s.startsWith("[") && s.endsWith("]")) {
+      const arr = JSON.parse(s);
+      if (Array.isArray(arr)) {
+        return arr.map((v) => Number(v)).filter((n) => Number.isFinite(n) && n >= 0);
+      }
+    }
+  } catch (e) {
+    // fall through to CSV parsing
+  }
+  return s
+    .split(/[^0-9.]+/)
+    .map((v) => v.trim())
+    .filter((v) => v.length > 0)
+    .map((v) => Number(v))
+    .filter((n) => Number.isFinite(n) && n >= 0);
+}
+
+// Apply array-driven row additions (dup ends) and per-row tube counts
+function applyCountsArray() {
+  const counts = parseCountsInput(rowCountsArrayInput.value);
+  if (!counts.length) {
+    useToast().add({ title: "Invalid counts array", color: "error" });
+    return;
+  }
+  const pitch = props.config.pitch ?? 0;
+  if (!(pitch > 0)) {
+    useToast().add({ title: "Invalid pitch", color: "error" });
+    return;
+  }
+  const vspace = props.config.lattice === "triangular"
+    ? pitch * Math.sqrt(3) / 2
+    : pitch;
+
+  let tubesArr = props.tubes.slice();
+  const currentLen = groupRowsFrom(tubesArr).length;
+  const targetLen = counts.length;
+
+  if (targetLen < currentLen) {
+    // For now, only support adding rows; warn if fewer provided
+    useToast().add({ title: "Input has fewer rows than current", color: "warning" });
+  }
+
+  if (targetLen > currentLen) {
+    const toAdd = targetLen - currentLen;
+    const addTop = Math.floor(toAdd / 2);
+    const addBottom = toAdd - addTop;
+    // Add rows at top by duplicating first row
+    for (let i = 0; i < addTop; i++) {
+      const rows = groupRowsFrom(tubesArr);
+      const newRow = computeAddRowForIndex(rows, 0, -1 as 1 | -1, vspace);
+      tubesArr = [...tubesArr, ...newRow];
+    }
+    // Add rows at bottom by duplicating last row
+    for (let i = 0; i < addBottom; i++) {
+      const rows = groupRowsFrom(tubesArr);
+      const newRow = computeAddRowForIndex(rows, rows.length - 1, 1 as 1 | -1, vspace);
+      tubesArr = [...tubesArr, ...newRow];
+    }
+  }
+
+  // Now set tube count per row according to counts array
+  const finalRows = groupRowsFrom(tubesArr);
+  const len = Math.min(finalRows.length, counts.length);
+  for (let i = 0; i < len; i++) {
+    const target = Math.max(0, Number(counts[i]) || 0);
+    tubesArr = computeSetRowCountUpdate(tubesArr, i, target);
+  }
+
+  emits("updateTubes", tubesArr);
+  // Clear selections and edits
+  selectedRowIndices.value = [];
+  selectedRowDisplayIndex.value = null;
+  selectedRowIndex.value = null;
+  selectedIds.value = [];
+  rowsToDelete.value = [];
+  selectedRowTargetCount.value = null;
+  renderAll();
+  useToast().add({ title: "Array counts applied" });
 }
 
 // When two rows are selected in mirror mode, keep their counts in sync
