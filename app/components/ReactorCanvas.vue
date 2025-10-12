@@ -46,7 +46,7 @@
           class="flex items-center justify-between cursor-pointer select-none"
           @click="isRowCountCollapsed = !isRowCountCollapsed"
         >
-          <span class="font-medium text-slate-700">Row Counts</span>
+          <span class="font-medium text-slate-700">Row Counts({{ rowCountsLocal.length }})</span>
           <UIcon name="i-mdi-shape-plus-outline" @click="copyTubes"></UIcon>
           <span
             class="text-slate-500 text-[10px] transition-transform"
@@ -76,11 +76,13 @@
               v-for="(count, idx) in rowCountsLocal"
               :key="idx"
               class="flex items-center justify-between gap-2 border-b border-slate-200 py-1"
-              :class="{ 'opacity-60 line-through': rowsToDelete.includes(idx) }"
+              :class="{ 'opacity-60 line-through': rowsToDelete.includes(idx), 'bg-blue-50 rounded-md': selectedRowIndices.includes(idx) }"
             >
-              <button class="text-left flex-1" @click="selectRowByDisplayIndex(idx)">
-                <span :class="{ 'text-blue-600 font-semibold': selectedRowDisplayIndex === idx || selectedRowSecondaryIndex === idx, 'text-red-500 font-bold': idx === Math.floor(rowCountsLocal.length / 2) }">Row {{ idx + 1 }}</span>
-              </button>
+              <div class="flex items-center gap-2 flex-1">
+                <button class="text-left" @click="toggleRowSelection(idx)">
+                  <span :class="{ 'text-blue-700 font-semibold': selectedRowIndices.includes(idx), 'text-red-500 font-bold': idx === Math.floor(rowCountsLocal.length / 2) }">Row {{ idx + 1 }}</span>
+                </button>
+              </div>
               <UInput
                 v-model.number="rowCountsEdits[idx]"
                 type="number"
@@ -90,15 +92,15 @@
                 @update:modelValue="(val) => onRowCountEdit(idx, Number(val))"
               />
               <UButton
+                icon="i-mdi-delete-outline"
+                square
                 size="xs"
-                variant="outline"
+                variant="ghost"
                 color="error"
                 @click.stop="toggleDeleteRow(idx)"
-              >
-                {{ rowsToDelete.includes(idx) ? 'Undo' : 'Delete' }}
-              </UButton>
+              />
             </div>
-            <div class="mt-2 flex justify-end">
+            <div class="mt-2 flex justify-end absolute bottom-0 right-10 bg-white shadow-2xl">
               <UButton size="xs" variant="solid" @click="applyAllRowUpdates">Apply All</UButton>
             </div>
           </div>
@@ -174,6 +176,8 @@ const selectedRowSecondaryIndex = computed(() => {
 // Inline row edits and batch apply/delete tracking
 const rowCountsEdits = ref<number[]>([]);
 const rowsToDelete = ref<number[]>([]);
+// Multi-row selection indices
+const selectedRowIndices = ref<number[]>([]);
 
 // Initialize and sync edits when rows change
 watch(rowCountsLocal, (counts) => {
@@ -183,9 +187,43 @@ watch(rowCountsLocal, (counts) => {
 }, { immediate: true });
 
 function toggleDeleteRow(idx: number) {
-  const i = rowsToDelete.value.indexOf(idx);
-  if (i >= 0) rowsToDelete.value.splice(i, 1);
-  else rowsToDelete.value.push(idx);
+  const targets = selectedRowIndices.value.includes(idx)
+    ? selectedRowIndices.value
+    : [idx];
+  targets.forEach((i) => {
+    const pos = rowsToDelete.value.indexOf(i);
+    if (pos >= 0) rowsToDelete.value.splice(pos, 1);
+    else rowsToDelete.value.push(i);
+  });
+}
+
+function toggleRowSelection(idx: number) {
+  const len = rowCountsLocal.value.length;
+  const mirrorIdx = mirrorMode.value ? (len - 1 - idx) : null;
+  const pos = selectedRowIndices.value.indexOf(idx);
+  if (pos >= 0) {
+    // Remove idx and its mirror if present
+    selectedRowIndices.value.splice(pos, 1);
+    if (mirrorIdx !== null && mirrorIdx !== idx) {
+      const mpos = selectedRowIndices.value.indexOf(mirrorIdx);
+      if (mpos >= 0) selectedRowIndices.value.splice(mpos, 1);
+    }
+  } else {
+    // Add idx and its mirror if applicable
+    selectedRowIndices.value.push(idx);
+    if (mirrorIdx !== null && mirrorIdx !== idx && !selectedRowIndices.value.includes(mirrorIdx)) {
+      selectedRowIndices.value.push(mirrorIdx);
+    }
+  }
+  // Update selectedIds to include all tubes from selected rows
+  const rows = groupRows();
+  const ids = new Set<string>();
+  selectedRowIndices.value.forEach((i) => {
+    const row = rows[i];
+    if (row) row.forEach((t) => ids.add(t.id));
+  });
+  selectedIds.value = Array.from(ids);
+  renderAll();
 }
 
 function applyAllRowUpdates() {
@@ -197,7 +235,13 @@ function applyAllRowUpdates() {
     const target = rowCountsEdits.value[idx] ?? originalCounts[idx] ?? 0;
     const current = originalCounts[idx] ?? 0;
     if (target !== current && target >= 0) {
-      tubesArr = computeSetRowCountUpdate(tubesArr, idx, target);
+      // If multiple rows selected and this idx is selected, propagate same target to all selected
+      const targets = selectedRowIndices.value.includes(idx)
+        ? selectedRowIndices.value
+        : [idx];
+      for (const i of targets) {
+        tubesArr = computeSetRowCountUpdate(tubesArr, i, target);
+      }
     }
   }
 
@@ -205,10 +249,15 @@ function applyAllRowUpdates() {
   const rows = groupRowsFrom(tubesArr);
   const deleteSet = new Set<string>();
   rowsToDelete.value.forEach((idx) => {
-    const row = rows[idx];
-    if (row && row.length) {
-      row.forEach((t) => deleteSet.add(t.id));
-    }
+    const targets = selectedRowIndices.value.includes(idx)
+      ? selectedRowIndices.value
+      : [idx];
+    targets.forEach((i) => {
+      const row = rows[i];
+      if (row && row.length) {
+        row.forEach((t) => deleteSet.add(t.id));
+      }
+    });
   });
   if (deleteSet.size > 0) {
     tubesArr = tubesArr.map((t) => (deleteSet.has(t.id) ? { ...t, deleted: true } : t));
@@ -216,6 +265,13 @@ function applyAllRowUpdates() {
 
   // Emit updated tubes and redraw
   emits("updateTubes", tubesArr);
+  // Clear all selections and pending deletes/edits after apply
+  selectedRowIndices.value = [];
+  selectedRowDisplayIndex.value = null;
+  selectedRowIndex.value = null;
+  selectedIds.value = [];
+  rowsToDelete.value = [];
+  selectedRowTargetCount.value = null;
   renderAll();
   useToast().add({ title: "Row updates applied" });
 }
@@ -223,17 +279,23 @@ function applyAllRowUpdates() {
 // When two rows are selected in mirror mode, keep their counts in sync
 function onRowCountEdit(idx: number, val: number) {
   // Update local edit at idx is already handled by v-model; we mirror to opposite when applicable
-  if (!mirrorMode.value) return;
-  const primary = selectedRowDisplayIndex.value;
-  const secondary = selectedRowSecondaryIndex.value;
-  if (primary === null || secondary === null) return; // not both selected
-
-  // Only mirror when editing one of the selected pair
-  if (idx !== primary && idx !== secondary) return;
-  const len = rowCountsEdits.value.length;
-  const mirrorIdx = len - 1 - idx;
-  if (mirrorIdx < 0 || mirrorIdx >= len) return;
-  rowCountsEdits.value[mirrorIdx] = val;
+  // If multiple selections: propagate the edit value to all selected rows
+  if (selectedRowIndices.value.length > 1 && selectedRowIndices.value.includes(idx)) {
+    selectedRowIndices.value.forEach((i) => {
+      rowCountsEdits.value[i] = val;
+    });
+  }
+  // Mirror mode: keep opposite in sync when one of mirrored rows is edited
+  if (mirrorMode.value) {
+    const primary = selectedRowDisplayIndex.value;
+    const secondary = selectedRowSecondaryIndex.value;
+    if (primary === null || secondary === null) return; // not both selected
+    if (idx !== primary && idx !== secondary) return; // Only when editing one of selected pair
+    const len = rowCountsEdits.value.length;
+    const mirrorIdx = len - 1 - idx;
+    if (mirrorIdx < 0 || mirrorIdx >= len) return;
+    rowCountsEdits.value[mirrorIdx] = val;
+  }
 }
 
 function addRowTop() {
@@ -283,9 +345,32 @@ watch(rowCountsLocal, (counts) => {
 
 watch(mirrorMode, (enabled) => {
   // Re-apply selection to include/exclude mirrored row
-  if (selectedRowDisplayIndex.value !== null) {
-    selectRowByDisplayIndex(selectedRowDisplayIndex.value);
+  const len = rowCountsLocal.value.length;
+  if (enabled) {
+    // Add mirrors for all selected indices
+    const set = new Set<number>(selectedRowIndices.value);
+    selectedRowIndices.value.forEach((i) => {
+      const m = len - 1 - i;
+      if (m !== i && m >= 0 && m < len) set.add(m);
+    });
+    selectedRowIndices.value = Array.from(set);
+  } else {
+    // Remove mirrored indices that were only present due to mirroring
+    // Keep current selection as-is; user can manually adjust.
+    // No-op for simplicity.
   }
+  // Refresh selectedIds and highlight bands
+  const rows = groupRows();
+  const ids = new Set<string>();
+  selectedRowIndices.value.forEach((i) => {
+    const row = rows[i];
+    if (row) row.forEach((t) => ids.add(t.id));
+  });
+  selectedIds.value = Array.from(ids);
+  if (selectedRowDisplayIndex.value !== null) {
+    selectedRowTargetCount.value = rowCountsLocal.value[selectedRowDisplayIndex.value] ?? null;
+  }
+  renderAll();
 });
 
 const isDragging = ref(false);
@@ -588,15 +673,24 @@ function selectRowByDisplayIndex(idx: number) {
   if (!rows[idx]) return;
   selectedRowDisplayIndex.value = idx;
   selectedRowIndex.value = idx;
-  let ids = rows[idx].map((t) => t.id);
+  // Add to multi-selection set if not present
+  if (!selectedRowIndices.value.includes(idx)) {
+    selectedRowIndices.value.push(idx);
+  }
+  // Mirror: ensure mirrored row also selected in multi-select when enabled
   if (mirrorMode.value) {
-    const mirrorIdx = rows.length - 1 - idx;
-    if (rows[mirrorIdx] && mirrorIdx !== idx) {
-      const mirrorIds = rows[mirrorIdx].map((t) => t.id);
-      ids = Array.from(new Set([...ids, ...mirrorIds]));
+    const len = rowCountsLocal.value.length;
+    const m = len - 1 - idx;
+    if (m !== idx && !selectedRowIndices.value.includes(m)) {
+      selectedRowIndices.value.push(m);
     }
   }
-  selectedIds.value = ids;
+  const ids = new Set<string>();
+  selectedRowIndices.value.forEach((i) => {
+    const row = rows[i];
+    if (row) row.forEach((t) => ids.add(t.id));
+  });
+  selectedIds.value = Array.from(ids);
   const svg = svgRef.value;
   const vp = svg?.querySelector("#viewport") as SVGGElement | null;
   if (vp && showMeasurements.value) drawMeasurements(vp);
@@ -705,6 +799,13 @@ function applySelectedRowCount() {
   const target = Math.max(0, (val as number) | 0);
   if (!mirrorMode.value) {
     setRowCount(selectedRowDisplayIndex.value, target);
+    // Clear selection after apply
+    selectedRowIndices.value = [];
+    selectedRowDisplayIndex.value = null;
+    selectedRowIndex.value = null;
+    selectedIds.value = [];
+    selectedRowTargetCount.value = null;
+    renderAll();
     return;
   }
   // Apply to both primary and mirrored rows in one combined update
@@ -717,6 +818,13 @@ function applySelectedRowCount() {
     updatedFinal = computeSetRowCountUpdate(updatedOnce, mirrorIdx, target);
   }
   emits("updateTubes", updatedFinal);
+  // Clear selection after apply
+  selectedRowIndices.value = [];
+  selectedRowDisplayIndex.value = null;
+  selectedRowIndex.value = null;
+  selectedIds.value = [];
+  selectedRowTargetCount.value = null;
+  renderAll();
 }
 
 function deleteSelectedRow() {
@@ -737,7 +845,14 @@ function deleteSelectedRow() {
   }
   const updated = props.tubes.map((t) => ({ ...t, deleted: idsToDelete.has(t.id) ? true : t.deleted }));
   emits("updateTubes", updated);
+  // Clear selection after delete apply
+  selectedRowIndices.value = [];
+  selectedRowDisplayIndex.value = null;
+  selectedRowIndex.value = null;
   selectedIds.value = [];
+  rowsToDelete.value = [];
+  selectedRowTargetCount.value = null;
+  renderAll();
 }
 
 function addRow(offsetSign: 1 | -1) {
@@ -882,8 +997,13 @@ defineExpose({
 });
 
 function drawRowHighlights(vp: SVGGElement) {
-  if (selectedRowDisplayIndex.value === null) return;
   const rows = groupRows();
+  const indicesSet = new Set<number>();
+  // Include multi-selected indices
+  selectedRowIndices.value.forEach((i) => indicesSet.add(i));
+  // Include primary selection
+  if (selectedRowDisplayIndex.value !== null) indicesSet.add(selectedRowDisplayIndex.value);
+  if (indicesSet.size === 0) return;
   if (rows.length === 0) return;
   const pitchVal = props.config.pitch ?? 0;
   const vspace = props.config.lattice === "triangular"
@@ -891,13 +1011,15 @@ function drawRowHighlights(vp: SVGGElement) {
     : pitchVal;
   const bandHeightPx = (vspace ?? 0) * scalePx;
 
-  const indices: number[] = [selectedRowDisplayIndex.value];
+  const indices: number[] = Array.from(indicesSet);
+  // Add mirror index only if primary exists and not already in set
   const mirrorIdx = selectedRowSecondaryIndex.value;
-  if (mirrorIdx !== null && mirrorIdx !== selectedRowDisplayIndex.value) {
-    indices.push(mirrorIdx);
+  if (mirrorIdx !== null) {
+    indicesSet.add(mirrorIdx);
   }
+  const finalIndices: number[] = Array.from(indicesSet);
 
-  for (const idx of indices) {
+  for (const idx of finalIndices) {
     const row = rows[idx];
     if (!row || row.length === 0) continue;
     const yModel = row[0]?.y;
@@ -1035,7 +1157,4 @@ function computeAddRowForIndex(rows: Tube[][], rowIdx: number, offsetSign: 1 | -
 }
 </style>
 
-<script lang="ts">
-// Helper functions colocated to avoid polluting script setup scope
-export default {}
-</script>
+
