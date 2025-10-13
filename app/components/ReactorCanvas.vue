@@ -127,7 +127,7 @@
 
       
       <div
-        class="absolute bottom-3 left-3 sm:bottom-4  bg-white/90 rounded-xl p-2 shadow-md flex flex-col items-center gap-2"
+        class="absolute bottom-3 left-3 sm:bottom-0  flex flex-col items-center gap-2"
       >
         <ZoomControls
           @zoomIn="zoomIn"
@@ -135,7 +135,9 @@
           @pan="panXY"
           @reset="resetView"
         />
+        <p class="text-[8px]">
         Zoom: {{ scale.toFixed(2) }}
+      </p>
       </div>
 
       
@@ -234,6 +236,40 @@ const tubeById = computed(() => {
   return m;
 });
 
+// Precompute rows and an index->ids mapping to avoid repeated work on selection
+const rowsComputed = computed(() => groupRows());
+const rowIndexToIds = computed(() => rowsComputed.value.map((row) => row.map((t) => t.id)));
+
+function updateSelectionVisuals(prev: Set<string>, next: Set<string>) {
+  const svg = svgRef.value;
+  if (!svg) return;
+  const vp = svg.querySelector('#viewport') as SVGGElement;
+  if (!vp) return;
+  // Toggle highlight class only for changed ids
+  for (const id of next) {
+    if (!prev.has(id)) {
+      const el = elById.get(id);
+      if (el) el.classList.add('highlight');
+    }
+  }
+  for (const id of prev) {
+    if (!next.has(id)) {
+      const el = elById.get(id);
+      if (el) el.classList.remove('highlight');
+    }
+  }
+}
+
+function updateRowHighlights() {
+  const svg = svgRef.value;
+  if (!svg) return;
+  const vp = svg.querySelector('#viewport') as SVGGElement;
+  if (!vp) return;
+  const { highlights } = ensureLayers(vp);
+  highlights.innerHTML = '';
+  drawRowHighlights(highlights);
+}
+
 const rowCountsArrayInput = ref<string>("");
 const selectedRowSecondaryIndex = computed(() => {
   if (!mirrorMode.value) return null;
@@ -289,14 +325,15 @@ function toggleRowSelection(idx: number) {
       selectedRowIndices.value.push(mirrorIdx);
     }
   }
-  const rows = groupRows();
+  const prev = new Set<string>(selectedIds.value);
   const ids = new Set<string>();
   selectedRowIndices.value.forEach((i) => {
-    const row = rows[i];
-    if (row) row.forEach((t) => ids.add(t.id));
+    const arr = rowIndexToIds.value[i];
+    if (arr) arr.forEach((id) => ids.add(id));
   });
   selectedIds.value = Array.from(ids);
-  renderAll();
+  updateSelectionVisuals(prev, new Set<string>(selectedIds.value));
+  updateRowHighlights();
 }
 
 function applyAllRowUpdates() {
@@ -495,17 +532,18 @@ watch(mirrorMode, (enabled) => {
     selectedRowIndices.value = Array.from(set);
   } else {
   }
-  const rows = groupRows();
+  const prev = new Set<string>(selectedIds.value);
   const ids = new Set<string>();
   selectedRowIndices.value.forEach((i) => {
-    const row = rows[i];
-    if (row) row.forEach((t) => ids.add(t.id));
+    const arr = rowIndexToIds.value[i];
+    if (arr) arr.forEach((id) => ids.add(id));
   });
   selectedIds.value = Array.from(ids);
   if (selectedRowDisplayIndex.value !== null) {
     selectedRowTargetCount.value = rowCountsLocal.value[selectedRowDisplayIndex.value] ?? null;
   }
-  renderAll();
+  updateSelectionVisuals(prev, new Set<string>(selectedIds.value));
+  updateRowHighlights();
 });
 
 
@@ -773,7 +811,7 @@ function copyJson() {
 }
 
 function copyTubes() {
-  const payload = JSON.stringify(rowCountsLocal.value, null, 2).replaceAll('[','').replaceAll(']','');
+  const payload = rowCountsLocal.value.join(', ');
   navigator.clipboard?.writeText(payload);
 }
 
