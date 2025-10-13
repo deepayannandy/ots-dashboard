@@ -138,6 +138,8 @@ export function generateTubes(cfg: ReactorConfig): {
           capColor: null,
           blocked: false,
           deleted: false,
+          property: null,
+          propertyColor: null,
         });
       }
     }
