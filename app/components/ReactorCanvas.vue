@@ -37,7 +37,7 @@
 
 
       <div
-        class="absolute top-3 right-3 bg-white/90 rounded-xl p-2 shadow-md text-xs sm:text-sm w-56"
+        class="absolute top-3 right-3 bg-white/90 rounded-xl p-3 shadow-md text-xs sm:text-sm w-80"
       >
         <div
           class="flex items-center justify-between cursor-pointer select-none"
@@ -70,7 +70,7 @@
           <textarea
             v-model="rowCountsArrayInput"
             rows="3"
-            class="w-full text-xs border border-slate-300 rounded p-1 focus:outline-none focus:ring-1 focus:ring-blue-300"
+            class="w-full text-xs sm:text-sm border border-slate-300 rounded p-2 focus:outline-none focus:ring-1 focus:ring-blue-300"
             placeholder="e.g., 7,12,15,... or [7,12,15,...]"
           ></textarea>
           <div  class="flex items-center justify-end">
@@ -82,17 +82,18 @@
           <div>
           <div
             v-if="!isRowCountCollapsed"
-            class="mt-2 max-h-96 overflow-y-auto pr-1"
+            class="mt-2 max-h-96 overflow-y-auto pr-1 space-y-1"
           >
             <div
               v-for="(count, idx) in rowCountsLocal"
               :key="idx"
-              class="flex items-center justify-between gap-2 border-b border-slate-200 py-1 cursor-pointer"
+              class="flex items-center gap-3 border-b border-slate-200 py-2 cursor-pointer"
               :class="{ 'opacity-60 line-through': rowsToDelete.includes(idx), 'bg-blue-50 rounded-md': selectedRowIndices.includes(idx) }"
               @click="toggleRowSelection(idx)"
             >
               <div class="flex items-center gap-2 flex-1 cursor-pointer">
-                <button class="text-left cursor-pointer"  >
+                <UCheckbox :model-value="selectedRowIndices.includes(idx)" @update:modelValue="() => toggleRowSelection(idx)" @click.stop />
+                <button class="text-left cursor-pointer">
                   <span :class="{ 'text-blue-700 font-semibold': selectedRowIndices.includes(idx), 'text-red-500 font-bold': idx === Math.floor(rowCountsLocal.length / 2) }">Row {{ idx + 1 }}</span>
                 </button>
               </div>
@@ -113,7 +114,7 @@
                 @click.stop="toggleDeleteRow(idx)"
               />
             </div>
-            <div v-if="rowCountsLocal.length" class="mt-2 absolute bottom-0  bg-white shadow-2xl w-full right-0">
+            <div v-if="rowCountsLocal.length" class="mt-2 sticky bottom-0 bg-white shadow w-full right-0">
               <UButton size="xs" block variant="solid" @click="applyAllRowUpdates">Apply All</UButton>
             </div>
             </div>
@@ -127,7 +128,7 @@
 
       
       <div
-        class="absolute bottom-3 left-3 sm:bottom-0  flex flex-col items-center gap-2"
+        class="absolute bottom-3 left-3 sm:bottom-0 flex flex-col items-center gap-2"
       >
         <ZoomControls
           @zoomIn="zoomIn"
@@ -135,9 +136,7 @@
           @pan="panXY"
           @reset="resetView"
         />
-        <p class="text-[8px]">
-        Zoom: {{ scale.toFixed(2) }}
-      </p>
+        <p class="text-[10px] sm:text-xs">Zoom: {{ scale.toFixed(2) }}</p>
       </div>
 
       
