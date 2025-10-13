@@ -87,7 +87,6 @@ function handleUpdateTubes(updated: Tube[]) {
     return;
   }
 
-  // Sort by Y first
   const sorted = [...active].sort((a, b) => a.y - b.y || a.x - b.x);
 
   const grouped: Tube[][] = [];
@@ -105,7 +104,6 @@ function handleUpdateTubes(updated: Tube[]) {
   }
   if (currentRow.length) grouped.push(currentRow);
 
-  // Sort each row left→right and assign new IDs
   const reassigned: Tube[] = [];
   grouped.forEach((row, i) => {
     const sortedRow = row.sort((a, b) => a.x - b.x);
@@ -116,14 +114,12 @@ function handleUpdateTubes(updated: Tube[]) {
 
   tubes.value = reassigned;
 
-  // Auto-update shape dimensions to fit tubes while keeping padding
   const xs = reassigned.map((t) => t.x);
   const ys = reassigned.map((t) => t.y);
   const pad = config.value.padding ?? 0;
   const tubeR = config.value.tubeRadius ?? 0;
 
   if (config.value.shape === 'circle' || config.value.shape === 'hexagon' || config.value.shape === 'doughnut') {
-    // Use radial distance so diagonal rows don't overflow the boundary
     const maxTubeEdgeRadius = reassigned.reduce((m, t) => Math.max(m, Math.hypot(t.x, t.y) + tubeR), 0);
     const newOuter = maxTubeEdgeRadius + pad;
     config.value.outerDimension = Math.max(newOuter, config.value.outerDimension);

@@ -48,7 +48,7 @@
         </UFieldGroup>
       </UFormField>
 
-      <!-- Dimensions -->
+      
       <template v-if="localState.shape === 'rectangle'">
         <UFormField class="w-full" label="Width">
           <UInput class="w-full" v-model="localState.width" type="number" />
@@ -118,7 +118,7 @@
         </UFieldGroup>
       </UFormField>
 
-      <!-- Tube Actions -->
+      
       <div class="space-y-3">
         <div class="text-sm font-medium text-slate-700">Tube Actions</div>
           <div class="flex items-center gap-2">
@@ -147,7 +147,7 @@
 
       </div>
 
-      <!-- Action Buttons -->
+      
       <div class="flex flex-wrap gap-3 mt-6 justify-between">
         <UButton icon="i-mdi-play" @click="applyConfig">Generate</UButton>
         <UButton icon="i-mdi-download" @click="$emit('download')">SVG</UButton>
@@ -165,6 +165,7 @@
 <script setup lang="ts">
 import { reactive, watch } from "vue";
 import type { ReactorConfig } from "@/types";
+import { propertyOptions } from "@/modules/constants";
 
 const props = defineProps<{
   model: ReactorConfig;
@@ -198,12 +199,5 @@ function applyConfig() {
   emit("generate");
 }
 
-const propertyOptions = [
-'catalyst_tc',
-'coolant',
-'solid',
-'bend',
-'salt_tc',
-'blocked',
-];
+ 
 </script>

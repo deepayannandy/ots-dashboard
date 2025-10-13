@@ -124,7 +124,6 @@ export function generateTubes(cfg: ReactorConfig): {
     for (let j = N; j >= -N; j--) {
       const x = j * spacing + offset;
 
-      // Rotate points based on user angle
       const xr = x * cosA - y * sinA;
       const yr = x * sinA + y * cosA;
 
@@ -145,7 +144,6 @@ export function generateTubes(cfg: ReactorConfig): {
     }
   }
 
-  // Center tubes around (0, 0)
   if (tubes.length > 0) {
     const avgX = tubes.reduce((s, t) => s + t.x, 0) / tubes.length;
     const avgY = tubes.reduce((s, t) => s + t.y, 0) / tubes.length;
@@ -155,7 +153,6 @@ export function generateTubes(cfg: ReactorConfig): {
     });
   }
 
-  // Sort tubes top-to-bottom, left-to-right
   tubes.sort((a, b) => {
     const ay = Math.round(a.y * 1e6) / 1e6;
     const by = Math.round(b.y * 1e6) / 1e6;
@@ -163,7 +160,6 @@ export function generateTubes(cfg: ReactorConfig): {
     return a.x - b.x;
   });
 
-  // Reassign row/column IDs
   let currentRow = 1;
   let currentCol = 1;
   let lastY: number | null = null;
@@ -179,7 +175,6 @@ export function generateTubes(cfg: ReactorConfig): {
     currentCol++;
   }
 
-  // ✅ FIXED: Compute rowCounts after final positioning
   const rowCounts: number[] = [];
   let lastRowY: number | null = null;
   let count = 0;

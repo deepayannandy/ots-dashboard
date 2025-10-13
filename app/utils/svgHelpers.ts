@@ -5,12 +5,8 @@ import type { ReactorConfig } from '@/types'
  * centerX/centerY are pixel coordinates of reactor center in the SVG.
  */
 export function drawBoundary(viewport: SVGGElement, cfg: ReactorConfig, centerX = 460, centerY = 380, scale = 3) {
-  // clear and draw; caller must ensure viewport exists
-  // We'll insert shapes (outer, padding layer, inner hole)
   const create = (n: string) => document.createElementNS('http://www.w3.org/2000/svg', n)
 
-  // clear boundary elements (we keep everything simple: caller usually clears viewport prior to drawing tubes)
-  // Draw depending on shape
   if (cfg.shape === 'circle' || cfg.shape === 'doughnut') {
     const outer = create('circle')
     outer.setAttribute('cx', String(centerX))
