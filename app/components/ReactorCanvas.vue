@@ -508,7 +508,7 @@ function renderAll() {
       salt_tc: '#0ea5e9',
       blocked: '#ef4444',
     };
-    const defaultFill = t.capped ? (t.capColor ?? '#facc15') : '#60a5fa';
+    const defaultFill = t.capped ? (t.capColor ?? '#facc15') : '#ffffff';
     const propKey = t.blocked ? 'blocked' : (t.property ?? null);
     const fill: string = propKey
       ? (t.propertyColor ?? propertyColors[propKey as keyof typeof propertyColors] ?? defaultFill)
@@ -657,6 +657,22 @@ function blockSelected() {
 function applyProperty(property: 'catalyst_tc' | 'coolant' | 'solid' | 'bend' | 'salt_tc' | 'blocked', color?: string) {
   if (selectedIds.value.length === 0)
     return useToast().add({ title: 'No Tube Selected', color: 'error' });
+  // Treat 'solid' as delete
+  if (property === 'solid') {
+    const updated = props.tubes.map((t) => ({
+      ...t,
+      deleted: selectedIds.value.includes(t.id) ? true : t.deleted,
+      property: selectedIds.value.includes(t.id) ? null : t.property,
+      propertyColor: selectedIds.value.includes(t.id) ? null : t.propertyColor,
+      blocked: selectedIds.value.includes(t.id) ? false : t.blocked,
+    }));
+    selectedIds.value.forEach((id) => useToast().add({ title: `${id} Deleted` }));
+    selectedIds.value = [];
+    emits('updateTubes', updated);
+    renderAll();
+    return;
+  }
+  // Normal properties and blocked
   props.tubes.forEach((t) => {
     if (selectedIds.value.includes(t.id)) {
       if (property === 'blocked') {
@@ -1114,22 +1130,15 @@ function computeAddRowForIndex(rows: Tube[][], rowIdx: number, offsetSign: 1 | -
   stroke-width: 2 !important;
   filter: drop-shadow(0 0 4px #f43f5e88);
 }
-.measure-line {
-  stroke-dasharray: 3 3;
-}
-.measure-text {
-  font-size: 5px;
-  fill: #dc2626;
-  user-select: none;
-}
+
 .selection-box {
   pointer-events: none;
   stroke-dasharray: 4 2;
 }
 
 .row-highlight {
-  fill: rgba(59, 130, 246, 0.12);
-  stroke: rgba(59, 130, 246, 0.3);
+  fill: rgba(255, 0, 0, 0.487);
+  stroke: rgb(0, 98, 255);
   stroke-width: 0.5;
 }
 

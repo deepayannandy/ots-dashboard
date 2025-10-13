@@ -50,30 +50,30 @@
 
       <!-- Dimensions -->
       <template v-if="localState.shape === 'rectangle'">
-        <UFormField label="Width">
-          <UInput v-model="localState.width" type="number" />
+        <UFormField class="w-full" label="Width">
+          <UInput class="w-full" v-model="localState.width" type="number" />
         </UFormField>
-        <UFormField label="Height">
-          <UInput v-model="localState.height" type="number" />
+        <UFormField class="w-full" label="Height">
+          <UInput class="w-full" v-model="localState.height" type="number" />
         </UFormField>
       </template>
 
       <template v-if="localState.shape === 'doughnut'">
-        <UFormField label="Inner Radius">
-          <UInput v-model="localState.innerRadius" type="number" />
+        <UFormField class="w-full" label="Inner Radius">
+          <UInput class="w-full" v-model="localState.innerRadius" type="number" />
         </UFormField>
       </template>
 
-      <UFormField label="Reactor Dimension / Radius">
-        <UInput v-model="localState.outerDimension" type="number" />
+      <UFormField class="w-full" label="Reactor Dimension / Radius">
+        <UInput class="w-full" v-model="localState.outerDimension" type="number" />
       </UFormField>
 
-      <UFormField label="Tube Radius">
-        <UInput v-model="localState.tubeRadius" type="number" />
+      <UFormField class="w-full" label="Tube Radius">
+        <UInput class="w-full" v-model="localState.tubeRadius" type="number" />
       </UFormField>
 
-      <UFormField label="Reactor Padding">
-        <UInput v-model="localState.padding" type="number" />
+      <UFormField class="w-full" label="Reactor Padding">
+        <UInput class="w-full" v-model="localState.padding" type="number" />
         <template #description>
           <span class="text-xs text-slate-500"
             >Size: {{ localState.padding }} units</span
@@ -83,11 +83,11 @@
 
       
 
-      <UFormField label="Pitch">
-        <UInput v-model="localState.pitch" type="number" />
+      <UFormField class="w-full" label="Pitch">
+        <UInput class="w-full" v-model="localState.pitch" type="number" />
       </UFormField>
 
-      <UFormField label="Arrangement">
+      <UFormField class="w-full" label="Arrangement">
         <UFieldGroup class="flex justify-between w-full" variant="outline">
           <UButton
             icon="i-mdi-triangle-outline"
@@ -106,7 +106,7 @@
         </UFieldGroup>
       </UFormField>
 
-      <UFormField label="Angle">
+      <UFormField class="w-full" label="Angle">
         <UFieldGroup class="flex justify-between w-full" variant="outline">
           <UButton
             v-for="deg in localState.lattice === 'square' ? [45, 90] : [30, 60]"
@@ -126,30 +126,24 @@
               icon="solar:square-academic-cap-2-bold-duotone"
               variant="outline"
               class="justify-center"
+              block
               :style="{ color: localState.capColor }"
               @click="$emit('cap', localState.capColor)"
             />
-            <UInput v-model="localState.capColor" type="color" />
+            <UInput class="w-full" v-model="localState.capColor" type="color" />
           </div>
           <div class="flex items-center gap-2">
             <USelectMenu
+            class="w-full"
               v-model="localState.tubeProperty"
               :items="propertyOptions"
+              :search-input="false"
               placeholder="Select property"
             />
             <UButton variant="soft" @click="$emit('setProperty', localState.tubeProperty)">Apply</UButton>
           </div>
 
-          <div class="col-span-2 flex items-center justify-between">
-            <UButton
-              icon="i-mdi-delete-outline"
-              square
-              color="error"
-              class="justify-center"
-              @click="$emit('delete')"
-            />
-            
-          </div>
+          
 
       </div>
 
@@ -189,7 +183,7 @@ const emit = defineEmits([
 
 const localState = reactive({
   ...props.model,
-  capColor: "#facc15",
+  capColor: "#0011ff",
   angle: props.model.angle as 30 | 45 | 60 | 90 | undefined,
   tubeProperty: undefined as undefined | 'catalyst_tc' | 'coolant' | 'solid' | 'bend' | 'salt_tc' | 'blocked',
 });
