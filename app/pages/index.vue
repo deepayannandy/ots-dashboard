@@ -1,17 +1,17 @@
 <template>
   <div class="grid grid-cols-10 relative">
     <div class="col-span-2 sticky">
-      <ConfigPanel
-        :model="config"
-        :tubesCount="tubes.length"
-        @update:model="setConfig"
-        @generate="onGenerate"
-        @copyJson="onCopyJson"
-        @download="onDownload"
-        @cap="onCap"
-        @block="onBlock"
-        @delete="onDelete"
-      />
+  <ConfigPanel
+    :model="config"
+    :tubesCount="tubes.length"
+    @update:model="setConfig"
+    @generate="onGenerate"
+    @copyJson="onCopyJson"
+    @download="onDownload"
+    @cap="onCap"
+    @setProperty="onSetProperty"
+    @delete="onDelete"
+  />
     </div>
     <div class="col-span-8">
       <ReactorCanvas
@@ -35,7 +35,7 @@ import type { Tube } from "~/types";
 
 defineShortcuts({
   meta_backspace: () => onDelete(),
-  meta_b: () => onBlock(),
+  meta_b: () => onSetProperty('blocked'),
   meta_d: () => onDownload(),
 });
 
@@ -52,10 +52,10 @@ function onCap(capColor = "#facc15") {
   canvas.capSelected(capColor);
 }
 
-function onBlock() {
+function onSetProperty(property: 'catalyst_tc' | 'coolant' | 'solid' | 'bend' | 'salt_tc' | 'blocked') {
   const canvas = canvasRef.value;
   if (!canvas) return;
-  canvas.blockSelected();
+  canvas.applyProperty(property);
 }
 
 function onDelete() {

@@ -50,30 +50,30 @@
 
       <!-- Dimensions -->
       <template v-if="localState.shape === 'rectangle'">
-        <UFormField label="Width">
-          <UInput v-model="localState.width" type="number" />
+        <UFormField class="w-full" label="Width">
+          <UInput class="w-full" v-model="localState.width" type="number" />
         </UFormField>
-        <UFormField label="Height">
-          <UInput v-model="localState.height" type="number" />
+        <UFormField class="w-full" label="Height">
+          <UInput class="w-full" v-model="localState.height" type="number" />
         </UFormField>
       </template>
 
       <template v-if="localState.shape === 'doughnut'">
-        <UFormField label="Inner Radius">
-          <UInput v-model="localState.innerRadius" type="number" />
+        <UFormField class="w-full" label="Inner Radius">
+          <UInput class="w-full" v-model="localState.innerRadius" type="number" />
         </UFormField>
       </template>
 
-      <UFormField label="Reactor Dimension / Radius">
-        <UInput v-model="localState.outerDimension" type="number" />
+      <UFormField class="w-full" label="Reactor Dimension / Radius">
+        <UInput class="w-full" v-model="localState.outerDimension" type="number" />
       </UFormField>
 
-      <UFormField label="Tube Radius">
-        <UInput v-model="localState.tubeRadius" type="number" />
+      <UFormField class="w-full" label="Tube Radius">
+        <UInput class="w-full" v-model="localState.tubeRadius" type="number" />
       </UFormField>
 
-      <UFormField label="Reactor Padding">
-        <UInput v-model="localState.padding" type="number" />
+      <UFormField class="w-full" label="Reactor Padding">
+        <UInput class="w-full" v-model="localState.padding" type="number" />
         <template #description>
           <span class="text-xs text-slate-500"
             >Size: {{ localState.padding }} units</span
@@ -81,28 +81,13 @@
         </template>
       </UFormField>
 
-      <div class="grid grid-cols-2 gap-3">
-        <UFormField label="Reactor Color">
-          <UInput
-            type="color"
-            v-model="localState.shapeColor"
-            class="h-10 p-1 w-full"
-          />
-        </UFormField>
-        <UFormField label="Padding Color">
-          <UInput
-            type="color"
-            v-model="localState.paddingColor"
-            class="h-10 p-1 w-full"
-          />
-        </UFormField>
-      </div>
+      
 
-      <UFormField label="Pitch">
-        <UInput v-model="localState.pitch" type="number" />
+      <UFormField class="w-full" label="Pitch">
+        <UInput class="w-full" v-model="localState.pitch" type="number" />
       </UFormField>
 
-      <UFormField label="Arrangement">
+      <UFormField class="w-full" label="Arrangement">
         <UFieldGroup class="flex justify-between w-full" variant="outline">
           <UButton
             icon="i-mdi-triangle-outline"
@@ -121,7 +106,7 @@
         </UFieldGroup>
       </UFormField>
 
-      <UFormField label="Angle">
+      <UFormField class="w-full" label="Angle">
         <UFieldGroup class="flex justify-between w-full" variant="outline">
           <UButton
             v-for="deg in localState.lattice === 'square' ? [45, 90] : [30, 60]"
@@ -136,32 +121,30 @@
       <!-- Tube Actions -->
       <div class="space-y-3">
         <div class="text-sm font-medium text-slate-700">Tube Actions</div>
-        <div class="grid grid-cols-4 gap-3">
-          <UButton
-            icon="solar:square-academic-cap-2-bold-duotone"
-            variant="outline"
-            class="justify-center"
-            :style="{ color: localState.capColor }"
-            @click="$emit('cap', localState.capColor)"
-          />
+          <div class="flex items-center gap-2">
+            <UButton
+              icon="solar:square-academic-cap-2-bold-duotone"
+              variant="outline"
+              class="justify-center"
+              block
+              :style="{ color: localState.capColor }"
+              @click="$emit('cap', localState.capColor)"
+            />
+            <UInput class="w-full" v-model="localState.capColor" type="color" />
+          </div>
+          <div class="flex items-center gap-2">
+            <USelectMenu
+            class="w-full"
+              v-model="localState.tubeProperty"
+              :items="propertyOptions"
+              :search-input="false"
+              placeholder="Select property"
+            />
+            <UButton variant="soft" @click="$emit('setProperty', localState.tubeProperty)">Apply</UButton>
+          </div>
 
-          <UInput v-model="localState.capColor" type="color" />
+          
 
-          <UButton
-            icon="i-mdi-block-helper"
-            variant="outline"
-            class="justify-center"
-            @click="$emit('block')"
-          />
-
-          <UButton
-            icon="i-mdi-delete-outline"
-            square
-            color="error"
-            class="justify-center"
-            @click="$emit('delete')"
-          />
-        </div>
       </div>
 
       <!-- Action Buttons -->
@@ -192,7 +175,7 @@ const emit = defineEmits([
   "update:model",
   "generate",
   "cap",
-  "block",
+  "setProperty",
   "delete",
   "download",
   "copyJson",
@@ -200,8 +183,9 @@ const emit = defineEmits([
 
 const localState = reactive({
   ...props.model,
-  capColor: "#facc15",
+  capColor: "#0011ff",
   angle: props.model.angle as 30 | 45 | 60 | 90 | undefined,
+  tubeProperty: undefined as undefined | 'catalyst_tc' | 'coolant' | 'solid' | 'bend' | 'salt_tc' | 'blocked',
 });
 
 watch(
@@ -213,4 +197,13 @@ function applyConfig() {
   emit("update:model", { ...localState });
   emit("generate");
 }
+
+const propertyOptions = [
+'catalyst_tc',
+'coolant',
+'solid',
+'bend',
+'salt_tc',
+'blocked',
+];
 </script>
