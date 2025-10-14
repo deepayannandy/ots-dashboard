@@ -25,8 +25,6 @@ export interface Tube {
   capColor?: string | null
   blocked?: boolean
   deleted?: boolean
-  // New property classification
   property?: 'catalyst_tc' | 'coolant' | 'solid' | 'bend' | 'salt_tc' | null
-  // Optional per-property color override
   propertyColor?: string | null
 }
