@@ -139,7 +139,11 @@
               :items="propertyOptions"
               :search-input="false"
               placeholder="Select property"
-            />
+            >
+          <template #item-label="{item}">
+            {{ item.replaceAll('_',' ').toUpperCase() }}
+          </template>
+          </USelectMenu>
             <UButton variant="soft" @click="$emit('setProperty', localState.tubeProperty)">Apply</UButton>
           </div>
 
