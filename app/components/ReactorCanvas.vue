@@ -14,27 +14,41 @@
 
           <span class="text-xs sm:text-sm text-slate-600">Mirror</span>
           <USwitch v-model="mirrorMode" />
-
+          <UButton v-if="mirrorMode" size="xs" variant="solid" @click="updateMirror">Update Mirror</UButton>
           
+          <span class="text-xs sm:text-sm text-slate-600">Back Side View</span>
+          <USwitch v-model="backsideMode" />
+          <UButton v-if="backsideMode" size="xs" variant="solid" @click="updateBackside">Update Backside</UButton>
         </div>
         <SearchBar @search="onSearch" class="w-full sm:w-auto" />
       </div>
     </div>
 
     <div
-      class="relative flex-1 flex justify-center items-center rounded-xl overflow-hidden bg-slate-50"
+      class="relative flex-1 flex justify-center items-start rounded-xl overflow-hidden bg-slate-50"
     >
       <svg
         ref="svgRef"
-        class="w-full h-full max-h-[100vh] aspect-[16/9]"
+        :class="(mirrorMode || backsideMode) ? 'w-1/2 h-[100vh] max-h-[100vh]' : 'w-full h-[100vh] max-h-[100vh]'"
         :viewBox="`0 0 ${svgWidth} ${svgHeight}`"
         xmlns="http://www.w3.org/2000/svg"
-        preserveAspectRatio="xMidYMid meet"
+        preserveAspectRatio="xMinYMin meet"
       >
         <GridRuler :width="svgWidth" :height="svgHeight" />
         <g id="viewport" :transform="transformStr"></g>
       </svg>
 
+      <svg
+        v-if="mirrorMode"
+        ref="mirrorSvgRef"
+        class="w-1/2 h-[100vh] max-h-[100vh]"
+        :viewBox="`0 0 ${svgWidth} ${svgHeight}`"
+        xmlns="http://www.w3.org/2000/svg"
+        preserveAspectRatio="xMinYMin meet"
+      >
+        <GridRuler :width="svgWidth" :height="svgHeight" />
+        <g id="mirror-viewport" :transform="mirrorTransformStr"></g>
+      </svg>
 
       <div
         class="absolute top-3 right-3 bg-white/90 rounded-xl p-3 shadow-md text-xs sm:text-sm w-80"
@@ -157,6 +171,7 @@ const props = defineProps<{ config: ReactorConfig; tubes: Tube[]; rowCount: numb
 const emits = defineEmits(["updateTubes", "copyJson", "download"]);
 
 const svgRef = ref<SVGSVGElement | null>(null);
+const mirrorSvgRef = ref<SVGSVGElement | null>(null);
 const svgWidth = 1200;
 const svgHeight = 760;
 const centerX = svgWidth / 2;
@@ -165,8 +180,10 @@ const scalePx = 2;
 
 // Rendering layers and caching
 const elById = new Map<string, SVGCircleElement>();
+const mirrorElById = new Map<string, SVGCircleElement>();
 let rafId: number | null = null;
 let tooltipEl: SVGTextElement | null = null;
+let mirrorTooltipEl: SVGTextElement | null = null;
 
 function ensureLayers(vp: SVGGElement) {
   let boundary = vp.querySelector('#boundary-layer') as SVGGElement | null;
@@ -205,6 +222,40 @@ function ensureLayers(vp: SVGGElement) {
   return { boundary: boundary!, highlights: highlights!, tubes: tubes!, labels: labels! };
 }
 
+function ensureMirrorLayers(vp: SVGGElement) {
+  let boundary = vp.querySelector('#boundary-layer') as SVGGElement | null;
+  let highlights = vp.querySelector('#highlight-layer') as SVGGElement | null;
+  let tubes = vp.querySelector('#tubes-layer') as SVGGElement | null;
+  let labels = vp.querySelector('#labels-layer') as SVGGElement | null;
+  const create = (id: string) => {
+    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    g.setAttribute('id', id);
+    return g as SVGGElement;
+  };
+  let appended = false;
+  if (!boundary) { boundary = create('boundary-layer'); vp.appendChild(boundary); appended = true; }
+  if (!highlights) { highlights = create('highlight-layer'); vp.appendChild(highlights); appended = true; }
+  if (!tubes) { tubes = create('tubes-layer'); vp.appendChild(tubes); appended = true; }
+  if (!labels) { labels = create('labels-layer'); vp.appendChild(labels); appended = true; }
+  let tip = labels.querySelector('#tooltip') as SVGTextElement | null;
+  if (!tip) {
+    tip = document.createElementNS('http://www.w3.org/2000/svg', 'text') as SVGTextElement;
+    tip.setAttribute('id', 'tooltip');
+    tip.setAttribute('fill', '#334155');
+    tip.setAttribute('font-size', '12');
+    tip.setAttribute('visibility', 'hidden');
+    labels.appendChild(tip);
+  }
+  mirrorTooltipEl = tip;
+  if (appended) {
+    const order = ['boundary-layer', 'highlight-layer', 'tubes-layer', 'labels-layer'];
+    const children = Array.from(vp.children) as SVGGElement[];
+    children.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
+    children.forEach((c) => vp.appendChild(c));
+  }
+  return { boundary: boundary!, highlights: highlights!, tubes: tubes!, labels: labels! };
+}
+
 function scheduleRender() {
   if (rafId !== null) cancelAnimationFrame(rafId);
   rafId = requestAnimationFrame(() => {
@@ -217,11 +268,21 @@ const { scale, tx, ty, zoom, pan, reset } = useViewportTransform();
 const transformStr = computed(
   () => `translate(${tx.value} ${ty.value}) scale(${scale.value})`
 );
+const { scale: mScale, tx: mTx, ty: mTy, zoom: mZoom, pan: mPan, reset: mReset } = useViewportTransform();
+const mirrorTransformStr = computed(
+  () => `translate(${mTx.value} ${mTy.value}) scale(${mScale.value})`
+);
 
 const selectedIds = ref<string[]>([]);
+const mirrorSelectedIds = ref<string[]>([]);
+const mirrorConfigSnapshot = ref<ReactorConfig | null>(null);
+const mirrorTubesSnapshot = ref<Tube[]>([]);
 const autoZoom = ref(true);
 const multiSelect = ref(false);
 const mirrorMode = ref(false);
+const backsideMode = ref(false);
+const backsideConfigSnapshot = ref<ReactorConfig | null>(null);
+const backsideTubesSnapshot = ref<Tube[]>([]);
 const isRowCountCollapsed = ref(true);
 const selectedRowDisplayIndex = ref<number | null>(null);
 const selectedRowIndex = ref<number | null>(null); // base-grid i index
@@ -259,6 +320,22 @@ function updateSelectionVisuals(prev: Set<string>, next: Set<string>) {
   }
 }
 
+function updateMirrorSelectionVisuals(prev: Set<string>, next: Set<string>) {
+  if (!(mirrorMode.value || backsideMode.value)) return;
+  for (const id of next) {
+    if (!prev.has(id)) {
+      const el = mirrorElById.get(id);
+      if (el) el.classList.add('highlight');
+    }
+  }
+  for (const id of prev) {
+    if (!next.has(id)) {
+      const el = mirrorElById.get(id);
+      if (el) el.classList.remove('highlight');
+    }
+  }
+}
+
 function updateRowHighlights() {
   const svg = svgRef.value;
   if (!svg) return;
@@ -269,6 +346,17 @@ function updateRowHighlights() {
   drawRowHighlights(highlights);
 }
 
+function updateMirrorRowHighlights() {
+  if (!(mirrorMode.value || backsideMode.value)) return;
+  const svg = mirrorSvgRef.value;
+  if (!svg) return;
+  const vp = svg.querySelector('#mirror-viewport') as SVGGElement;
+  if (!vp) return;
+  const { highlights } = ensureMirrorLayers(vp);
+  highlights.innerHTML = '';
+  drawRowHighlightsMirror(highlights);
+}
+
 const rowCountsArrayInput = ref<string>("");
 const selectedRowSecondaryIndex = computed(() => {
   if (!mirrorMode.value) return null;
@@ -276,7 +364,7 @@ const selectedRowSecondaryIndex = computed(() => {
   const len = rowCountsLocal.value.length;
   const idx = selectedRowDisplayIndex.value;
   const mirrorIdx = len - 1 - idx;
-  if (mirrorIdx === idx) return null; // same row, avoid duplicate
+  if (mirrorIdx === idx) return null;
   return mirrorIdx;
 });
 
@@ -302,7 +390,7 @@ function toggleDeleteRow(idx: number) {
 
 function toggleRowSelection(idx: number) {
   const len = rowCountsLocal.value.length;
-  const mirrorIdx = mirrorMode.value ? (len - 1 - idx) : null;
+  const mirrorIdx = (mirrorMode.value || backsideMode.value) ? (len - 1 - idx) : null;
   const pos = selectedRowIndices.value.indexOf(idx);
   if (pos >= 0) {
     selectedRowIndices.value.splice(pos, 1);
@@ -333,6 +421,12 @@ function toggleRowSelection(idx: number) {
   selectedIds.value = Array.from(ids);
   updateSelectionVisuals(prev, new Set<string>(selectedIds.value));
   updateRowHighlights();
+  if (mirrorMode.value || backsideMode.value) {
+    const prevMirror = new Set<string>(mirrorSelectedIds.value);
+    mirrorSelectedIds.value = selectedIds.value.slice();
+    updateMirrorSelectionVisuals(prevMirror, new Set<string>(mirrorSelectedIds.value));
+    updateMirrorRowHighlights();
+  }
 }
 
 function applyAllRowUpdates() {
@@ -523,14 +617,25 @@ watch(rowCountsLocal, (counts) => {
 watch(mirrorMode, (enabled) => {
   const len = rowCountsLocal.value.length;
   if (enabled) {
+    // Mirror SVG is recreated via v-if; drop stale element refs
+    mirrorElById.clear();
+    // Keep current selections mirrored
     const set = new Set<number>(selectedRowIndices.value);
     selectedRowIndices.value.forEach((i) => {
       const m = len - 1 - i;
       if (m !== i && m >= 0 && m < len) set.add(m);
     });
     selectedRowIndices.value = Array.from(set);
+    mirrorSelectedIds.value = selectedIds.value.slice();
+    updateMirror();
   } else {
+    // Teardown mirror state when disabled
+    mirrorElById.clear();
+    mirrorSelectedIds.value = [];
+    mirrorConfigSnapshot.value = null;
+    mirrorTubesSnapshot.value = [];
   }
+  // Refresh selection visuals and highlights on primary view
   const prev = new Set<string>(selectedIds.value);
   const ids = new Set<string>();
   selectedRowIndices.value.forEach((i) => {
@@ -630,6 +735,11 @@ function renderAll() {
           selectedIds.value = [id];
           c!.classList.add('highlight');
         }
+        if (mirrorMode.value) {
+          const prevM = new Set<string>(mirrorSelectedIds.value);
+          mirrorSelectedIds.value = selectedIds.value.slice();
+          updateMirrorSelectionVisuals(prevM, new Set<string>(mirrorSelectedIds.value));
+        }
       });
       if (fragment) newElements.push(c);
       else tubes.appendChild(c);
@@ -658,8 +768,137 @@ function renderAll() {
   }
 }
 
+function renderMirrorAll() {
+  if (!(mirrorMode.value || backsideMode.value)) return;
+  const svg = mirrorSvgRef.value;
+  if (!svg) return;
+  const vp = svg.querySelector('#mirror-viewport') as SVGGElement;
+  if (!vp) return;
+
+  const { boundary, highlights, tubes, labels } = ensureMirrorLayers(vp);
+  boundary.innerHTML = '';
+  highlights.innerHTML = '';
+  Array.from(labels.children).forEach((child) => {
+    if ((child as Element).id !== 'tooltip') child.remove();
+  });
+
+  const cfg = backsideMode.value
+    ? (backsideConfigSnapshot.value ?? props.config)
+    : (mirrorConfigSnapshot.value ?? props.config);
+  drawBoundary(boundary, cfg, centerX, centerY, scalePx);
+  drawRowHighlightsMirror(highlights);
+
+  const activeTubes = (mirrorTubesSnapshot.value.length ? mirrorTubesSnapshot.value : props.tubes).filter((t) => !t.deleted);
+  const presentIds = new Set(activeTubes.map((t) => t.id));
+
+  for (const [id, el] of Array.from(mirrorElById.entries())) {
+    if (!presentIds.has(id)) {
+      el.remove();
+      mirrorElById.delete(id);
+    }
+  }
+
+  const propertyColors: Record<string, string> = {
+    catalyst_tc: '#16a34a',
+    coolant: '#22c55e',
+    solid: '#64748b',
+    bend: '#f97316',
+    salt_tc: '#0ea5e9',
+    blocked: '#ef4444',
+  };
+
+  const useFragment = mirrorElById.size === 0 && activeTubes.length >= 50;
+  const fragment = useFragment ? document.createDocumentFragment() : null;
+  const newElements: SVGCircleElement[] = [];
+
+  const signX = backsideMode.value ? -1 : 1;
+
+  activeTubes.forEach((t) => {
+    let c = mirrorElById.get(t.id);
+    if (!c) {
+      c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      c.setAttribute('data-name', t.id);
+      c.addEventListener('mouseenter', () => {
+        if (!mirrorTooltipEl) return;
+        mirrorTooltipEl.textContent = t.id;
+        mirrorTooltipEl.setAttribute('x', String(centerX + signX * t.x * scalePx + 10));
+        mirrorTooltipEl.setAttribute('y', String(centerY + t.y * scalePx - 4));
+        mirrorTooltipEl.setAttribute('visibility', 'visible');
+      });
+      c.addEventListener('mouseleave', () => {
+        if (!mirrorTooltipEl) return;
+        mirrorTooltipEl.setAttribute('visibility', 'hidden');
+      });
+      if (fragment) newElements.push(c);
+      else tubes.appendChild(c);
+      mirrorElById.set(t.id, c);
+    }
+
+    c.setAttribute('cx', String(centerX + signX * t.x * scalePx));
+    c.setAttribute('cy', String(centerY + t.y * scalePx));
+    c.setAttribute('r', String(t.r * scalePx));
+    const defaultFill = t.capped ? (t.capColor ?? '#facc15') : '#ffffff';
+    const propKey = t.blocked ? 'blocked' : (t.property ?? null);
+    const fill: string = propKey
+      ? (t.propertyColor ?? propertyColors[propKey as keyof typeof propertyColors] ?? defaultFill)
+      : defaultFill;
+    c.setAttribute('fill', fill);
+    c.setAttribute('stroke', '#0f172a');
+    c.setAttribute('stroke-width', '0.2');
+
+    if (mirrorSelectedIds.value.includes(t.id)) c.classList.add('highlight');
+    else c.classList.remove('highlight');
+  });
+
+  if (fragment && newElements.length) {
+    newElements.forEach((el) => fragment!.appendChild(el));
+    tubes.appendChild(fragment!);
+  }
+}
+
+function drawRowHighlightsMirror(vp: SVGGElement) {
+  const rows = groupRows();
+  const indicesSet = new Set<number>();
+  selectedRowIndices.value.forEach((i) => indicesSet.add(i));
+  if (selectedRowDisplayIndex.value !== null) indicesSet.add(selectedRowDisplayIndex.value);
+  if (indicesSet.size === 0) return;
+  if (rows.length === 0) return;
+  const pitchVal = props.config.pitch ?? 0;
+  const vspace = props.config.lattice === 'triangular'
+    ? (pitchVal * Math.sqrt(3)) / 2
+    : pitchVal;
+  const bandHeightPx = (vspace ?? 0) * scalePx;
+
+  const finalIndices: number[] = Array.from(indicesSet);
+  for (const idx of finalIndices) {
+    const row = rows[idx];
+    if (!row || row.length === 0) continue;
+    const yModel = row[0]?.y;
+    if (typeof yModel !== 'number') continue;
+    const yPxCenter = centerY + yModel * scalePx;
+    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    rect.setAttribute('x', '0');
+    rect.setAttribute('y', String(yPxCenter - bandHeightPx / 2));
+    rect.setAttribute('width', String(svgWidth));
+    rect.setAttribute('height', String(bandHeightPx));
+    rect.setAttribute('class', 'row-highlight');
+    vp.appendChild(rect);
+  }
+}
+
+function updateMirror() {
+  mirrorConfigSnapshot.value = { ...props.config };
+  mirrorTubesSnapshot.value = props.tubes.map((t) => ({ ...t }));
+  renderMirrorAll();
+}
+function updateBackside() {
+  backsideConfigSnapshot.value = { ...props.config };
+  backsideTubesSnapshot.value = props.tubes.map((t) => ({ ...t }));
+  renderMirrorAll();
+}
 onMounted(() => {
   renderAll();
+  if (mirrorMode.value) renderMirrorAll();
 });
 
 onBeforeUnmount(() => {
@@ -668,32 +907,41 @@ onBeforeUnmount(() => {
 
 function zoomIn() {
   zoom(1.15);
+  if (mirrorMode.value || backsideMode.value) mZoom(1.15);
 }
 function zoomOut() {
   zoom(1 / 1.15);
+  if (mirrorMode.value || backsideMode.value) mZoom(1 / 1.15);
 }
 function panXY(dx: number, dy: number) {
   pan(dx, dy);
+  if (mirrorMode.value || backsideMode.value) mPan(dx, dy);
 }
 function resetView() {
   reset();
+  if (mirrorMode.value || backsideMode.value) mReset();
 }
 
 function onSearch(term: string) {
-  if (!term) return alert("Enter tube ID");
+  if (!term) return alert('Enter tube ID');
   const svg = svgRef.value;
   if (!svg) return;
-  const vp = svg.querySelector("#viewport") as SVGGElement;
+  const vp = svg.querySelector('#viewport') as SVGGElement;
   const el = elById.get(term) ?? null;
-  if (!el) return alert("Tube not found");
+  if (!el) return alert('Tube not found');
 
-  // Clear previous highlights via cache
   selectedIds.value.forEach((sid) => {
     const prev = elById.get(sid);
     if (prev) prev.classList.remove('highlight');
   });
   selectedIds.value = [term];
-  el.classList.add("highlight");
+  el.classList.add('highlight');
+
+  if (mirrorMode.value || backsideMode.value) {
+    const prevM = new Set<string>(mirrorSelectedIds.value);
+    mirrorSelectedIds.value = [term];
+    updateMirrorSelectionVisuals(prevM, new Set<string>(mirrorSelectedIds.value));
+  }
 
   if (autoZoom.value) {
     const bbox = el.getBBox();
@@ -711,6 +959,9 @@ function smoothZoomAndPan(targetX: number, targetY: number, targetZoom: number) 
   const endZoom = targetZoom;
   const endTx = centerX - targetX * targetZoom;
   const endTy = centerY - targetY * targetZoom;
+  const mStartZoom = mScale.value;
+  const mStartTx = mTx.value;
+  const mStartTy = mTy.value;
   let step = 0;
   function animate() {
     step++;
@@ -718,6 +969,11 @@ function smoothZoomAndPan(targetX: number, targetY: number, targetZoom: number) 
     scale.value = startZoom + (endZoom - startZoom) * t;
     tx.value = startTx + (endTx - startTx) * t;
     ty.value = startTy + (endTy - startTy) * t;
+    if (mirrorMode.value) {
+      mScale.value = mStartZoom + (endZoom - mStartZoom) * t;
+      mTx.value = mStartTx + (endTx - mStartTx) * t;
+      mTy.value = mStartTy + (endTy - mStartTy) * t;
+    }
     if (step < steps) requestAnimationFrame(animate);
   }
   animate();
