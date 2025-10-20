@@ -14,11 +14,16 @@
 
           <span class="text-xs sm:text-sm text-slate-600">Mirror</span>
           <USwitch v-model="mirrorMode" />
-          <UButton v-if="mirrorMode" size="xs" variant="solid" @click="updateMirror">Update Mirror</UButton>
-          
+
           <span class="text-xs sm:text-sm text-slate-600">Back Side View</span>
           <USwitch v-model="backsideMode" />
-          <UButton v-if="backsideMode" size="xs" variant="solid" @click="updateBackside">Update Backside</UButton>
+          <UButton
+            v-if="backsideMode"
+            size="xs"
+            variant="solid"
+            @click="updateBackside"
+            >Update Backside</UButton
+          >
         </div>
         <SearchBar @search="onSearch" class="w-full sm:w-auto" />
       </div>
@@ -29,7 +34,11 @@
     >
       <svg
         ref="svgRef"
-        :class="(mirrorMode || backsideMode) ? 'w-1/2 h-[100vh] max-h-[100vh]' : 'w-full h-[100vh] max-h-[100vh]'"
+        :class="
+          backsideMode
+            ? 'w-1/2 h-[100vh] max-h-[100vh]'
+            : 'w-full h-[100vh] max-h-[100vh]'
+        "
         :viewBox="`0 0 ${svgWidth} ${svgHeight}`"
         xmlns="http://www.w3.org/2000/svg"
         preserveAspectRatio="xMinYMin meet"
@@ -39,7 +48,7 @@
       </svg>
 
       <svg
-        v-if="mirrorMode"
+        v-if="backsideMode"
         ref="mirrorSvgRef"
         class="w-1/2 h-[100vh] max-h-[100vh]"
         :viewBox="`0 0 ${svgWidth} ${svgHeight}`"
@@ -57,7 +66,9 @@
           class="flex items-center justify-between cursor-pointer select-none"
           @click="isRowCountCollapsed = !isRowCountCollapsed"
         >
-          <span class="font-medium text-slate-700">Row Counts({{ rowCountsLocal.length }})</span>
+          <span class="font-medium text-slate-700"
+            >Row Counts({{ rowCountsLocal.length }})</span
+          >
           <UIcon name="i-mdi-shape-plus-outline" @click="copyTubes"></UIcon>
           <span
             class="text-slate-500 text-[10px] transition-transform"
@@ -67,80 +78,110 @@
           </span>
         </div>
 
-        
-        <div class="mt-2 flex items-center justify-end gap-2" v-if="!isRowCountCollapsed">
+        <div
+          class="mt-2 flex items-center justify-end gap-2"
+          v-if="!isRowCountCollapsed"
+        >
           <template v-if="mirrorMode">
-            <UButton size="xs" variant="soft" @click="addRowEnds">Add Ends</UButton>
+            <UButton size="xs" variant="soft" @click="addRowEnds"
+              >Add Ends</UButton
+            >
           </template>
           <template v-else>
-            <UButton size="xs" variant="soft" @click="addRowTop">Add Top</UButton>
-            <UButton size="xs" variant="soft" @click="addRowBottom">Add Bottom</UButton>
+            <UButton size="xs" variant="soft" @click="addRowTop"
+              >Add Top</UButton
+            >
+            <UButton size="xs" variant="soft" @click="addRowBottom"
+              >Add Bottom</UButton
+            >
           </template>
         </div>
 
-        
         <div v-if="!isRowCountCollapsed" class="mt-2 space-y-2">
-          <label class="text-[10px] sm:text-xs text-slate-600">Counts Array (comma-separated or JSON)</label>
+          <label class="text-[10px] sm:text-xs text-slate-600"
+            >Counts Array (comma-separated or JSON)</label
+          >
           <textarea
             v-model="rowCountsArrayInput"
             rows="3"
             class="w-full text-xs sm:text-sm border border-slate-300 rounded p-2 focus:outline-none focus:ring-1 focus:ring-blue-300"
             placeholder="e.g., 7,12,15,... or [7,12,15,...]"
           ></textarea>
-          <div  class="flex items-center justify-end">
-            <UButton size="xs" variant="solid" @click="applyCountsArray">Apply Counts Array</UButton>
+          <div class="flex items-center justify-end">
+            <UButton size="xs" variant="solid" @click="applyCountsArray"
+              >Apply Counts Array</UButton
+            >
           </div>
         </div>
 
         <transition name="fade">
           <div>
-          <div
-            v-if="!isRowCountCollapsed"
-            class="mt-2 max-h-96 overflow-y-auto pr-1 space-y-1"
-          >
             <div
-              v-for="(count, idx) in rowCountsLocal"
-              :key="idx"
-              class="flex items-center gap-3 border-b border-slate-200 py-2 cursor-pointer"
-              :class="{ 'opacity-60 line-through': rowsToDelete.includes(idx), 'bg-blue-50 rounded-md': selectedRowIndices.includes(idx) }"
-              @click="toggleRowSelection(idx)"
+              v-if="!isRowCountCollapsed"
+              class="mt-2 max-h-96 overflow-y-auto pr-1 space-y-1"
             >
-              <div class="flex items-center gap-2 flex-1 cursor-pointer">
-                <UCheckbox :model-value="selectedRowIndices.includes(idx)" @update:modelValue="() => toggleRowSelection(idx)" @click.stop />
-                <button class="text-left cursor-pointer">
-                  <span :class="{ 'text-blue-700 font-semibold': selectedRowIndices.includes(idx), 'text-red-500 font-bold': idx === Math.floor(rowCountsLocal.length / 2) }">Row {{ idx + 1 }}</span>
-                </button>
+              <div
+                v-for="(count, idx) in rowCountsLocal"
+                :key="idx"
+                class="flex items-center gap-3 border-b border-slate-200 py-2 cursor-pointer"
+                :class="{
+                  'opacity-60 line-through': rowsToDelete.includes(idx),
+                  'bg-blue-50 rounded-md': selectedRowIndices.includes(idx),
+                }"
+                @click="toggleRowSelection(idx)"
+              >
+                <div class="flex items-center gap-2 flex-1 cursor-pointer">
+                  <UCheckbox
+                    :model-value="selectedRowIndices.includes(idx)"
+                    @update:modelValue="() => toggleRowSelection(idx)"
+                    @click.stop
+                  />
+                  <button class="text-left cursor-pointer">
+                    <span
+                      :class="{
+                        'text-blue-700 font-semibold':
+                          selectedRowIndices.includes(idx),
+                        'text-red-500 font-bold':
+                          idx === Math.floor(rowCountsLocal.length / 2),
+                      }"
+                      >Row {{ idx + 1 }}</span
+                    >
+                  </button>
+                </div>
+                <UInput
+                  v-model.number="rowCountsEdits[idx]"
+                  type="number"
+                  min="0"
+                  class="w-16"
+                  @click.stop
+                  @update:modelValue="(val) => onRowCountEdit(idx, Number(val))"
+                />
+                <UButton
+                  icon="i-mdi-delete-outline"
+                  square
+                  size="xs"
+                  variant="ghost"
+                  color="error"
+                  @click.stop="toggleDeleteRow(idx)"
+                />
               </div>
-              <UInput
-                v-model.number="rowCountsEdits[idx]"
-                type="number"
-                min="0"
-                class="w-16"
-                @click.stop
-                @update:modelValue="(val) => onRowCountEdit(idx, Number(val))"
-              />
-              <UButton
-                icon="i-mdi-delete-outline"
-                square
-                size="xs"
-                variant="ghost"
-                color="error"
-                @click.stop="toggleDeleteRow(idx)"
-              />
-            </div>
-            <div v-if="rowCountsLocal.length" class="mt-2 sticky bottom-0 bg-white shadow w-full right-0">
-              <UButton size="xs" block variant="solid" @click="applyAllRowUpdates">Apply All</UButton>
-            </div>
+              <div
+                v-if="rowCountsLocal.length"
+                class="mt-2 sticky bottom-0 bg-white shadow w-full right-0"
+              >
+                <UButton
+                  size="xs"
+                  block
+                  variant="solid"
+                  @click="applyAllRowUpdates"
+                  >Apply All</UButton
+                >
+              </div>
             </div>
           </div>
         </transition>
       </div>
 
-      
-
-      
-
-      
       <div
         class="absolute bottom-3 left-3 sm:bottom-0 flex flex-col items-center gap-2"
       >
@@ -152,8 +193,6 @@
         />
         <p class="text-[10px] sm:text-xs">Zoom: {{ scale.toFixed(2) }}</p>
       </div>
-
-      
     </div>
   </div>
 </template>
@@ -165,9 +204,17 @@ import { drawBoundary } from "~/utils/svgHelpers";
 import ZoomControls from "@/components/Controls/ZoomControls.vue";
 import SearchBar from "@/components/Controls/SearchBar.vue";
 import GridRuler from "@/components/GridRuler.vue";
-import { groupRowsFrom as groupRowsFromModule,  computeSetRowCountUpdate as computeSetRowCountUpdateModule, computeAddRowForIndex as computeAddRowForIndexModule } from "@/modules/reactor";
+import {
+  groupRowsFrom as groupRowsFromModule,
+  computeSetRowCountUpdate as computeSetRowCountUpdateModule,
+  computeAddRowForIndex as computeAddRowForIndexModule,
+} from "@/modules/reactor";
 
-const props = defineProps<{ config: ReactorConfig; tubes: Tube[]; rowCount: number[] }>();
+const props = defineProps<{
+  config: ReactorConfig;
+  tubes: Tube[];
+  rowCount: number[];
+}>();
 const emits = defineEmits(["updateTubes", "copyJson", "download"]);
 
 const svgRef = ref<SVGSVGElement | null>(null);
@@ -186,74 +233,132 @@ let tooltipEl: SVGTextElement | null = null;
 let mirrorTooltipEl: SVGTextElement | null = null;
 
 function ensureLayers(vp: SVGGElement) {
-  let boundary = vp.querySelector('#boundary-layer') as SVGGElement | null;
-  let highlights = vp.querySelector('#highlight-layer') as SVGGElement | null;
-  let tubes = vp.querySelector('#tubes-layer') as SVGGElement | null;
-  let labels = vp.querySelector('#labels-layer') as SVGGElement | null;
+  let boundary = vp.querySelector("#boundary-layer") as SVGGElement | null;
+  let highlights = vp.querySelector("#highlight-layer") as SVGGElement | null;
+  let tubes = vp.querySelector("#tubes-layer") as SVGGElement | null;
+  let labels = vp.querySelector("#labels-layer") as SVGGElement | null;
   const create = (id: string) => {
-    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-    g.setAttribute('id', id);
+    const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    g.setAttribute("id", id);
     return g as SVGGElement;
   };
   let appended = false;
-  if (!boundary) { boundary = create('boundary-layer'); vp.appendChild(boundary); appended = true; }
-  if (!highlights) { highlights = create('highlight-layer'); vp.appendChild(highlights); appended = true; }
-  if (!tubes) { tubes = create('tubes-layer'); vp.appendChild(tubes); appended = true; }
-  if (!labels) { labels = create('labels-layer'); vp.appendChild(labels); appended = true; }
+  if (!boundary) {
+    boundary = create("boundary-layer");
+    vp.appendChild(boundary);
+    appended = true;
+  }
+  if (!highlights) {
+    highlights = create("highlight-layer");
+    vp.appendChild(highlights);
+    appended = true;
+  }
+  if (!tubes) {
+    tubes = create("tubes-layer");
+    vp.appendChild(tubes);
+    appended = true;
+  }
+  if (!labels) {
+    labels = create("labels-layer");
+    vp.appendChild(labels);
+    appended = true;
+  }
   // Ensure a single virtualized tooltip element exists
-  let tip = labels.querySelector('#tooltip') as SVGTextElement | null;
+  let tip = labels.querySelector("#tooltip") as SVGTextElement | null;
   if (!tip) {
-    tip = document.createElementNS('http://www.w3.org/2000/svg', 'text') as SVGTextElement;
-    tip.setAttribute('id', 'tooltip');
-    tip.setAttribute('fill', '#334155');
-    tip.setAttribute('font-size', '12');
-    tip.setAttribute('visibility', 'hidden');
+    tip = document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "text"
+    ) as SVGTextElement;
+    tip.setAttribute("id", "tooltip");
+    tip.setAttribute("fill", "#334155");
+    tip.setAttribute("font-size", "12");
+    tip.setAttribute("visibility", "hidden");
     labels.appendChild(tip);
   }
   tooltipEl = tip;
   // Ensure correct ordering if newly appended
   if (appended) {
     // boundary -> highlights -> tubes -> labels
-    const order = ['boundary-layer', 'highlight-layer', 'tubes-layer', 'labels-layer'];
+    const order = [
+      "boundary-layer",
+      "highlight-layer",
+      "tubes-layer",
+      "labels-layer",
+    ];
     const children = Array.from(vp.children) as SVGGElement[];
     children.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
     children.forEach((c) => vp.appendChild(c));
   }
-  return { boundary: boundary!, highlights: highlights!, tubes: tubes!, labels: labels! };
+  return {
+    boundary: boundary!,
+    highlights: highlights!,
+    tubes: tubes!,
+    labels: labels!,
+  };
 }
 
 function ensureMirrorLayers(vp: SVGGElement) {
-  let boundary = vp.querySelector('#boundary-layer') as SVGGElement | null;
-  let highlights = vp.querySelector('#highlight-layer') as SVGGElement | null;
-  let tubes = vp.querySelector('#tubes-layer') as SVGGElement | null;
-  let labels = vp.querySelector('#labels-layer') as SVGGElement | null;
+  let boundary = vp.querySelector("#boundary-layer") as SVGGElement | null;
+  let highlights = vp.querySelector("#highlight-layer") as SVGGElement | null;
+  let tubes = vp.querySelector("#tubes-layer") as SVGGElement | null;
+  let labels = vp.querySelector("#labels-layer") as SVGGElement | null;
   const create = (id: string) => {
-    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-    g.setAttribute('id', id);
+    const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    g.setAttribute("id", id);
     return g as SVGGElement;
   };
   let appended = false;
-  if (!boundary) { boundary = create('boundary-layer'); vp.appendChild(boundary); appended = true; }
-  if (!highlights) { highlights = create('highlight-layer'); vp.appendChild(highlights); appended = true; }
-  if (!tubes) { tubes = create('tubes-layer'); vp.appendChild(tubes); appended = true; }
-  if (!labels) { labels = create('labels-layer'); vp.appendChild(labels); appended = true; }
-  let tip = labels.querySelector('#tooltip') as SVGTextElement | null;
+  if (!boundary) {
+    boundary = create("boundary-layer");
+    vp.appendChild(boundary);
+    appended = true;
+  }
+  if (!highlights) {
+    highlights = create("highlight-layer");
+    vp.appendChild(highlights);
+    appended = true;
+  }
+  if (!tubes) {
+    tubes = create("tubes-layer");
+    vp.appendChild(tubes);
+    appended = true;
+  }
+  if (!labels) {
+    labels = create("labels-layer");
+    vp.appendChild(labels);
+    appended = true;
+  }
+  let tip = labels.querySelector("#tooltip") as SVGTextElement | null;
   if (!tip) {
-    tip = document.createElementNS('http://www.w3.org/2000/svg', 'text') as SVGTextElement;
-    tip.setAttribute('id', 'tooltip');
-    tip.setAttribute('fill', '#334155');
-    tip.setAttribute('font-size', '12');
-    tip.setAttribute('visibility', 'hidden');
+    tip = document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "text"
+    ) as SVGTextElement;
+    tip.setAttribute("id", "tooltip");
+    tip.setAttribute("fill", "#334155");
+    tip.setAttribute("font-size", "12");
+    tip.setAttribute("visibility", "hidden");
     labels.appendChild(tip);
   }
   mirrorTooltipEl = tip;
   if (appended) {
-    const order = ['boundary-layer', 'highlight-layer', 'tubes-layer', 'labels-layer'];
+    const order = [
+      "boundary-layer",
+      "highlight-layer",
+      "tubes-layer",
+      "labels-layer",
+    ];
     const children = Array.from(vp.children) as SVGGElement[];
     children.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
     children.forEach((c) => vp.appendChild(c));
   }
-  return { boundary: boundary!, highlights: highlights!, tubes: tubes!, labels: labels! };
+  return {
+    boundary: boundary!,
+    highlights: highlights!,
+    tubes: tubes!,
+    labels: labels!,
+  };
 }
 
 function scheduleRender() {
@@ -268,7 +373,14 @@ const { scale, tx, ty, zoom, pan, reset } = useViewportTransform();
 const transformStr = computed(
   () => `translate(${tx.value} ${ty.value}) scale(${scale.value})`
 );
-const { scale: mScale, tx: mTx, ty: mTy, zoom: mZoom, pan: mPan, reset: mReset } = useViewportTransform();
+const {
+  scale: mScale,
+  tx: mTx,
+  ty: mTy,
+  zoom: mZoom,
+  pan: mPan,
+  reset: mReset,
+} = useViewportTransform();
 const mirrorTransformStr = computed(
   () => `translate(${mTx.value} ${mTy.value}) scale(${mScale.value})`
 );
@@ -298,40 +410,42 @@ const tubeById = computed(() => {
 
 // Precompute rows and an index->ids mapping to avoid repeated work on selection
 const rowsComputed = computed(() => groupRows());
-const rowIndexToIds = computed(() => rowsComputed.value.map((row) => row.map((t) => t.id)));
+const rowIndexToIds = computed(() =>
+  rowsComputed.value.map((row) => row.map((t) => t.id))
+);
 
 function updateSelectionVisuals(prev: Set<string>, next: Set<string>) {
   const svg = svgRef.value;
   if (!svg) return;
-  const vp = svg.querySelector('#viewport') as SVGGElement;
+  const vp = svg.querySelector("#viewport") as SVGGElement;
   if (!vp) return;
   // Toggle highlight class only for changed ids
   for (const id of next) {
     if (!prev.has(id)) {
       const el = elById.get(id);
-      if (el) el.classList.add('highlight');
+      if (el) el.classList.add("highlight");
     }
   }
   for (const id of prev) {
     if (!next.has(id)) {
       const el = elById.get(id);
-      if (el) el.classList.remove('highlight');
+      if (el) el.classList.remove("highlight");
     }
   }
 }
 
 function updateMirrorSelectionVisuals(prev: Set<string>, next: Set<string>) {
-  if (!(mirrorMode.value || backsideMode.value)) return;
+  if (!backsideMode.value) return;
   for (const id of next) {
     if (!prev.has(id)) {
       const el = mirrorElById.get(id);
-      if (el) el.classList.add('highlight');
+      if (el) el.classList.add("highlight");
     }
   }
   for (const id of prev) {
     if (!next.has(id)) {
       const el = mirrorElById.get(id);
-      if (el) el.classList.remove('highlight');
+      if (el) el.classList.remove("highlight");
     }
   }
 }
@@ -339,21 +453,21 @@ function updateMirrorSelectionVisuals(prev: Set<string>, next: Set<string>) {
 function updateRowHighlights() {
   const svg = svgRef.value;
   if (!svg) return;
-  const vp = svg.querySelector('#viewport') as SVGGElement;
+  const vp = svg.querySelector("#viewport") as SVGGElement;
   if (!vp) return;
   const { highlights } = ensureLayers(vp);
-  highlights.innerHTML = '';
+  highlights.innerHTML = "";
   drawRowHighlights(highlights);
 }
 
 function updateMirrorRowHighlights() {
-  if (!(mirrorMode.value || backsideMode.value)) return;
+  if (!backsideMode.value) return;
   const svg = mirrorSvgRef.value;
   if (!svg) return;
-  const vp = svg.querySelector('#mirror-viewport') as SVGGElement;
+  const vp = svg.querySelector("#mirror-viewport") as SVGGElement;
   if (!vp) return;
   const { highlights } = ensureMirrorLayers(vp);
-  highlights.innerHTML = '';
+  highlights.innerHTML = "";
   drawRowHighlightsMirror(highlights);
 }
 
@@ -372,10 +486,14 @@ const rowCountsEdits = ref<number[]>([]);
 const rowsToDelete = ref<number[]>([]);
 const selectedRowIndices = ref<number[]>([]);
 
-watch(rowCountsLocal, (counts) => {
-  rowCountsEdits.value = counts.slice();
-  rowsToDelete.value = rowsToDelete.value.filter((i) => i < counts.length);
-}, { immediate: true });
+watch(
+  rowCountsLocal,
+  (counts) => {
+    rowCountsEdits.value = counts.slice();
+    rowsToDelete.value = rowsToDelete.value.filter((i) => i < counts.length);
+  },
+  { immediate: true }
+);
 
 function toggleDeleteRow(idx: number) {
   const targets = selectedRowIndices.value.includes(idx)
@@ -390,7 +508,7 @@ function toggleDeleteRow(idx: number) {
 
 function toggleRowSelection(idx: number) {
   const len = rowCountsLocal.value.length;
-  const mirrorIdx = (mirrorMode.value || backsideMode.value) ? (len - 1 - idx) : null;
+  const mirrorIdx = backsideMode.value ? len - 1 - idx : null;
   const pos = selectedRowIndices.value.indexOf(idx);
   if (pos >= 0) {
     selectedRowIndices.value.splice(pos, 1);
@@ -408,7 +526,11 @@ function toggleRowSelection(idx: number) {
     selectedRowDisplayIndex.value = idx;
     selectedRowIndex.value = idx;
     selectedRowTargetCount.value = rowCountsLocal.value[idx] ?? null;
-    if (mirrorIdx !== null && mirrorIdx !== idx && !selectedRowIndices.value.includes(mirrorIdx)) {
+    if (
+      mirrorIdx !== null &&
+      mirrorIdx !== idx &&
+      !selectedRowIndices.value.includes(mirrorIdx)
+    ) {
       selectedRowIndices.value.push(mirrorIdx);
     }
   }
@@ -421,10 +543,13 @@ function toggleRowSelection(idx: number) {
   selectedIds.value = Array.from(ids);
   updateSelectionVisuals(prev, new Set<string>(selectedIds.value));
   updateRowHighlights();
-  if (mirrorMode.value || backsideMode.value) {
+  if (backsideMode.value) {
     const prevMirror = new Set<string>(mirrorSelectedIds.value);
     mirrorSelectedIds.value = selectedIds.value.slice();
-    updateMirrorSelectionVisuals(prevMirror, new Set<string>(mirrorSelectedIds.value));
+    updateMirrorSelectionVisuals(
+      prevMirror,
+      new Set<string>(mirrorSelectedIds.value)
+    );
     updateMirrorRowHighlights();
   }
 }
@@ -460,7 +585,9 @@ function applyAllRowUpdates() {
     });
   });
   if (deleteSet.size > 0) {
-    tubesArr = tubesArr.map((t) => (deleteSet.has(t.id) ? { ...t, deleted: true } : t));
+    tubesArr = tubesArr.map((t) =>
+      deleteSet.has(t.id) ? { ...t, deleted: true } : t
+    );
   }
 
   emits("updateTubes", tubesArr);
@@ -481,11 +608,12 @@ function parseCountsInput(str: string): number[] {
     if (s.startsWith("[") && s.endsWith("]")) {
       const arr = JSON.parse(s);
       if (Array.isArray(arr)) {
-        return arr.map((v) => Number(v)).filter((n) => Number.isFinite(n) && n >= 0);
+        return arr
+          .map((v) => Number(v))
+          .filter((n) => Number.isFinite(n) && n >= 0);
       }
     }
-  } catch (e) {
-  }
+  } catch (e) {}
   return s
     .split(/[^0-9.]+/)
     .map((v) => v.trim())
@@ -505,16 +633,18 @@ function applyCountsArray() {
     useToast().add({ title: "Invalid pitch", color: "error" });
     return;
   }
-  const vspace = props.config.lattice === "triangular"
-    ? pitch * Math.sqrt(3) / 2
-    : pitch;
+  const vspace =
+    props.config.lattice === "triangular" ? (pitch * Math.sqrt(3)) / 2 : pitch;
 
   let tubesArr = props.tubes.slice();
   const currentLen = groupRowsFrom(tubesArr).length;
   const targetLen = counts.length;
 
   if (targetLen < currentLen) {
-    useToast().add({ title: "Input has fewer rows than current", color: "warning" });
+    useToast().add({
+      title: "Input has fewer rows than current",
+      color: "warning",
+    });
   }
 
   if (targetLen > currentLen) {
@@ -528,7 +658,12 @@ function applyCountsArray() {
     }
     for (let i = 0; i < addBottom; i++) {
       const rows = groupRowsFrom(tubesArr);
-      const newRow = computeAddRowForIndex(rows, rows.length - 1, 1 as 1 | -1, vspace);
+      const newRow = computeAddRowForIndex(
+        rows,
+        rows.length - 1,
+        1 as 1 | -1,
+        vspace
+      );
       tubesArr = [...tubesArr, ...newRow];
     }
   }
@@ -552,7 +687,10 @@ function applyCountsArray() {
 }
 
 function onRowCountEdit(idx: number, val: number) {
-  if (selectedRowIndices.value.length > 1 && selectedRowIndices.value.includes(idx)) {
+  if (
+    selectedRowIndices.value.length > 1 &&
+    selectedRowIndices.value.includes(idx)
+  ) {
     selectedRowIndices.value.forEach((i) => {
       rowCountsEdits.value[i] = val;
     });
@@ -572,9 +710,10 @@ function onRowCountEdit(idx: number, val: number) {
 function addRowTop() {
   const rows = groupRows();
   if (rows.length === 0) return;
-  const vspace = props.config.lattice === "triangular"
-    ? (props.config.pitch ?? 0) * Math.sqrt(3) / 2
-    : (props.config.pitch ?? 0);
+  const vspace =
+    props.config.lattice === "triangular"
+      ? ((props.config.pitch ?? 0) * Math.sqrt(3)) / 2
+      : props.config.pitch ?? 0;
   const newRow = computeAddRowForIndex(rows, 0, -1, vspace);
   if (newRow.length === 0) return;
   const updated = [...props.tubes, ...newRow];
@@ -585,9 +724,10 @@ function addRowTop() {
 function addRowBottom() {
   const rows = groupRows();
   if (rows.length === 0) return;
-  const vspace = props.config.lattice === "triangular"
-    ? (props.config.pitch ?? 0) * Math.sqrt(3) / 2
-    : (props.config.pitch ?? 0);
+  const vspace =
+    props.config.lattice === "triangular"
+      ? ((props.config.pitch ?? 0) * Math.sqrt(3)) / 2
+      : props.config.pitch ?? 0;
   const newRow = computeAddRowForIndex(rows, rows.length - 1, 1, vspace);
   if (newRow.length === 0) return;
   const updated = [...props.tubes, ...newRow];
@@ -598,9 +738,10 @@ function addRowBottom() {
 function addRowEnds() {
   const rows = groupRows();
   if (rows.length === 0) return;
-  const vspace = props.config.lattice === "triangular"
-    ? (props.config.pitch ?? 0) * Math.sqrt(3) / 2
-    : (props.config.pitch ?? 0);
+  const vspace =
+    props.config.lattice === "triangular"
+      ? ((props.config.pitch ?? 0) * Math.sqrt(3)) / 2
+      : props.config.pitch ?? 0;
   const top = computeAddRowForIndex(rows, 0, -1, vspace);
   const bottom = computeAddRowForIndex(rows, rows.length - 1, 1, vspace);
   const updated = [...props.tubes, ...top, ...bottom];
@@ -610,7 +751,8 @@ function addRowEnds() {
 
 watch(rowCountsLocal, (counts) => {
   if (selectedRowDisplayIndex.value !== null) {
-    selectedRowTargetCount.value = counts[selectedRowDisplayIndex.value] ?? null;
+    selectedRowTargetCount.value =
+      counts[selectedRowDisplayIndex.value] ?? null;
   }
 });
 
@@ -644,30 +786,42 @@ watch(mirrorMode, (enabled) => {
   });
   selectedIds.value = Array.from(ids);
   if (selectedRowDisplayIndex.value !== null) {
-    selectedRowTargetCount.value = rowCountsLocal.value[selectedRowDisplayIndex.value] ?? null;
+    selectedRowTargetCount.value =
+      rowCountsLocal.value[selectedRowDisplayIndex.value] ?? null;
   }
   updateSelectionVisuals(prev, new Set<string>(selectedIds.value));
   updateRowHighlights();
 });
 
-
-watch(() => props.tubes, () => { scheduleRender(); }, { deep: true });
-watch(() => props.config, () => { scheduleRender(); }, { deep: true });
+watch(
+  () => props.tubes,
+  () => {
+    scheduleRender();
+  },
+  { deep: true }
+);
+watch(
+  () => props.config,
+  () => {
+    scheduleRender();
+  },
+  { deep: true }
+);
 watch(selectedRowDisplayIndex, () => scheduleRender());
 
 function renderAll() {
   const svg = svgRef.value;
   if (!svg) return;
-  const vp = svg.querySelector('#viewport') as SVGGElement;
+  const vp = svg.querySelector("#viewport") as SVGGElement;
   if (!vp) return;
 
   const { boundary, highlights, tubes, labels } = ensureLayers(vp);
   // Clear non-tube layers
-  boundary.innerHTML = '';
-  highlights.innerHTML = '';
+  boundary.innerHTML = "";
+  highlights.innerHTML = "";
   // Preserve the virtualized tooltip element in labels layer
   Array.from(labels.children).forEach((child) => {
-    if ((child as Element).id !== 'tooltip') child.remove();
+    if ((child as Element).id !== "tooltip") child.remove();
   });
 
   // Boundary
@@ -688,12 +842,12 @@ function renderAll() {
 
   // Update/add elements
   const propertyColors: Record<string, string> = {
-    catalyst_tc: '#16a34a',
-    coolant: '#22c55e',
-    solid: '#64748b',
-    bend: '#f97316',
-    salt_tc: '#0ea5e9',
-    blocked: '#ef4444',
+    catalyst_tc: "#16a34a",
+    coolant: "#22c55e",
+    solid: "#64748b",
+    bend: "#f97316",
+    salt_tc: "#0ea5e9",
+    blocked: "#ef4444",
   };
 
   const useFragment = elById.size === 0 && activeTubes.length >= 50;
@@ -703,42 +857,45 @@ function renderAll() {
   activeTubes.forEach((t) => {
     let c = elById.get(t.id);
     if (!c) {
-      c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-      c.setAttribute('data-name', t.id);
-      c.addEventListener('mouseenter', () => {
+      c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      c.setAttribute("data-name", t.id);
+      c.addEventListener("mouseenter", () => {
         if (!tooltipEl) return;
         tooltipEl.textContent = t.id;
-        tooltipEl.setAttribute('x', String(centerX + t.x * scalePx + 10));
-        tooltipEl.setAttribute('y', String(centerY + t.y * scalePx - 4));
-        tooltipEl.setAttribute('visibility', 'visible');
+        tooltipEl.setAttribute("x", String(centerX + t.x * scalePx + 10));
+        tooltipEl.setAttribute("y", String(centerY + t.y * scalePx - 4));
+        tooltipEl.setAttribute("visibility", "visible");
       });
-      c.addEventListener('mouseleave', () => {
+      c.addEventListener("mouseleave", () => {
         if (!tooltipEl) return;
-        tooltipEl.setAttribute('visibility', 'hidden');
+        tooltipEl.setAttribute("visibility", "hidden");
       });
-      c.addEventListener('click', () => {
+      c.addEventListener("click", () => {
         const id = t.id;
         if (multiSelect.value) {
           if (selectedIds.value.includes(id)) {
             selectedIds.value = selectedIds.value.filter((sid) => sid !== id);
-            c!.classList.remove('highlight');
+            c!.classList.remove("highlight");
           } else {
             selectedIds.value.push(id);
-            c!.classList.add('highlight');
+            c!.classList.add("highlight");
           }
         } else {
           // Clear previous highlights via cache
           selectedIds.value.forEach((sid) => {
             const el = elById.get(sid);
-            if (el) el.classList.remove('highlight');
+            if (el) el.classList.remove("highlight");
           });
           selectedIds.value = [id];
-          c!.classList.add('highlight');
+          c!.classList.add("highlight");
         }
-        if (mirrorMode.value) {
+        if (backsideMode.value) {
           const prevM = new Set<string>(mirrorSelectedIds.value);
           mirrorSelectedIds.value = selectedIds.value.slice();
-          updateMirrorSelectionVisuals(prevM, new Set<string>(mirrorSelectedIds.value));
+          updateMirrorSelectionVisuals(
+            prevM,
+            new Set<string>(mirrorSelectedIds.value)
+          );
         }
       });
       if (fragment) newElements.push(c);
@@ -746,20 +903,22 @@ function renderAll() {
       elById.set(t.id, c);
     }
 
-    c.setAttribute('cx', String(centerX + t.x * scalePx));
-    c.setAttribute('cy', String(centerY + t.y * scalePx));
-    c.setAttribute('r', String(t.r * scalePx));
-    const defaultFill = t.capped ? (t.capColor ?? '#facc15') : '#ffffff';
-    const propKey = t.blocked ? 'blocked' : (t.property ?? null);
+    c.setAttribute("cx", String(centerX + t.x * scalePx));
+    c.setAttribute("cy", String(centerY + t.y * scalePx));
+    c.setAttribute("r", String(t.r * scalePx));
+    const defaultFill = t.capped ? t.capColor ?? "#facc15" : "#ffffff";
+    const propKey = t.blocked ? "blocked" : t.property ?? null;
     const fill: string = propKey
-      ? (t.propertyColor ?? propertyColors[propKey as keyof typeof propertyColors] ?? defaultFill)
+      ? t.propertyColor ??
+        propertyColors[propKey as keyof typeof propertyColors] ??
+        defaultFill
       : defaultFill;
-    c.setAttribute('fill', fill);
-    c.setAttribute('stroke', '#0f172a');
-    c.setAttribute('stroke-width', '0.2');
+    c.setAttribute("fill", fill);
+    c.setAttribute("stroke", "#0f172a");
+    c.setAttribute("stroke-width", "0.2");
 
-    if (selectedIds.value.includes(t.id)) c.classList.add('highlight');
-    else c.classList.remove('highlight');
+    if (selectedIds.value.includes(t.id)) c.classList.add("highlight");
+    else c.classList.remove("highlight");
   });
 
   if (fragment && newElements.length) {
@@ -769,26 +928,28 @@ function renderAll() {
 }
 
 function renderMirrorAll() {
-  if (!(mirrorMode.value || backsideMode.value)) return;
+  if (!backsideMode.value) return;
   const svg = mirrorSvgRef.value;
   if (!svg) return;
-  const vp = svg.querySelector('#mirror-viewport') as SVGGElement;
+  const vp = svg.querySelector("#mirror-viewport") as SVGGElement;
   if (!vp) return;
 
   const { boundary, highlights, tubes, labels } = ensureMirrorLayers(vp);
-  boundary.innerHTML = '';
-  highlights.innerHTML = '';
+  boundary.innerHTML = "";
+  highlights.innerHTML = "";
   Array.from(labels.children).forEach((child) => {
-    if ((child as Element).id !== 'tooltip') child.remove();
+    if ((child as Element).id !== "tooltip") child.remove();
   });
 
   const cfg = backsideMode.value
-    ? (backsideConfigSnapshot.value ?? props.config)
-    : (mirrorConfigSnapshot.value ?? props.config);
+    ? backsideConfigSnapshot.value ?? props.config
+    : mirrorConfigSnapshot.value ?? props.config;
   drawBoundary(boundary, cfg, centerX, centerY, scalePx);
   drawRowHighlightsMirror(highlights);
 
-  const activeTubes = (mirrorTubesSnapshot.value.length ? mirrorTubesSnapshot.value : props.tubes).filter((t) => !t.deleted);
+  const activeTubes = (
+    mirrorTubesSnapshot.value.length ? mirrorTubesSnapshot.value : props.tubes
+  ).filter((t) => !t.deleted);
   const presentIds = new Set(activeTubes.map((t) => t.id));
 
   for (const [id, el] of Array.from(mirrorElById.entries())) {
@@ -799,12 +960,12 @@ function renderMirrorAll() {
   }
 
   const propertyColors: Record<string, string> = {
-    catalyst_tc: '#16a34a',
-    coolant: '#22c55e',
-    solid: '#64748b',
-    bend: '#f97316',
-    salt_tc: '#0ea5e9',
-    blocked: '#ef4444',
+    catalyst_tc: "#16a34a",
+    coolant: "#22c55e",
+    solid: "#64748b",
+    bend: "#f97316",
+    salt_tc: "#0ea5e9",
+    blocked: "#ef4444",
   };
 
   const useFragment = mirrorElById.size === 0 && activeTubes.length >= 50;
@@ -816,38 +977,43 @@ function renderMirrorAll() {
   activeTubes.forEach((t) => {
     let c = mirrorElById.get(t.id);
     if (!c) {
-      c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-      c.setAttribute('data-name', t.id);
-      c.addEventListener('mouseenter', () => {
+      c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      c.setAttribute("data-name", t.id);
+      c.addEventListener("mouseenter", () => {
         if (!mirrorTooltipEl) return;
         mirrorTooltipEl.textContent = t.id;
-        mirrorTooltipEl.setAttribute('x', String(centerX + signX * t.x * scalePx + 10));
-        mirrorTooltipEl.setAttribute('y', String(centerY + t.y * scalePx - 4));
-        mirrorTooltipEl.setAttribute('visibility', 'visible');
+        mirrorTooltipEl.setAttribute(
+          "x",
+          String(centerX + signX * t.x * scalePx + 10)
+        );
+        mirrorTooltipEl.setAttribute("y", String(centerY + t.y * scalePx - 4));
+        mirrorTooltipEl.setAttribute("visibility", "visible");
       });
-      c.addEventListener('mouseleave', () => {
+      c.addEventListener("mouseleave", () => {
         if (!mirrorTooltipEl) return;
-        mirrorTooltipEl.setAttribute('visibility', 'hidden');
+        mirrorTooltipEl.setAttribute("visibility", "hidden");
       });
       if (fragment) newElements.push(c);
       else tubes.appendChild(c);
       mirrorElById.set(t.id, c);
     }
 
-    c.setAttribute('cx', String(centerX + signX * t.x * scalePx));
-    c.setAttribute('cy', String(centerY + t.y * scalePx));
-    c.setAttribute('r', String(t.r * scalePx));
-    const defaultFill = t.capped ? (t.capColor ?? '#facc15') : '#ffffff';
-    const propKey = t.blocked ? 'blocked' : (t.property ?? null);
+    c.setAttribute("cx", String(centerX + signX * t.x * scalePx));
+    c.setAttribute("cy", String(centerY + t.y * scalePx));
+    c.setAttribute("r", String(t.r * scalePx));
+    const defaultFill = t.capped ? t.capColor ?? "#facc15" : "#ffffff";
+    const propKey = t.blocked ? "blocked" : t.property ?? null;
     const fill: string = propKey
-      ? (t.propertyColor ?? propertyColors[propKey as keyof typeof propertyColors] ?? defaultFill)
+      ? t.propertyColor ??
+        propertyColors[propKey as keyof typeof propertyColors] ??
+        defaultFill
       : defaultFill;
-    c.setAttribute('fill', fill);
-    c.setAttribute('stroke', '#0f172a');
-    c.setAttribute('stroke-width', '0.2');
+    c.setAttribute("fill", fill);
+    c.setAttribute("stroke", "#0f172a");
+    c.setAttribute("stroke-width", "0.2");
 
-    if (mirrorSelectedIds.value.includes(t.id)) c.classList.add('highlight');
-    else c.classList.remove('highlight');
+    if (mirrorSelectedIds.value.includes(t.id)) c.classList.add("highlight");
+    else c.classList.remove("highlight");
   });
 
   if (fragment && newElements.length) {
@@ -860,13 +1026,15 @@ function drawRowHighlightsMirror(vp: SVGGElement) {
   const rows = groupRows();
   const indicesSet = new Set<number>();
   selectedRowIndices.value.forEach((i) => indicesSet.add(i));
-  if (selectedRowDisplayIndex.value !== null) indicesSet.add(selectedRowDisplayIndex.value);
+  if (selectedRowDisplayIndex.value !== null)
+    indicesSet.add(selectedRowDisplayIndex.value);
   if (indicesSet.size === 0) return;
   if (rows.length === 0) return;
   const pitchVal = props.config.pitch ?? 0;
-  const vspace = props.config.lattice === 'triangular'
-    ? (pitchVal * Math.sqrt(3)) / 2
-    : pitchVal;
+  const vspace =
+    props.config.lattice === "triangular"
+      ? (pitchVal * Math.sqrt(3)) / 2
+      : pitchVal;
   const bandHeightPx = (vspace ?? 0) * scalePx;
 
   const finalIndices: number[] = Array.from(indicesSet);
@@ -874,14 +1042,14 @@ function drawRowHighlightsMirror(vp: SVGGElement) {
     const row = rows[idx];
     if (!row || row.length === 0) continue;
     const yModel = row[0]?.y;
-    if (typeof yModel !== 'number') continue;
+    if (typeof yModel !== "number") continue;
     const yPxCenter = centerY + yModel * scalePx;
-    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-    rect.setAttribute('x', '0');
-    rect.setAttribute('y', String(yPxCenter - bandHeightPx / 2));
-    rect.setAttribute('width', String(svgWidth));
-    rect.setAttribute('height', String(bandHeightPx));
-    rect.setAttribute('class', 'row-highlight');
+    const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    rect.setAttribute("x", "0");
+    rect.setAttribute("y", String(yPxCenter - bandHeightPx / 2));
+    rect.setAttribute("width", String(svgWidth));
+    rect.setAttribute("height", String(bandHeightPx));
+    rect.setAttribute("class", "row-highlight");
     vp.appendChild(rect);
   }
 }
@@ -898,7 +1066,7 @@ function updateBackside() {
 }
 onMounted(() => {
   renderAll();
-  if (mirrorMode.value) renderMirrorAll();
+  if (backsideMode.value) renderMirrorAll();
 });
 
 onBeforeUnmount(() => {
@@ -907,40 +1075,43 @@ onBeforeUnmount(() => {
 
 function zoomIn() {
   zoom(1.15);
-  if (mirrorMode.value || backsideMode.value) mZoom(1.15);
+  if (backsideMode.value) mZoom(1.15);
 }
 function zoomOut() {
   zoom(1 / 1.15);
-  if (mirrorMode.value || backsideMode.value) mZoom(1 / 1.15);
+  if (backsideMode.value) mZoom(1 / 1.15);
 }
 function panXY(dx: number, dy: number) {
   pan(dx, dy);
-  if (mirrorMode.value || backsideMode.value) mPan(dx, dy);
+  if (backsideMode.value) mPan(dx, dy);
 }
 function resetView() {
   reset();
-  if (mirrorMode.value || backsideMode.value) mReset();
+  if (backsideMode.value) mReset();
 }
 
 function onSearch(term: string) {
-  if (!term) return alert('Enter tube ID');
+  if (!term) return alert("Enter tube ID");
   const svg = svgRef.value;
   if (!svg) return;
-  const vp = svg.querySelector('#viewport') as SVGGElement;
+  const vp = svg.querySelector("#viewport") as SVGGElement;
   const el = elById.get(term) ?? null;
-  if (!el) return alert('Tube not found');
+  if (!el) return alert("Tube not found");
 
   selectedIds.value.forEach((sid) => {
     const prev = elById.get(sid);
-    if (prev) prev.classList.remove('highlight');
+    if (prev) prev.classList.remove("highlight");
   });
   selectedIds.value = [term];
-  el.classList.add('highlight');
+  el.classList.add("highlight");
 
-  if (mirrorMode.value || backsideMode.value) {
+  if (backsideMode.value) {
     const prevM = new Set<string>(mirrorSelectedIds.value);
     mirrorSelectedIds.value = [term];
-    updateMirrorSelectionVisuals(prevM, new Set<string>(mirrorSelectedIds.value));
+    updateMirrorSelectionVisuals(
+      prevM,
+      new Set<string>(mirrorSelectedIds.value)
+    );
   }
 
   if (autoZoom.value) {
@@ -951,7 +1122,11 @@ function onSearch(term: string) {
   }
 }
 
-function smoothZoomAndPan(targetX: number, targetY: number, targetZoom: number) {
+function smoothZoomAndPan(
+  targetX: number,
+  targetY: number,
+  targetZoom: number
+) {
   const steps = 20;
   const startZoom = scale.value;
   const startTx = tx.value;
@@ -969,7 +1144,7 @@ function smoothZoomAndPan(targetX: number, targetY: number, targetZoom: number) 
     scale.value = startZoom + (endZoom - startZoom) * t;
     tx.value = startTx + (endTx - startTx) * t;
     ty.value = startTy + (endTy - startTy) * t;
-    if (mirrorMode.value) {
+    if (backsideMode.value) {
       mScale.value = mStartZoom + (endZoom - mStartZoom) * t;
       mTx.value = mStartTx + (endTx - mStartTx) * t;
       mTy.value = mStartTy + (endTy - mStartTy) * t;
@@ -978,7 +1153,6 @@ function smoothZoomAndPan(targetX: number, targetY: number, targetZoom: number) 
   }
   animate();
 }
-
 
 function capSelected(capColor = "#facc15") {
   if (selectedIds.value.length === 0)
@@ -1007,10 +1181,19 @@ function blockSelected() {
   emits("updateTubes", props.tubes);
 }
 
-function applyProperty(property: 'catalyst_tc' | 'coolant' | 'solid' | 'bend' | 'salt_tc' | 'blocked', color?: string) {
+function applyProperty(
+  property:
+    | "catalyst_tc"
+    | "coolant"
+    | "solid"
+    | "bend"
+    | "salt_tc"
+    | "blocked",
+  color?: string
+) {
   if (selectedIds.value.length === 0)
-    return useToast().add({ title: 'No Tube Selected', color: 'error' });
-  if (property === 'solid') {
+    return useToast().add({ title: "No Tube Selected", color: "error" });
+  if (property === "solid") {
     const updated = props.tubes.map((t) => ({
       ...t,
       deleted: selectedIds.value.includes(t.id) ? true : t.deleted,
@@ -1018,15 +1201,17 @@ function applyProperty(property: 'catalyst_tc' | 'coolant' | 'solid' | 'bend' | 
       propertyColor: selectedIds.value.includes(t.id) ? null : t.propertyColor,
       blocked: selectedIds.value.includes(t.id) ? false : t.blocked,
     }));
-    selectedIds.value.forEach((id) => useToast().add({ title: `${id} Deleted` }));
+    selectedIds.value.forEach((id) =>
+      useToast().add({ title: `${id} Deleted` })
+    );
     selectedIds.value = [];
-    emits('updateTubes', updated);
+    emits("updateTubes", updated);
     renderAll();
     return;
   }
   props.tubes.forEach((t) => {
     if (selectedIds.value.includes(t.id)) {
-      if (property === 'blocked') {
+      if (property === "blocked") {
         t.blocked = true;
         t.property = null;
         t.propertyColor = null;
@@ -1035,12 +1220,14 @@ function applyProperty(property: 'catalyst_tc' | 'coolant' | 'solid' | 'bend' | 
         t.blocked = false;
         t.property = property;
         t.propertyColor = null;
-        useToast().add({ title: `${t.id} ${property.replace('_', ' ').toUpperCase()}` });
+        useToast().add({
+          title: `${t.id} ${property.replace("_", " ").toUpperCase()}`,
+        });
       }
     }
   });
   renderAll();
-  emits('updateTubes', props.tubes);
+  emits("updateTubes", props.tubes);
 }
 
 function deleteSelected() {
@@ -1066,7 +1253,7 @@ function copyJson() {
 }
 
 function copyTubes() {
-  const payload = rowCountsLocal.value.join(', ');
+  const payload = rowCountsLocal.value.join(", ");
   navigator.clipboard?.writeText(payload);
 }
 
@@ -1092,13 +1279,10 @@ function downloadSvg() {
   emits("download");
 }
 
-
 function groupRows(): Tube[][] {
   // Compute rows directly from current props to ensure reactivity
   return groupRowsFromModule(props.tubes, props.config.pitch!);
 }
-
-
 
 function setRowCount(rowIdx: number, targetCount: number) {
   const rows = groupRows();
@@ -1126,10 +1310,28 @@ function setRowCount(rowIdx: number, targetCount: number) {
     const addLeft = Math.floor(delta / 2);
     const newTubes: Tube[] = [];
     for (let i = 1; i <= addRight; i++) {
-      newTubes.push({ id: "", x: maxX + i * pitch, y, r, capped: false, capColor: null, blocked: false, deleted: false });
+      newTubes.push({
+        id: "",
+        x: maxX + i * pitch,
+        y,
+        r,
+        capped: false,
+        capColor: null,
+        blocked: false,
+        deleted: false,
+      });
     }
     for (let i = 1; i <= addLeft; i++) {
-      newTubes.push({ id: "", x: minX - i * pitch, y, r, capped: false, capColor: null, blocked: false, deleted: false });
+      newTubes.push({
+        id: "",
+        x: minX - i * pitch,
+        y,
+        r,
+        capped: false,
+        capColor: null,
+        blocked: false,
+        deleted: false,
+      });
     }
     const updated = [...props.tubes, ...newTubes];
     emits("updateTubes", updated);
@@ -1140,10 +1342,16 @@ function setRowCount(rowIdx: number, targetCount: number) {
   const sortedRow = [...row].sort((a, b) => a.x - b.x);
   const leftToDelete = Math.floor(removeDelta / 2);
   const rightToDelete = Math.ceil(removeDelta / 2);
-  const leftIds = sortedRow.slice(0, Math.max(0, leftToDelete)).map((t) => t.id);
-  const rightIds = sortedRow.slice(Math.max(sortedRow.length - rightToDelete, 0)).map((t) => t.id);
+  const leftIds = sortedRow
+    .slice(0, Math.max(0, leftToDelete))
+    .map((t) => t.id);
+  const rightIds = sortedRow
+    .slice(Math.max(sortedRow.length - rightToDelete, 0))
+    .map((t) => t.id);
   const idsToDelete = new Set<string>([...leftIds, ...rightIds]);
-  const updated = props.tubes.map((t) => (idsToDelete.has(t.id) ? { ...t, deleted: true } : t));
+  const updated = props.tubes.map((t) =>
+    idsToDelete.has(t.id) ? { ...t, deleted: true } : t
+  );
   emits("updateTubes", updated);
 }
 
@@ -1179,8 +1387,6 @@ function applySelectedRowCount() {
   renderAll();
 }
 
-
-
 function addRow(offsetSign: 1 | -1) {
   if (selectedRowIndex.value === null) {
     useToast().add({ title: "Select a row first", color: "error" });
@@ -1196,9 +1402,15 @@ function addRow(offsetSign: 1 | -1) {
     useToast().add({ title: "Invalid pitch", color: "error" });
     return;
   }
-  const vspace = props.config.lattice === "triangular" ? (pitch * Math.sqrt(3)) / 2 : pitch;
+  const vspace =
+    props.config.lattice === "triangular" ? (pitch * Math.sqrt(3)) / 2 : pitch;
 
-  const newRowPrimary = computeAddRowForIndex(rows, primaryIdx, offsetSign, vspace);
+  const newRowPrimary = computeAddRowForIndex(
+    rows,
+    primaryIdx,
+    offsetSign,
+    vspace
+  );
   let newRowMirror: Tube[] = [];
   if (mirrorMode.value) {
     const mirrorIdx = rows.length - 1 - primaryIdx;
@@ -1209,9 +1421,6 @@ function addRow(offsetSign: 1 | -1) {
   const updated = [...props.tubes, ...newRowPrimary, ...newRowMirror];
   emits("updateTubes", updated);
 }
-
-
-
 
 defineExpose({
   capSelected,
@@ -1226,13 +1435,15 @@ function drawRowHighlights(vp: SVGGElement) {
   const rows = groupRows();
   const indicesSet = new Set<number>();
   selectedRowIndices.value.forEach((i) => indicesSet.add(i));
-  if (selectedRowDisplayIndex.value !== null) indicesSet.add(selectedRowDisplayIndex.value);
+  if (selectedRowDisplayIndex.value !== null)
+    indicesSet.add(selectedRowDisplayIndex.value);
   if (indicesSet.size === 0) return;
   if (rows.length === 0) return;
   const pitchVal = props.config.pitch ?? 0;
-  const vspace = props.config.lattice === "triangular"
-    ? (pitchVal * Math.sqrt(3)) / 2
-    : pitchVal;
+  const vspace =
+    props.config.lattice === "triangular"
+      ? (pitchVal * Math.sqrt(3)) / 2
+      : pitchVal;
   const bandHeightPx = (vspace ?? 0) * scalePx;
 
   const indices: number[] = Array.from(indicesSet);
@@ -1261,7 +1472,11 @@ function groupRowsFrom(tubesArr: Tube[]): Tube[][] {
   return groupRowsFromModule(tubesArr, props.config.pitch!);
 }
 
-function computeSetRowCountUpdate(tubesArr: Tube[], rowIdx: number, targetCount: number): Tube[] {
+function computeSetRowCountUpdate(
+  tubesArr: Tube[],
+  rowIdx: number,
+  targetCount: number
+): Tube[] {
   return computeSetRowCountUpdateModule(
     tubesArr,
     rowIdx,
@@ -1271,7 +1486,12 @@ function computeSetRowCountUpdate(tubesArr: Tube[], rowIdx: number, targetCount:
   );
 }
 
-function computeAddRowForIndex(rows: Tube[][], rowIdx: number, offsetSign: 1 | -1, vspace: number): Tube[] {
+function computeAddRowForIndex(
+  rows: Tube[][],
+  rowIdx: number,
+  offsetSign: 1 | -1,
+  vspace: number
+): Tube[] {
   return computeAddRowForIndexModule(
     rows,
     rowIdx,
@@ -1302,7 +1522,6 @@ function computeAddRowForIndex(rows: Tube[][], rowIdx: number, offsetSign: 1 | -
   stroke-width: 0.5;
 }
 
-
 .fade-enter-active,
 .fade-leave-active {
   transition: all 0.2s ease;
@@ -1313,7 +1532,3 @@ function computeAddRowForIndex(rows: Tube[][], rowIdx: number, offsetSign: 1 | -
   transform: translateY(-4px);
 }
 </style>
-
-
-
-
