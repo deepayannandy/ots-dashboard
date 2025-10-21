@@ -24,14 +24,17 @@
             @click="updateBackside"
             >Update Backside</UButton
           >
+          <span class="text-xs sm:text-sm text-slate-600">Show Comments</span>
+          <USwitch v-model="showComments" />
         </div>
         <SearchBar @search="onSearch" class="w-full sm:w-auto" />
       </div>
     </div>
 
     <div
-      class="relative flex-1 flex justify-center items-start rounded-xl overflow-hidden bg-slate-50"
-    >
+        ref="canvasContainerRef"
+        class="relative flex-1 flex justify-center items-start rounded-xl overflow-hidden bg-slate-50"
+      >
       <svg
         ref="svgRef"
         :class="
@@ -193,6 +196,20 @@
         />
         <p class="text-[10px] sm:text-xs">Zoom: {{ scale.toFixed(2) }}</p>
       </div>
+    <!-- Floating Comment Editor -->
+     <div
+       v-if="commentPanelOpen"
+       class="absolute z-50 bg-white rounded-md shadow-lg p-3 w-64"
+       :style="{ left: commentPanelX + 'px', top: commentPanelY + 'px' }"
+     >
+       <div class="text-xs font-medium text-slate-700 mb-2">Tube {{ commentTubeId }}</div>
+       <UTextarea v-model="commentDraft" rows="3" placeholder="Add a note for this tube" />
+       <div class="flex justify-end gap-2 mt-2">
+         <UButton size="xs" variant="ghost" @click="closeCommentEditor">Cancel</UButton>
+         <UButton size="xs" color="error" variant="soft" @click="deleteComment">Delete</UButton>
+         <UButton size="xs" variant="solid" @click="saveComment">Save</UButton>
+       </div>
+     </div>
     </div>
   </div>
 </template>
@@ -400,6 +417,56 @@ const selectedRowDisplayIndex = ref<number | null>(null);
 const selectedRowIndex = ref<number | null>(null); // base-grid i index
 const rowCountsLocal = computed(() => groupRows().map((r) => r.length));
 const selectedRowTargetCount = ref<number | null>(null);
+
+// Show comments toggle
+const showComments = ref(true);
+// Floating comment editor state
+const canvasContainerRef = ref<HTMLDivElement | null>(null);
+const commentPanelOpen = ref(false);
+const commentPanelX = ref(0);
+const commentPanelY = ref(0);
+const commentTubeId = ref<string | null>(null);
+const commentDraft = ref<string>("");
+
+function openContextCommentEditor(id: string, e: MouseEvent) {
+  const tube = props.tubes.find((t) => t.id === id);
+  const rect = canvasContainerRef.value?.getBoundingClientRect();
+  const x = e.clientX - (rect?.left ?? 0);
+  const y = e.clientY - (rect?.top ?? 0);
+  commentPanelX.value = Math.round(x);
+  commentPanelY.value = Math.round(y);
+  commentTubeId.value = id;
+  commentDraft.value = (tube?.comment ?? '') || '';
+  commentPanelOpen.value = true;
+}
+function saveComment() {
+  if (!commentTubeId.value) return;
+  const updated = props.tubes.map((tt) =>
+    tt.id === commentTubeId.value
+      ? { ...tt, comment: commentDraft.value.trim() || null }
+      : tt
+  );
+  emits("updateTubes", updated);
+  commentPanelOpen.value = false;
+  commentTubeId.value = null;
+  commentDraft.value = "";
+  scheduleRender();
+}
+function deleteComment() {
+  if (!commentTubeId.value) return;
+  const updated = props.tubes.map((tt) =>
+    tt.id === commentTubeId.value ? { ...tt, comment: null } : tt
+  );
+  emits("updateTubes", updated);
+  commentPanelOpen.value = false;
+  commentTubeId.value = null;
+  commentDraft.value = "";
+  scheduleRender();
+}
+function closeCommentEditor() {
+  commentPanelOpen.value = false;
+  commentTubeId.value = null;
+}
 
 // Optional: Precompute a Map<string, Tube> for reuse in updates
 const tubeById = computed(() => {
@@ -808,6 +875,7 @@ watch(
   { deep: true }
 );
 watch(selectedRowDisplayIndex, () => scheduleRender());
+watch(showComments, () => scheduleRender());
 
 function renderAll() {
   const svg = svgRef.value;
@@ -870,6 +938,10 @@ function renderAll() {
         if (!tooltipEl) return;
         tooltipEl.setAttribute("visibility", "hidden");
       });
+      c.addEventListener("contextmenu", (e) => {
+        e.preventDefault();
+        openContextCommentEditor(t.id, e);
+      });
       c.addEventListener("click", () => {
         const id = t.id;
         if (multiSelect.value) {
@@ -920,6 +992,32 @@ function renderAll() {
     if (selectedIds.value.includes(t.id)) c.classList.add("highlight");
     else c.classList.remove("highlight");
   });
+
+  // Draw comment indicators in labels layer (only when toggle is on)
+  if (showComments.value) {
+    activeTubes.forEach((t) => {
+      if (t.comment) {
+        const note = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        note.textContent = "✎";
+        note.setAttribute("x", String(centerX + t.x * scalePx + 6));
+        note.setAttribute("y", String(centerY + t.y * scalePx - 10));
+        note.setAttribute("fill", "#ef4444");
+        note.setAttribute("font-size", "10");
+        note.addEventListener("mouseenter", () => {
+          if (!tooltipEl) return;
+          tooltipEl.textContent = t.comment!;
+          tooltipEl.setAttribute("x", String(centerX + t.x * scalePx + 10));
+          tooltipEl.setAttribute("y", String(centerY + t.y * scalePx - 14));
+          tooltipEl.setAttribute("visibility", "visible");
+        });
+        note.addEventListener("mouseleave", () => {
+          if (!tooltipEl) return;
+          tooltipEl.setAttribute("visibility", "hidden");
+        });
+        labels.appendChild(note);
+      }
+    });
+  }
 
   if (fragment && newElements.length) {
     newElements.forEach((el) => fragment!.appendChild(el));

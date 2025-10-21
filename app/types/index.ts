@@ -21,10 +21,11 @@ export interface Tube {
   x: number
   y: number
   r: number
-  capped?: boolean
-  capColor?: string | null
+  capped: boolean
+  capColor: string | null
   blocked?: boolean
   deleted?: boolean
   property?: 'catalyst_tc' | 'coolant' | 'solid' | 'bend' | 'salt_tc' | null
   propertyColor?: string | null
+  comment?: string | null
 }

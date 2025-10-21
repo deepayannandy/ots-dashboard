@@ -64,10 +64,10 @@ export function computeSetRowCountUpdate(
     const addLeft = Math.floor(delta / 2);
     const newTubes: Tube[] = [];
     for (let i = 1; i <= addRight; i++) {
-      newTubes.push({ id: genTempId(), x: maxX + i * pitch, y, r, capped: false, capColor: null, blocked: false, deleted: false });
+      newTubes.push({ id: genTempId(), x: maxX + i * pitch, y, r, capped: false, capColor: null, blocked: false, deleted: false, comment: null });
     }
     for (let i = 1; i <= addLeft; i++) {
-      newTubes.push({ id: genTempId(), x: minX - i * pitch, y, r, capped: false, capColor: null, blocked: false, deleted: false });
+      newTubes.push({ id: genTempId(), x: minX - i * pitch, y, r, capped: false, capColor: null, blocked: false, deleted: false, comment: null });
     }
     return [...tubesArr, ...newTubes];
   }
@@ -106,5 +106,6 @@ export function computeAddRowForIndex(
     capColor: null,
     blocked: false,
     deleted: false,
+    comment: null,
   }));
 }

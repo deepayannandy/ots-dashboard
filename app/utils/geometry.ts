@@ -139,6 +139,7 @@ export function generateTubes(cfg: ReactorConfig): {
           deleted: false,
           property: null,
           propertyColor: null,
+          comment: null,
         });
       }
     }
