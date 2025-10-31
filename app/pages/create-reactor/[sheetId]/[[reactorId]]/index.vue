@@ -63,6 +63,7 @@
             @click="saveChangesModal=true"
           />
         </template>
+
         <template #left>
           <UDropdownMenu :items="settingitems" :content="{ align: 'start' }" :ui="{ content: 'w-56' }">
             <UButton
@@ -72,6 +73,15 @@
               icon="i-lucide-settings"
             />
           </UDropdownMenu>
+          <URadioGroup
+            v-model="viewDisplay"
+            indicator="hidden"
+            variant="card"
+            size="xs"
+            orientation="horizontal"
+            default-value=""
+            :items="items"
+          />
         </template>
       </UDashboardToolbar>
     </template>
@@ -89,7 +99,11 @@
               :viewBox="`0 0 ${svgWidth} ${svgHeight}`"
               xmlns="http://www.w3.org/2000/svg"
               preserveAspectRatio="xMinYMin meet"
+              :style="
+                viewDisplay==='Back View'? 'transform: scale(-1,1); transform-origin:center; transform-box:fill-box;'
+                : ''"
             >
+              >
               <g id="viewport" :transform="transformStr" />
             </svg>
 
@@ -220,6 +234,7 @@ const settingsInput = reactive({
   mirrorX: false,
   autoSave: false
 })
+
 const saveChangesModal = ref(false)
 const settingitems = computed<DropdownMenuItem[]>(() => [
 
@@ -231,6 +246,7 @@ const settingitems = computed<DropdownMenuItem[]>(() => [
     onUpdateChecked(v: boolean) { settingsInput.mirrorX = v },
     onSelect(e: Event) { e.preventDefault() }
   },
+
   {
     label: 'Auto Save',
     icon: 'i-lucide-save',
@@ -253,6 +269,8 @@ const svgWidth = 1200, svgHeight = 760
 const centerX = svgWidth / 2, centerY = svgHeight / 2, scalePx = 2
 const searchValue = ref<string[]>([])
 const searchRow = ref<string>('R1')
+const items = ref(['Front View', 'Back View'])
+const viewDisplay = ref('Front View')
 
 // Cache DOM elements for fast access
 const elById = new Map<string, SVGCircleElement>()
