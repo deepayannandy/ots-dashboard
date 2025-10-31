@@ -11,7 +11,6 @@
     <template #body>
       <UPageGrid>
         <TubeSheet v-model="newSheet" add-new />
-        {{ list.length }}
         <TubeSheet
           v-for="(sheet, i) in list"
           :key="sheet._id"
