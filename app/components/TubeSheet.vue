@@ -102,6 +102,16 @@
       :color="statusColor(localState.status)"
       variant="outline"
       class="mt-auto"
+      @click.stop="navigateTo(`/create-reactor/${localState._id}/${localState.reactorId??''}`)"
+    />
+    <UButton
+      v-if="localState.status !=='SHAPE_CREATION'"
+      block
+      size="xs"
+      label="Edit Shape & Congif"
+      :color="statusColor(localState.status)"
+      variant="outline"
+      class="mt-auto"
       @click.stop="handleNextStep(localState.status, localState._id, localState.reactorId)"
     />
   </UPageCard>
