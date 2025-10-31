@@ -59,23 +59,6 @@
     class="cursor-pointer"
     @click="open = true"
   >
-    <!-- Edit/Delete icons -->
-    <div class="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-      <UButton
-        icon="i-lucide-edit"
-        size="xs"
-        variant="ghost"
-        @click.stop="open = true"
-      />
-      <UButton
-        icon="i-lucide-trash"
-        size="xs"
-        color="error"
-        variant="ghost"
-        @click.stop="handleDelete"
-      />
-    </div>
-
     <!-- Header -->
     <div class="flex items-center justify-between">
       <h3 class="font-semibold text-neutral-900 dark:text-neutral-100 truncate">
@@ -117,7 +100,7 @@
       size="xs"
       :label="getLabel(localState.status)"
       :color="statusColor(localState.status)"
-      variant="soft"
+      variant="outline"
       class="mt-auto"
       @click.stop="handleNextStep(localState.status, localState._id, localState.reactorId)"
     />
@@ -179,7 +162,7 @@ const statusColor = (status?: string) => {
 const getLabel = (status?: string) => {
   switch (status) {
     case 'SHAPE_CREATION': return 'Create Shape'
-    case 'SHAPE_CREATED': return 'Edit Shape'
+    case 'SHAPE_CREATED': return 'Start Survey'
     case 'UNDER_SURVEY': return 'View Survey'
     case 'IDLE': return 'Completed'
     default: return 'Open'
@@ -212,7 +195,7 @@ const handleNextStep = (status?: string, sheetId?: string, reactorId?: string) =
   if (status && reactorId && sheetId)
     switch (status) {
       case 'SHAPE_CREATION': return navigateTo(`/create-reactor/${sheetId}/${reactorId}`)
-      case 'SHAPE_CREATED': return navigateTo(`/create-reactor/${sheetId}/${reactorId}`)
+      case 'SHAPE_CREATED': return navigateTo(`/survey-details/${sheetId}/${reactorId}`)
       case 'UNDER_SURVEY': return navigateTo(`/survey-details/${sheetId}/${reactorId}`)
       case 'IDLE': return 'Completed'
       default: return 'Open'

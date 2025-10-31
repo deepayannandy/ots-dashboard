@@ -44,6 +44,7 @@ const groups = computed(() => [
 <template>
   <UDashboardGroup unit="rem">
     <UDashboardSidebar
+      v-if="!useRoute().path.startsWith('/survey-details')"
       id="default"
       v-model:open="open"
       collapsible
