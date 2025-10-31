@@ -11,6 +11,7 @@
     <template #body>
       <UPageGrid>
         <TubeSheet v-model="newSheet" add-new />
+        {{ list.length }}
         <TubeSheet
           v-for="(sheet, i) in list"
           :key="sheet._id"
@@ -22,16 +23,12 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, onMounted } from 'vue'
+import { reactive } from 'vue'
 import { useTubeSheets } from '~/stores/tubesheets'
 import type { TubeSheet } from '~/types'
 
-const { getAllSheet } = useTubeSheets()
-const list = ref<Partial<TubeSheet>[]>([])
-onMounted(async () => {
-  const data = await getAllSheet()
-  list.value = data ?? []
-})
+const { list } = useTubeSheets()
+
 const newSheet = reactive<Partial<TubeSheet>>({
   name: '',
   type: 'REACTOR',

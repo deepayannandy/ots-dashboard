@@ -210,8 +210,4 @@ const handleNextStep = (status?: string, sheetId?: string, reactorId?: string) =
     }
   }
 }
-
-const handleDelete = () => {
-  if (confirm('Delete this Tube Sheet?')) store.deleteTubeSheet(localState._id)
-}
 </script>

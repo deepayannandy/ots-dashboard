@@ -22,9 +22,17 @@ export const useTubeSheets = defineStore('tubesheets', {
     async getAllSheet() {
       try {
         const { data } = await useAxios().$get('/api/v2/tubeSheet/getAllTubeSheet')
-        this.list = data.sort((a: { updatedAt: string | number | Date }, b: { updatedAt: string | number | Date }) => {
-          return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-        })
+
+        // sort first
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const sorted = data.sort((a: any, b: any) =>
+          new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+        )
+
+        // mutate instead of replacing
+        this.list.length = 0
+        this.list.push(...sorted)
+
         return this.list
       } catch (e) {
         console.error(e)

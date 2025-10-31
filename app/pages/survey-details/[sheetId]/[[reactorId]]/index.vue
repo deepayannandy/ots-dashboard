@@ -449,7 +449,7 @@ function renderAll() {
     updateCircleVisual(t)
   }
 }
-
+let interval: ReturnType<typeof setInterval> | null = null
 async function stratSurvey() {
   loading.value = true
   try {
@@ -458,6 +458,7 @@ async function stratSurvey() {
       surveyType: 'SOD',
       eactorId: reactorId
     })
+    interval = setInterval(fetchUpdatedTubeColors, 5000)
     if (data.Success) {
       useToast().add({ title: 'Survey Stated', color: 'success' })
     }
@@ -508,8 +509,6 @@ onMounted(async () => {
    WATCH
 ----------------------------- */
 
-let interval: ReturnType<typeof setInterval> | null = null
-
 async function fetchUpdatedTubeColors() {
   try {
     const { data } = await useSurveyStore().getSurveyUpdates()
@@ -535,18 +534,9 @@ const backendUpdatedCount = computed(() =>
 // total tubes
 const totalCount = computed(() => currentTubes.value.length)
 
-// remaining tubes
-const remainingCount = computed(() =>
-  totalCount.value - backendUpdatedCount.value
-)
-
 const progressPercent = computed(() => {
   if (!totalCount.value) return 0
   return Math.round((backendUpdatedCount.value / totalCount.value) * 100)
-})
-
-onMounted(() => {
-  interval = setInterval(fetchUpdatedTubeColors, 5000)
 })
 
 onUnmounted(() => {
