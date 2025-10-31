@@ -52,7 +52,6 @@
 
       <UDashboardToolbar>
         <template #right>
-          <!-- <RowConfigPannel class=" right-0 z-20 bg-white dark:bg-black" /> -->
           <UButton
             label="Start Survey"
             color="primary"
@@ -94,6 +93,82 @@
             <!-- Zoom Controls -->
             <!-- Optional: show selected IDs -->
           </div>
+          <!-- Backend Progress Indicator -->
+          <!-- Backend Tube Progress Widget -->
+          <UPageCard spotlight spotlight-color="primary" class="absolute top-6 right-6 z-50 flex flex-col items-center gap-2 bg-white/90 dark:bg-black/90 p-4 rounded-2xl ">
+            <svg
+              width="120"
+              height="120"
+              viewBox="0 0 36 36"
+              class="drop-shadow-sm"
+            >
+
+              <!-- Background Track -->
+              <circle
+                cx="18"
+                cy="18"
+                r="16"
+                stroke="currentColor"
+                stroke-width="3"
+                fill="none"
+                class="text-gray-300 dark:text-neutral-700"
+              />
+
+              <!-- Progress Ring -->
+              <circle
+                cx="18"
+                cy="18"
+                r="16"
+                :stroke-dasharray="`${progressPercent}, 100`"
+                stroke-width="3.8"
+                fill="none"
+                stroke-linecap="round"
+                transform="rotate(-90 18 18)"
+                class="transition-all duration-700"
+                style="stroke: url(#grad)"
+              />
+
+              <!-- Gradient Definition -->
+              <defs>
+                <linearGradient
+                  id="grad"
+                  x1="1"
+                  y1="0"
+                  x2="0"
+                  y2="1"
+                >
+                  <stop offset="0%" stop-color="#10B981" /> <!-- green -->
+                  <stop offset="100%" stop-color="#2563EB" /> <!-- blue -->
+                </linearGradient>
+              </defs>
+
+              <!-- % text inside -->
+              <text
+                x="18"
+                y="20"
+                text-anchor="middle"
+                font-size="9"
+                class="fill-black dark:fill-white font-bold"
+              >
+                {{ progressPercent }}%
+              </text>
+            </svg>
+
+            <!-- Tube count -->
+            <div class="text-sm font-semibold text-center text-neutral-700 dark:text-neutral-200">
+              <span class="text-green-600 dark:text-green-400">{{ backendUpdatedCount }}</span>
+              /
+              <span class="text-neutral-600 dark:text-neutral-400">{{ totalCount }}</span>
+            </div>
+            <div class="flex items-center gap-2 bg-white dark:bg-black shadow px-3 py-2 rounded-md text-xs font-medium">
+              <span>Progress:</span>
+              <span class="text-green-600">
+                {{ backendUpdatedCount }} ✅
+              </span>
+              <span>/ {{ totalCount }}</span>
+            </div>
+          </UPageCard>
+
           <div class="sticky  sm:bottom-0 flex justify-between">
             <div class="flex flex-col items-center gap-2 z-50 bg-white dark:bg-black shadow p-2 rounded w-fit">
               <ZoomControls
@@ -145,9 +220,7 @@ const sheetId = useRoute().params?.sheetId as string
 
 const settingsInput = reactive({
 
-  mirrorX: false,
-  autoSave: false,
-  backView: false
+  mirrorX: false
 })
 
 const settingitems = computed<DropdownMenuItem[]>(() => [
@@ -160,18 +233,10 @@ const settingitems = computed<DropdownMenuItem[]>(() => [
     onUpdateChecked(v: boolean) { settingsInput.mirrorX = v },
     onSelect(e: Event) { e.preventDefault() }
   }
-  {
-    label: 'Back View (Left ↔ Right)',
-    icon: 'i-lucide-arrow-left-right',
-    type: 'checkbox',
-    checked: settingsInput.backView,
-    onUpdateChecked(v: boolean) { settingsInput.backView = v; renderAll() },
-    onSelect(e: Event) { e.preventDefault() }
-  }
 ])
 
 const { config, tubes: currentTubes } = useReactorGenerator()
-const { scale, tx, ty, zoom, pan, reset } = useViewportTransform({ scale: 0.5, tx: -100 })
+const { scale, tx, ty, zoom, pan, reset } = useViewportTransform()
 
 // Initialize stores
 const reactorsStore = useReactorsStore()
@@ -448,17 +513,37 @@ let interval: ReturnType<typeof setInterval> | null = null
 async function fetchUpdatedTubeColors() {
   try {
     const { data } = await useSurveyStore().getSurveyUpdates()
+
     data.forEach((element: { tubeId: string | number, color: string }) => {
       const tube = currentTubes.value[element.tubeId as number]
-      if (tube) {
-        console.log(tube)
-        updateCircleVisual(tube, element.color)
-      }
+      if (!tube) return
+
+      tube.propertyColor = element.color // update color
+      tube._backendUpdated = true
+
+      updateCircleVisual(tube, element.color)
     })
   } catch (err) {
     console.error('Failed to fetch tube colors:', err)
   }
 }
+
+const backendUpdatedCount = computed(() =>
+  currentTubes.value.filter(t => t._backendUpdated).length
+)
+
+// total tubes
+const totalCount = computed(() => currentTubes.value.length)
+
+// remaining tubes
+const remainingCount = computed(() =>
+  totalCount.value - backendUpdatedCount.value
+)
+
+const progressPercent = computed(() => {
+  if (!totalCount.value) return 0
+  return Math.round((backendUpdatedCount.value / totalCount.value) * 100)
+})
 
 onMounted(() => {
   interval = setInterval(fetchUpdatedTubeColors, 5000)
