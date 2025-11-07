@@ -26,8 +26,8 @@ import { reactive } from 'vue'
 import { useTubeSheets } from '~/stores/tubesheets'
 import type { TubeSheet } from '~/types'
 
-const { list } = useTubeSheets()
-
+const { list, getAllSheet } = useTubeSheets()
+await getAllSheet()
 const newSheet = reactive<Partial<TubeSheet>>({
   name: '',
   type: 'REACTOR',

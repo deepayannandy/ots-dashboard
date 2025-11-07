@@ -27,6 +27,7 @@ export const useAuth = defineStore('auth', {
       this.user = null
       this.isLoggedIn = false
       this.token = ''
+      localStorage.clear()
       return navigateTo('/auth/login')
     }
   },

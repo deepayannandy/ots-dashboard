@@ -1,0 +1,136 @@
+{
+  "screens": [
+    {
+      "screen": "Dashboard",
+      "path": "/",
+      "features": ["View all tubesheets", "Create new tubesheet", "Edit tubesheet details"],
+      "description": "Main dashboard showing all tubesheets with creation and editing capabilities"
+    },
+    {
+      "screen": "Login",
+      "path": "/auth/login",
+      "features": ["User authentication", "Login form"],
+      "description": "Authentication screen for user login"
+    },
+    {
+      "screen": "Create Reactor",
+      "path": "/create-reactor/[sheetId]/[[reactorId]]",
+      "features": ["Reactor configuration", "Tube placement", "Save reactor"],
+      "description": "Screen for creating or editing reactor configurations"
+    },
+    {
+      "screen": "Reactor Display",
+      "path": "/reactor-display/[reactorId]",
+      "features": ["View reactor details", "Visualize reactor tubes"],
+      "description": "Display screen for viewing reactor information and visualization"
+    },
+    {
+      "screen": "Settings",
+      "path": "/settings",
+      "features": ["User preferences", "Application settings"],
+      "description": "User and application settings configuration screen"
+    },
+    {
+      "screen": "Survey Details",
+      "path": "/survey-details/[sheetId]/[[reactorId]]",
+      "features": ["View reactor tubes", "Zoom controls", "Interactive SVG rendering"],
+      "description": "Detailed survey view with interactive controls for reactor visualization"
+    }
+  ],
+  "components": [
+    {
+      "name": "TubeSheet",
+      "features": ["Display tubesheet card", "Edit tubesheet properties"],
+      "description": "Component for displaying and editing tubesheet information"
+    },
+    {
+      "name": "UserMenu",
+      "features": ["User profile options", "Logout functionality"],
+      "description": "Navigation menu for user-related actions"
+    },
+    {
+      "name": "ZoomControls",
+      "features": ["Zoom in/out", "Pan in all directions"],
+      "description": "Controls for zooming and panning in visualization views"
+    },
+    {
+      "name": "ConfigPannel",
+      "features": ["Configure reactor settings"],
+      "description": "Panel for configuring reactor properties"
+    },
+    {
+      "name": "RowConfigPannel",
+      "features": ["Configure row settings"],
+      "description": "Panel for configuring row properties in tubesheets"
+    }
+  ],
+  "stores": [
+    {
+      "name": "auth",
+      "features": ["User authentication", "Session management"],
+      "description": "Store for managing user authentication state"
+    },
+    {
+      "name": "reactors",
+      "features": ["Save reactor", "Get reactor by ID"],
+      "description": "Store for managing reactor data and operations"
+    },
+    {
+      "name": "survey",
+      "features": ["Survey data management"],
+      "description": "Store for managing survey information"
+    },
+    {
+      "name": "tubesheets",
+      "features": ["Tubesheet list", "Tubesheet operations"],
+      "description": "Store for managing tubesheet data"
+    },
+    {
+      "name": "userSettings",
+      "features": ["User preferences"],
+      "description": "Store for managing user-specific settings"
+    }
+  ],
+  "types": [
+    {
+      "name": "Reactor",
+      "description": "Data structure for reactor information"
+    },
+    {
+      "name": "Tube",
+      "description": "Data structure for tube properties"
+    },
+    {
+      "name": "TubeSheet",
+      "description": "Data structure for tubesheet information"
+    },
+    {
+      "name": "ReactorConfig",
+      "description": "Configuration settings for reactors"
+    }
+  ],
+  "composables": [
+    {
+      "name": "useViewportTransform",
+      "features": ["Zoom", "Pan", "Reset view"],
+      "description": "Composable for handling viewport transformations"
+    },
+    {
+      "name": "useReactorGenerator",
+      "features": ["Generate reactor layouts"],
+      "description": "Composable for generating reactor configurations"
+    },
+    {
+      "name": "useInterval",
+      "features": ["Timed operations"],
+      "description": "Composable for handling interval-based operations"
+    },
+    {
+      "name": "useDashboard",
+      "features": ["Dashboard state management"],
+      "description": "Composable for managing dashboard state"
+    }
+  ]
+}
+
+
