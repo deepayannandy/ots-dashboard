@@ -7,10 +7,10 @@ function validateConfig(cfg: ReactorConfig) {
   if (!(r > 0)) throw new Error('Tube radius must be > 0')
   if (pad < 0) throw new Error('Padding must be >= 0')
 
-  const minPitch = 2 * r
+  const minPitch = 2 * r + 1e-9
   if (cfg.pitch < minPitch) {
     throw new Error(
-      `Pitch too small — must be ≥ ${minPitch.toFixed(2)} to avoid overlap`
+      `Pitch too small — must be ≥ ${minPitch.toFixed(2)} to avoid overlap (2 × tubeRadius)`
     )
   }
 
@@ -28,8 +28,8 @@ function validateConfig(cfg: ReactorConfig) {
   }
 
   if (cfg.shape === 'RECTANGLE') {
-    if (!(cfg.outerDimension > 0)) throw new Error('Side must be > 0')
-    if (cfg.outerDimension / 2 - pad - r <= 0)
+    if (!cfg.width || !cfg.height) throw new Error('RECTANGLE width and height required')
+    if (cfg.width / 2 - pad - r <= 0 || cfg.height / 2 - pad - r <= 0)
       throw new Error('Not enough room in RECTANGLE')
   }
 
@@ -56,6 +56,7 @@ function pointInShape(
   const eps = 1e-9
   const r = cfg.tubeRadius
   const pad = cfg.padding
+
   if (shape === 'CIRCLE') {
     return Math.hypot(x, y) <= cfg.outerDimension - pad - r + eps
   }
@@ -64,12 +65,6 @@ function pointInShape(
     return (
       d >= (cfg.innerRadius ?? 0) + pad + r - eps
       && d <= cfg.outerDimension - pad - r + eps
-    )
-  }
-  if (shape === 'RECTANGLE') {
-    return (
-      Math.abs(x) <= cfg.outerDimension / 2 - pad - r + eps
-      && Math.abs(y) <= cfg.outerDimension / 2 - pad - r + eps
     )
   }
   if (shape === 'RECTANGLE') {
@@ -111,10 +106,13 @@ export function generateTubes(cfg: ReactorConfig): {
   const sinA = Math.sin(theta)
 
   let searchExtent = cfg.outerDimension
-  if (cfg.shape === 'RECTANGLE')
-    searchExtent = Math.max(cfg.width!, cfg.height!) / 2
+  if (cfg.shape === 'RECTANGLE') {
+  // use diagonal half-extent so rotated lattice covers corners
+    searchExtent = Math.hypot((cfg.width ?? 0) / 2, (cfg.height ?? 0) / 2)
+  }
   if (cfg.shape === 'DONUT') searchExtent = cfg.outerDimension
-  const N = Math.ceil((searchExtent * 2) / spacing) + 4
+
+  const N = Math.ceil((searchExtent * 2) / spacing) + 6
 
   for (let i = -N; i <= N; i++) {
     const y = i * vspace
@@ -163,16 +161,19 @@ export function generateTubes(cfg: ReactorConfig): {
 
   let currentRow = 1
   let currentCol = 1
-  let lastY: number | null = null
-  const rowThreshold = spacing * 0.3
+  // const lastY: number | null = null
+  const rowThreshold = vspace * 0.5
 
+  // before computing rows, compute a 'bucketY' used to decide row changes
+  let lastBucketY: number | null = null
   for (const t of tubes) {
-    if (lastY !== null && Math.abs(t.y - lastY) > rowThreshold) {
+    const bucketY = Math.round(t.y / rowThreshold) * rowThreshold
+    if (lastBucketY !== null && Math.abs(bucketY - lastBucketY) > 0.5 * rowThreshold) {
       currentRow++
       currentCol = 1
     }
     t.id = `R${currentRow}C${currentCol}`
-    lastY = t.y
+    lastBucketY = bucketY
     currentCol++
   }
 

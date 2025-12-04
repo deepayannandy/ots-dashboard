@@ -10,7 +10,7 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       axios: {
-        baseURL: 'http://localhost:6969/'
+        baseURL: 'http://localhost:4000/'
       }
     }
   },
