@@ -11,12 +11,14 @@
     <template #body>
       <UPageGrid>
         <TubeSheet v-model="newSheet" add-new />
-        <TubeSheet
-          v-for="(sheet, i) in list"
-          :key="sheet._id"
-          v-model="list[i]!"
-        />
+        <div v-for="(sheet, i) in list" :key="sheet._id">
+          <TubeSheet
+            v-model="list[i]!"
+            @saved="(sheet) => { currentSheet = sheet.value; CameraConfigModal = true }"
+          />
+        </div>
       </UPageGrid>
+      <CameraConfig v-model:open="CameraConfigModal" v-model="currentSheet" />
     </template>
   </UDashboardPanel>
 </template>
@@ -25,13 +27,15 @@
 import { reactive } from 'vue'
 import { useTubeSheets } from '~/stores/tubesheets'
 import type { TubeSheet } from '~/types'
+import { CalendarDate } from '@internationalized/date'
 
+const CameraConfigModal = ref(true)
 const { list, getAllSheet } = useTubeSheets()
 await getAllSheet()
 const newSheet = reactive<Partial<TubeSheet>>({
-  name: '',
-  type: 'REACTOR',
-  siteName: ''
-
+  date: new CalendarDate(new Date().getFullYear(), new Date().getMonth() + 1, new Date().getDate()),
+  clientName: '',
+  projectStartDate: new CalendarDate(new Date().getFullYear(), new Date().getMonth() + 1, new Date().getDate())
 })
+const currentSheet = ref<Partial<TubeSheet>>({})
 </script>

@@ -7,34 +7,34 @@
     <template #body>
       <UForm :state="localState" class="grid grid-cols-1 gap-2">
         <UFieldGroup class="grid grid-cols-2  w-full">
-          <UBadge variant="ghost" class="text-xl">
+          <div variant="outline" class="text-xl">
             Date
-          </UBadge>
+          </div>
           <UInputDate v-model="localState.date" class="rounded-l-none" />
         </UFieldGroup>
         <UFieldGroup class="grid grid-cols-2  w-full">
-          <UBadge variant="ghost" class="text-xl">
+          <div variant="outline" class="text-xl">
             Project Start Date
-          </UBadge>
+          </div>
           <UInputDate v-model="localState.projectStartDate" class="rounded-l-none" />
         </UFieldGroup>
 
         <UFieldGroup class="grid grid-cols-2  w-full">
-          <UBadge variant="ghost" class="text-xl">
+          <div variant="outline" class="text-xl">
             Equipment ID
-          </UBadge>
+          </div>
           <UInput v-model="localState.equipmentId" />
         </UFieldGroup>
         <UFieldGroup class="grid grid-cols-2  w-full">
-          <UBadge variant="ghost" class="text-xl">
+          <div variant="outline" class="text-xl">
             Equipment Name
-          </UBadge>
+          </div>
           <USelect v-model="localState.equipmentName" :items="tubeSheetTypeItems" />
         </UFieldGroup>
         <UFieldGroup class="grid grid-cols-2  w-full">
-          <UBadge variant="ghost" class="text-xl">
+          <div variant="outline" class="text-xl">
             Type of Phases
-          </UBadge>
+          </div>
           <USelect
             v-model="localState.typeOfPhases"
             :items="typeOfPhases"
@@ -44,57 +44,34 @@
           />
         </UFieldGroup>
         <UFieldGroup class="grid grid-cols-2  w-full">
-          <UBadge variant="ghost" class="text-xl">
+          <div variant="outline" class="text-xl">
             Client Name
-          </UBadge>
+          </div>
           <UInput v-model="localState.clientName" />
         </UFieldGroup>
         <UFieldGroup class="grid grid-cols-2  w-full place-items-start">
-          <UBadge variant="ghost" class="text-xl">
+          <div variant="outline" class="text-xl">
             Client Address
-          </UBadge>
+          </div>
           <UTextarea v-model="localState.clientAddress" class="w-full" />
         </UFieldGroup>
         <UFieldGroup class="grid grid-cols-2  w-full">
-          <UBadge variant="ghost" class="text-xl">
+          <div variant="outline" class="text-xl">
             Material
-          </UBadge>
+          </div>
           <UInput v-model="localState.material" />
         </UFieldGroup>
         <UFieldGroup class="grid grid-cols-2  w-full">
-          <UBadge variant="ghost" class="text-xl">
+          <div variant="outline" class="text-xl">
             Total No Of Tubes
-          </UBadge>
+          </div>
           <UInput v-model="localState.totalNoOfTubes" />
         </UFieldGroup>
-        <UDivider />
-        <UFieldGroup class="grid grid-cols-2  w-full">
-          <UBadge variant="ghost" class="text-xl">
-            Number of Cameras
-          </UBadge>
-          <UInputNumber v-model="localState.numberOfCameras" />
-        </UFieldGroup>
-        <div v-if="localState.cameras && localState.cameras.length">
-          <div v-for="(camera, index) in localState.cameras" :key="index" class="flex items-center gap-2">
-            <UFieldGroup
-              class="grid grid-cols-2  w-full my-1"
-            >
-              <UBadge
-                variant="
-              ghost"
-                class="text-xl"
-              >
-                Camera {{ index + 1 }}
-              </UBadge>
-              <USelect v-model="localState.cameras[index]" :items="cameraItems" />
-            </UFieldGroup>
-          </div>
-        </div>
       </UForm>
     </template>
     <template #footer>
       <div class="flex justify-end gap-4 w-full">
-        <UButton label="Reset" variant="ghost" @click="open = false" />
+        <UButton label="Reset" variant="outline" @click="open = false" />
         <UButton
           :label="isEditing ? 'Save' : 'Save'"
           color="primary"
@@ -131,9 +108,9 @@
       <h3 class="font-semibold text-neutral-900 dark:text-neutral-100 truncate">
         {{ localState.clientName }}
       </h3>
-      <UBadge :color="statusColor(localState.status)" variant="soft">
+      <div :color="statusColor(localState.status)" variant="soft">
         {{ getLabel(localState.status) }}
-      </UBadge>
+      </div>
     </div>
 
     <!-- Info -->
@@ -191,8 +168,9 @@ import type { TubeSheet } from '@/types'
 import { USelect } from '#components'
 
 const props = defineProps<{ modelValue: Partial<TubeSheet>, addNew?: boolean }>()
-const emit = defineEmits(['update:modelValue'])
+const emit = defineEmits(['update:modelValue', 'saved'])
 const open = ref(false)
+
 const store = useTubeSheets()
 
 const tubeSheetTypeItems = [
@@ -202,14 +180,6 @@ const tubeSheetTypeItems = [
   { label: 'Glycol', value: 'GLYCOL_REACTOR' },
   { label: 'Aerylic Reactor', value: 'AERYLIC_REACTOR' },
   { label: 'Gas Cooler', value: 'GAS_COOLER' }
-]
-
-const cameraItems = [
-  { label: 'Camera A', value: 'Camera A' },
-  { label: 'Camera B', value: 'Camera B' },
-  { label: 'Camera C', value: 'Camera C' },
-  { label: 'Camera D', value: 'Camera D' },
-  { label: 'Camera E', value: 'Camera E' }
 ]
 
 const typeOfPhases = [
@@ -262,6 +232,7 @@ const handleSubmit = () => {
   } catch (err) {
     console.error('Toast error:', err)
   }
+  emit('saved', localState)
 }
 
 /* ✅ Dynamic color mapping */
