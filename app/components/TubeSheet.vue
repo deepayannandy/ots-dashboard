@@ -72,8 +72,24 @@
           <UBadge variant="ghost" class="text-xl">
             Number of Cameras
           </UBadge>
-          <UInput v-model="localState.numberOfCameras" />
+          <UInputNumber v-model="localState.numberOfCameras" />
         </UFieldGroup>
+        <div v-if="localState.cameras && localState.cameras.length">
+          <div v-for="(camera, index) in localState.cameras" :key="index" class="flex items-center gap-2">
+            <UFieldGroup
+              class="grid grid-cols-2  w-full my-1"
+            >
+              <UBadge
+                variant="
+              ghost"
+                class="text-xl"
+              >
+                Camera {{ index + 1 }}
+              </UBadge>
+              <USelect v-model="localState.cameras[index]" :items="cameraItems" />
+            </UFieldGroup>
+          </div>
+        </div>
       </UForm>
     </template>
     <template #footer>
@@ -188,6 +204,14 @@ const tubeSheetTypeItems = [
   { label: 'Gas Cooler', value: 'GAS_COOLER' }
 ]
 
+const cameraItems = [
+  { label: 'Camera A', value: 'Camera A' },
+  { label: 'Camera B', value: 'Camera B' },
+  { label: 'Camera C', value: 'Camera C' },
+  { label: 'Camera D', value: 'Camera D' },
+  { label: 'Camera E', value: 'Camera E' }
+]
+
 const typeOfPhases = [
   { label: 'Initial tube sheet inspection top and bottom. Front and back', value: 'INITIAL_TUBE_SHEET_INSPECTION' },
   { label: 'High pressure cleaning- water and nozzle entry detection', value: 'HIGH_PRESSURE_CLEANING' },
@@ -208,6 +232,15 @@ const typeOfPhases = [
 
 const localState = reactive<Partial<TubeSheet>>({ ...props.modelValue })
 watch(() => props.modelValue, v => Object.assign(localState, v), { deep: true })
+
+watch(() => localState.numberOfCameras, (newVal) => {
+  const num = Number(newVal) || 0
+  if (!localState.cameras) localState.cameras = []
+  localState.cameras = localState.cameras.slice(0, num)
+  while (localState.cameras.length < num) {
+    localState.cameras.push(`Camera ${localState.cameras.length + 1}`)
+  }
+})
 
 const isEditing = computed(() => !!props.modelValue._id)
 
