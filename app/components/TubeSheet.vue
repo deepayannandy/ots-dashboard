@@ -2,34 +2,85 @@
   <!-- Modal -->
   <UModal
     v-model:open="open"
-    :title="isEditing ? 'Edit Tube Sheet' : 'Create Tube Sheet'"
     :description="`Status: ${getLabel(localState.status)}`"
   >
     <template #body>
-      <UForm :state="localState" class="grid grid-cols-2 gap-2">
-        <UFormField label="Name" name="name">
-          <UInput v-model="localState.name" placeholder="Enter sheet name" class="w-full" />
-        </UFormField>
+      <UForm :state="localState" class="grid grid-cols-1 gap-2">
+        <UFieldGroup class="grid grid-cols-2  w-full">
+          <UBadge variant="ghost" class="text-xl">
+            Date
+          </UBadge>
+          <UInputDate v-model="localState.date" class="rounded-l-none" />
+        </UFieldGroup>
+        <UFieldGroup class="grid grid-cols-2  w-full">
+          <UBadge variant="ghost" class="text-xl">
+            Project Start Date
+          </UBadge>
+          <UInputDate v-model="localState.projectStartDate" class="rounded-l-none" />
+        </UFieldGroup>
 
-        <UFormField label="Site Name" name="siteName">
-          <UInput v-model="localState.siteName" placeholder="Enter site name" class="w-full" />
-        </UFormField>
-
-        <UFormField label="Type" name="type">
-          <USelectMenu
-            v-model="localState.type"
-            value-key="value"
-            :items="tubeSheetTypeItems"
+        <UFieldGroup class="grid grid-cols-2  w-full">
+          <UBadge variant="ghost" class="text-xl">
+            Equipment ID
+          </UBadge>
+          <UInput v-model="localState.equipmentId" />
+        </UFieldGroup>
+        <UFieldGroup class="grid grid-cols-2  w-full">
+          <UBadge variant="ghost" class="text-xl">
+            Equipment Name
+          </UBadge>
+          <USelect v-model="localState.equipmentName" :items="tubeSheetTypeItems" />
+        </UFieldGroup>
+        <UFieldGroup class="grid grid-cols-2  w-full">
+          <UBadge variant="ghost" class="text-xl">
+            Type of Phases
+          </UBadge>
+          <USelect
+            v-model="localState.typeOfPhases"
+            :items="typeOfPhases"
+            multiple
+            :ui="{ content: 'min-w-fit' }"
             class="w-full"
           />
-        </UFormField>
+        </UFieldGroup>
+        <UFieldGroup class="grid grid-cols-2  w-full">
+          <UBadge variant="ghost" class="text-xl">
+            Client Name
+          </UBadge>
+          <UInput v-model="localState.clientName" />
+        </UFieldGroup>
+        <UFieldGroup class="grid grid-cols-2  w-full place-items-start">
+          <UBadge variant="ghost" class="text-xl">
+            Client Address
+          </UBadge>
+          <UTextarea v-model="localState.clientAddress" class="w-full" />
+        </UFieldGroup>
+        <UFieldGroup class="grid grid-cols-2  w-full">
+          <UBadge variant="ghost" class="text-xl">
+            Material
+          </UBadge>
+          <UInput v-model="localState.material" />
+        </UFieldGroup>
+        <UFieldGroup class="grid grid-cols-2  w-full">
+          <UBadge variant="ghost" class="text-xl">
+            Total No Of Tubes
+          </UBadge>
+          <UInput v-model="localState.totalNoOfTubes" />
+        </UFieldGroup>
+        <UDivider />
+        <UFieldGroup class="grid grid-cols-2  w-full">
+          <UBadge variant="ghost" class="text-xl">
+            Number of Cameras
+          </UBadge>
+          <UInput v-model="localState.numberOfCameras" />
+        </UFieldGroup>
       </UForm>
     </template>
     <template #footer>
       <div class="flex justify-end gap-4 w-full">
-        <UButton label="Cancel" variant="ghost" @click="open = false" />
+        <UButton label="Reset" variant="ghost" @click="open = false" />
         <UButton
-          :label="isEditing ? 'Save' : 'Add Tubesheet'"
+          :label="isEditing ? 'Save' : 'Save'"
           color="primary"
           @click="handleSubmit"
         />
@@ -62,7 +113,7 @@
     <!-- Header -->
     <div class="flex items-center justify-between">
       <h3 class="font-semibold text-neutral-900 dark:text-neutral-100 truncate">
-        {{ localState.name }}
+        {{ localState.clientName }}
       </h3>
       <UBadge :color="statusColor(localState.status)" variant="soft">
         {{ getLabel(localState.status) }}
@@ -71,7 +122,7 @@
 
     <!-- Info -->
     <div class="space-y-1 text-xs text-neutral-600 dark:text-neutral-400">
-      <p><span class="font-medium">Site:</span> {{ localState.siteName }}</p>
+      <p><span class="font-medium">Site:</span> {{ localState.clientAddress }}</p>
       <p><span class="font-medium">Type:</span> {{ readableType(localState.type) }}</p>
       <p class="text-[11px] opacity-70">
         Created: {{ formatDate(localState.createdAt) }}<br>
@@ -121,6 +172,7 @@
 import { ref, reactive, watch, computed } from 'vue'
 import { useTubeSheets } from '@/stores/tubesheets'
 import type { TubeSheet } from '@/types'
+import { USelect } from '#components'
 
 const props = defineProps<{ modelValue: Partial<TubeSheet>, addNew?: boolean }>()
 const emit = defineEmits(['update:modelValue'])
@@ -129,7 +181,29 @@ const store = useTubeSheets()
 
 const tubeSheetTypeItems = [
   { label: 'Heat Exchanger', value: 'HEAT_EXCHANGER' },
-  { label: 'Reactor', value: 'REACTOR' }
+  { label: 'Boiler', value: 'BOILER' },
+  { label: 'EOEG Reactor', value: 'EOEG_REACTOR' },
+  { label: 'Glycol', value: 'GLYCOL_REACTOR' },
+  { label: 'Aerylic Reactor', value: 'AERYLIC_REACTOR' },
+  { label: 'Gas Cooler', value: 'GAS_COOLER' }
+]
+
+const typeOfPhases = [
+  { label: 'Initial tube sheet inspection top and bottom. Front and back', value: 'INITIAL_TUBE_SHEET_INSPECTION' },
+  { label: 'High pressure cleaning- water and nozzle entry detection', value: 'HIGH_PRESSURE_CLEANING' },
+  { label: 'Eddy current or RFT probe detection', value: 'EDDY_CURRENT_OR_RFT_PROBE_DETECTION' },
+  { label: 'Boroscope inspection', value: 'BOROSCOPE_INSPECTION' },
+  { label: 'Unloading of the catalyst', value: 'UNLOADING_OF_CATALYST' },
+  { label: 'Foam swab cleaning and detection.', value: 'FOAM_SWAB_CLEANING_AND_DETECTION' },
+  { label: 'Mechanical cleaner detection', value: 'MECHANICAL_CLEANER_DETECTION' },
+  { label: 'Sand blasting- sand', value: 'SAND_BLASTING_SAND' },
+  { label: 'Sand Blasting- sand blasting nozzle detection', value: 'SAND_BLASTING_NOZZLE_DETECTION' },
+  { label: 'Color cap tracking', value: 'COLOR_CAP_TRACKING' },
+  { label: 'Fish tape tracking', value: 'FISH_TAPE_TRACKING' },
+  { label: 'Air lancing tip tracking', value: 'AIR_LANCING_TIP_TRACKING' },
+  { label: 'Spring removal Tracking', value: 'SPRING_REMOVAL_TRACKING' },
+  { label: 'Soring insertion Tracking', value: 'SPRING_INSERTION_TRACKING' }, // corrected spelling
+  { label: 'Catalyst Outage Tracking', value: 'CATALYST_OUTAGE_TRACKING' }
 ]
 
 const localState = reactive<Partial<TubeSheet>>({ ...props.modelValue })
@@ -138,7 +212,7 @@ watch(() => props.modelValue, v => Object.assign(localState, v), { deep: true })
 const isEditing = computed(() => !!props.modelValue._id)
 
 const handleSubmit = () => {
-  if (!localState.name || !localState.siteName) return alert('Enter all fields')
+  if (!localState.clientName || !localState.clientAddress) return alert('Enter all fields')
 
   if (isEditing.value) {
     store.updateTubeSheet(localState)

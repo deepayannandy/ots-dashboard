@@ -44,13 +44,23 @@ export interface Survey {
 
 export interface TubeSheet {
   _id: string
-  name: string
+  clientName: string
   type: TubeSheetType
-  siteName: string
+  clientAddress: string
   createdAt: Date
   updatedAt: Date
   status: 'SHAPE_CREATION' | 'SHAPE_CREATED' | 'UNDER_SURVEY' | 'IDLE'
   reactorId: string
+  date: Date
+  projectStartDate: Date
+  matrial: string
+  totalNoOfTubes: number
+  equipmentId: string
+  numberOfCameras: number
+  cameras: string[]
+  equipmentName: string
+  typeOfPhases: string[]
+
 }
 
 export interface Reactor {
