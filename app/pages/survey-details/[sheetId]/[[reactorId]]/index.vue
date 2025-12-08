@@ -94,6 +94,45 @@
             <!-- Optional: show selected IDs -->
           </div>
           <!-- Backend Progress Indicator -->
+          <!-- Tubesheet Details Card -->
+          <UPageCard
+            v-if="tubeSheetDetails"
+            spotlight
+            spotlight-color="secondary"
+            class="absolute top-6 left-6 z-50 bg-white/90 dark:bg-black/90 p-4 rounded-2xl max-w-sm"
+          >
+            <div class="space-y-3">
+              <h3 class="font-bold text-lg text-neutral-900 dark:text-neutral-100">
+                {{ tubeSheetDetails.clientName }}
+              </h3>
+              <div class="space-y-2 text-xs text-neutral-600 dark:text-neutral-400">
+                <p><span class="font-medium">Equipment:</span> {{ tubeSheetDetails.equipmentName || 'N/A' }}</p>
+                <p><span class="font-medium">Equipment ID:</span> {{ tubeSheetDetails.equipmentId || 'N/A' }}</p>
+                <p><span class="font-medium">Type:</span> {{ getEquipmentTypeLabel(tubeSheetDetails.type) }}</p>
+                <p><span class="font-medium">Site:</span> {{ tubeSheetDetails.clientAddress }}</p>
+                <p><span class="font-medium">Material:</span> {{ tubeSheetDetails.material || 'N/A' }}</p>
+                <p><span class="font-medium">Total Tubes:</span> {{ tubeSheetDetails.totalNoOfTubes || 0 }}</p>
+                <p><span class="font-medium">Cameras:</span> {{ tubeSheetDetails.numberOfCameras || 0 }}</p>
+                <p><span class="font-medium">Phases:</span> {{ getPhaseLabels(tubeSheetDetails.typeOfPhases) }}</p>
+                <p>
+                  <span class="font-medium">Status:</span>
+                  <span
+                    class="inline-block px-2 py-0.5 rounded-full text-xs font-medium"
+                    :class="{
+                      'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300': tubeSheetDetails.status === 'TUBE_SHEET_CREATED',
+                      'bg-secondary-100 text-secondary-700 dark:bg-secondary-900/30 dark:text-secondary-300': tubeSheetDetails.status === 'CAMERA_CONFIGURED',
+                      'bg-success-100 text-success-700 dark:bg-success-900/30 dark:text-success-300': tubeSheetDetails.status === 'REACTOR_CREATED',
+                      'bg-info-100 text-info-700 dark:bg-info-900/30 dark:text-info-300': tubeSheetDetails.status === 'CAMERA_CALIBRATED',
+                      'bg-warning-100 text-warning-700 dark:bg-warning-900/30 dark:text-warning-300': tubeSheetDetails.status === 'UNDER_SURVEY'
+                    }"
+                  >
+                    {{ tubeSheetDetails.status?.replace(/_/g, ' ') || 'N/A' }}
+                  </span>
+                </p>
+              </div>
+            </div>
+          </UPageCard>
+
           <!-- Backend Tube Progress Widget -->
           <UPageCard spotlight spotlight-color="primary" class="absolute top-6 right-6 z-50 flex flex-col items-center gap-2 bg-white/90 dark:bg-black/90 p-4 rounded-2xl ">
             <svg
@@ -217,6 +256,51 @@ const { setConfig } = useReactorGenerator()
 
 const reactorId = useRoute().params?.reactorId as string
 const sheetId = useRoute().params?.sheetId as string
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const tubeSheetDetails = ref<any>(null)
+
+// Equipment type mapping from TubeSheet.vue
+const tubeSheetTypeItems = [
+  { label: 'Heat Exchanger', value: 'HEAT_EXCHANGER' },
+  { label: 'Boiler', value: 'BOILER' },
+  { label: 'EOEG Reactor', value: 'EOEG_REACTOR' },
+  { label: 'Glycol', value: 'GLYCOL_REACTOR' },
+  { label: 'Aerylic Reactor', value: 'AERYLIC_REACTOR' },
+  { label: 'Gas Cooler', value: 'GAS_COOLER' }
+]
+
+// Type of phases mapping from TubeSheet.vue
+const typeOfPhasesItems = [
+  { label: 'Initial tube sheet inspection top and bottom. Front and back', value: 'INITIAL_TUBE_SHEET_INSPECTION' },
+  { label: 'High pressure cleaning- water and nozzle entry detection', value: 'HIGH_PRESSURE_CLEANING' },
+  { label: 'Eddy current or RFT probe detection', value: 'EDDY_CURRENT_OR_RFT_PROBE_DETECTION' },
+  { label: 'Boroscope inspection', value: 'BOROSCOPE_INSPECTION' },
+  { label: 'Unloading of the catalyst', value: 'UNLOADING_OF_CATALYST' },
+  { label: 'Foam swab cleaning and detection.', value: 'FOAM_SWAB_CLEANING_AND_DETECTION' },
+  { label: 'Mechanical cleaner detection', value: 'MECHANICAL_CLEANER_DETECTION' },
+  { label: 'Sand blasting- sand', value: 'SAND_BLASTING_SAND' },
+  { label: 'Sand Blasting- sand blasting nozzle detection', value: 'SAND_BLASTING_NOZZLE_DETECTION' },
+  { label: 'Color cap tracking', value: 'COLOR_CAP_TRACKING' },
+  { label: 'Fish tape tracking', value: 'FISH_TAPE_TRACKING' },
+  { label: 'Air lancing tip tracking', value: 'AIR_LANCING_TIP_TRACKING' },
+  { label: 'Spring removal Tracking', value: 'SPRING_REMOVAL_TRACKING' },
+  { label: 'Soring insertion Tracking', value: 'SPRING_INSERTION_TRACKING' },
+  { label: 'Catalyst Outage Tracking', value: 'CATALYST_OUTAGE_TRACKING' }
+]
+
+const getEquipmentTypeLabel = (value: string) => {
+  const item = tubeSheetTypeItems.find(t => t.value === value)
+  return item ? item.label : value
+}
+
+const getPhaseLabels = (phases: string[]) => {
+  if (!phases || phases.length === 0) return 'N/A'
+  return phases.map((phase) => {
+    const item = typeOfPhasesItems.find(p => p.value === phase)
+    return item ? item.label : phase
+  }).join(', ')
+}
 
 const settingsInput = reactive({
 
@@ -490,6 +574,16 @@ function resetView() {
 
 // Load reactor data on mount
 onMounted(async () => {
+  // Fetch tubesheet details
+  if (sheetId) {
+    try {
+      const { data } = await useAxios().$get(`/api/v2/tubeSheet/getSpecificTubeSheet/${sheetId}`)
+      tubeSheetDetails.value = data
+    } catch (err) {
+      console.error('Failed to fetch tubesheet details:', err)
+    }
+  }
+
   if (reactorId) {
     const reactor = await reactorsStore.getAReactor(reactorId)
     if (reactor) {

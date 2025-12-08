@@ -33,6 +33,7 @@ export interface Tube {
   property?: string | null
   propertyColor?: string | null
   comment?: string | null
+  _backendUpdated?: boolean
 }
 
 export interface Survey {
