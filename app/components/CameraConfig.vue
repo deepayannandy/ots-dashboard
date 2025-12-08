@@ -1,6 +1,6 @@
 <template>
   <!-- Camera Configuration Modal -->
-  <UModal v-model:open="localState.open" description="Configure Cameras">
+  <UModal v-model:open="localState.open" description="Configure Cameras" @update:open="emit('update:open', $event)">
     <template #body>
       <UFieldGroup class="grid grid-cols-2  w-full my-1">
         <div variant="outline" class="text-xl">
@@ -17,12 +17,12 @@
         </div>
       </UFieldGroup>
       <div v-if="localState.cameras && localState.cameras.length">
-        <div v-for="(camera, index) in localState.cameras" :key="index" class="flex items-center gap-2">
+        <div v-for="(cameraId, index) in localState.cameras" :key="index" class="flex items-center gap-2">
           <UFieldGroup class="grid grid-cols-2 w-full my-1">
             <div variant="outline" class="text-xl">
               Camera {{ index + 1 }}
             </div>
-            <USelect v-model="localState.cameras[index]" :items="cameraItems" />
+            <USelect v-model="localState.cameras[index]" :items="cameraItems" placeholder="Select Camera" />
           </UFieldGroup>
         </div>
       </div>
@@ -36,52 +36,81 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, watch, computed } from 'vue'
+import { reactive, watch, computed, ref } from 'vue'
 import { useTubeSheets } from '@/stores/tubesheets'
 import type { TubeSheet } from '@/types'
-import { USelect } from '#components'
+
+interface Camera {
+  _id: string
+  name: string
+  macId: string
+  ipAddress: string
+  isOccupied: boolean
+}
 
 const props = defineProps<{ modelValue: Partial<TubeSheet>, addNew?: boolean, open: boolean }>()
 const emit = defineEmits(['update:modelValue', 'update:open'])
 const store = useTubeSheets()
 
-const cameraItems = [
-  { label: 'Camera A', value: 'Camera A' },
-  { label: 'Camera B', value: 'Camera B' },
-  { label: 'Camera C', value: 'Camera C' },
-  { label: 'Camera D', value: 'Camera D' },
-  { label: 'Camera E', value: 'Camera E' }
-]
+const availableCameras = ref<Camera[]>([])
+const cameraItems = computed(() =>
+  availableCameras.value.map(cam => ({
+    label: `${cam.name} (${cam.ipAddress})`,
+    value: cam._id
+  }))
+)
 
 const localState = reactive<Partial<TubeSheet> & { open: boolean }>({ ...props.modelValue, open: props.open })
 watch(() => props.modelValue, v => Object.assign(localState, v), { deep: true })
+watch(() => props.open, v => localState.open = v)
+
+// Fetch available cameras when modal opens
+watch(() => localState.open, async (isOpen) => {
+  if (isOpen) {
+    try {
+      const { data } = await useAxios().$get('/api/v2/camera/getAvailableCameras')
+      availableCameras.value = data
+    } catch (err) {
+      console.error('Failed to fetch cameras:', err)
+      useToast().add({ title: 'Failed to load cameras', color: 'error' })
+    }
+  }
+})
 
 watch(() => localState.numberOfCameras, (newVal) => {
   const num = Number(newVal) || 0
   if (!localState.cameras) localState.cameras = []
   localState.cameras = localState.cameras.slice(0, num)
   while (localState.cameras.length < num) {
-    localState.cameras.push(`Camera ${localState.cameras.length + 1}`)
+    // Keep existing camera IDs, add empty strings for new cameras
+    localState.cameras.push('')
   }
 })
 
-const isEditing = computed(() => !!props.modelValue._id)
-
-const handleSubmit = () => {
-  if (isEditing.value) {
-    store.updateTubeSheet(localState)
-  } else {
-    store.addTubeSheet({
-      ...localState
-    })
-  }
-
-  emit('update:modelValue', localState)
-  emit('update:open', false)
+const handleSubmit = async () => {
   try {
-    useToast().add({ title: 'Saved!', color: 'primary' })
+    if (!localState._id) {
+      useToast().add({ title: 'Error: No tubesheet ID', color: 'error' })
+      return
+    }
+
+    const payload = {
+      numberOfCameras: localState.numberOfCameras,
+      cameras: localState.cameras
+    }
+
+    await useAxios().$patch(`/api/v2/tubeSheet/addCameraDetails/${localState._id}`, payload)
+
+    // Refresh tubesheet data
+    await store.getAllSheet()
+
+    emit('update:modelValue', localState)
+    emit('update:open', false)
+
+    useToast().add({ title: 'Camera configuration saved!', color: 'success' })
   } catch (err) {
-    console.error('Toast error:', err)
+    console.error('Camera config error:', err)
+    useToast().add({ title: 'Failed to save camera configuration', color: 'error' })
   }
 }
 </script>

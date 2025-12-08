@@ -21,7 +21,7 @@ export const useReactorsStore = defineStore('reactors', () => {
         navigateTo('/')
       } else {
         const { id } = await api.$post(`/api/v2/reactor/createReactor`, reactor)
-        useTubeSheets().updateTubeSheet({ _id: reactor.sheetId, status: 'SHAPE_CREATED', reactorId: id })
+        useTubeSheets().updateTubeSheet({ _id: reactor.sheetId, status: 'REACTOR_CREATED', reactorId: id })
         navigateTo('/')
       }
     } catch (e) {

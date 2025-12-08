@@ -29,9 +29,17 @@ export const useTubeSheets = defineStore('tubesheets', {
           new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
         )
 
+        // Convert date strings to Date objects
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const processedData = sorted.map((sheet: any) => ({
+          ...sheet,
+          date: sheet.date ? new Date(sheet.date) : undefined,
+          projectStartDate: sheet.projectStartDate ? new Date(sheet.projectStartDate) : undefined
+        }))
+
         // mutate instead of replacing
         this.list.length = 0
-        this.list.push(...sorted)
+        this.list.push(...processedData)
 
         return this.list
       } catch (e) {
@@ -41,7 +49,7 @@ export const useTubeSheets = defineStore('tubesheets', {
 
     async updateTubeSheet(sheet: Partial<TubeSheet>) {
       try {
-        await useAxios().$patch(`/api/v2/tubeSheet/patchTubeSheet/${sheet._id}`, { ...sheet })
+        await useAxios().$patch(`/api/v2/tubeSheet/patchTubeSheetDetails/${sheet._id}`, sheet)
         await this.getAllSheet()
         return this.list.find(s => s._id === sheet._id)
       } catch (e) {

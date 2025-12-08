@@ -1,5 +1,4 @@
 import type { CreateAxiosDefaults } from 'axios'
-import type CalendarDate from '@internationalized/date'
 
 export type LatticeType = 'triangular' | 'square'
 export type propertiesTypes = {
@@ -48,10 +47,10 @@ export interface TubeSheet {
   clientAddress: string
   createdAt: Date
   updatedAt: Date
-  status: 'SHAPE_CREATION' | 'SHAPE_CREATED' | 'UNDER_SURVEY' | 'IDLE'
+  status: 'TUBE_SHEET_CREATED' | 'CAMERA_CONFIGURED' | 'REACTOR_CREATED' | 'CAMERA_CALIBRATED' | 'IDLE' | 'UNDER_SURVEY'
   reactorId: string
-  date: CalendarDate
-  projectStartDate: CalendarDate
+  date: Date
+  projectStartDate: Date
   material: string
   totalNoOfTubes: number
   equipmentId: string
