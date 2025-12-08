@@ -33,9 +33,8 @@ export interface Tube {
   property?: string | null
   propertyColor?: string | null
   comment?: string | null
+  _backendUpdated?: boolean
 }
-
-export type TubeSheetType = 'HEAT_EXCHANGER' | 'REACTOR'
 
 export interface Survey {
   id: string
@@ -44,13 +43,23 @@ export interface Survey {
 
 export interface TubeSheet {
   _id: string
-  name: string
-  type: TubeSheetType
-  siteName: string
+  clientName: string
+  type: string
+  clientAddress: string
   createdAt: Date
   updatedAt: Date
-  status: 'SHAPE_CREATION' | 'SHAPE_CREATED' | 'UNDER_SURVEY' | 'IDLE'
+  status: 'TUBE_SHEET_CREATED' | 'CAMERA_CONFIGURED' | 'REACTOR_CREATED' | 'CAMERA_CALIBRATED' | 'IDLE' | 'UNDER_SURVEY'
   reactorId: string
+  date: Date
+  projectStartDate: Date
+  material: string
+  totalNoOfTubes: number
+  equipmentId: string
+  numberOfCameras: number
+  cameras: string[]
+  equipmentName: string
+  typeOfPhases: string[]
+
 }
 
 export interface Reactor {

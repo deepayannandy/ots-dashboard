@@ -88,7 +88,7 @@
     <template #body>
       <UPage class="flex">
         <UPageBody
-          class="relative  select-none bg-[linear-gradient(to_right,#e5e7eb_.5px,transparent_.5px),linear-gradient(to_bottom,#e5e7eb_.5px,transparent_.5px)] bg-[size:20px_20px] dark:bg-[linear-gradient(to_right,#2d2d2d_.5px,transparent_.5px),linear-gradient(to_bottom,#2d2d2d_.5px,transparent_.5px)] dark:bg-[size:20px_20px] dark:bg-neutral-950 bg-white !p-0 !mt-0 h-full w-full"
+          :class="bodyClass"
         >
           <!--  @click="deselectAll"
             @contextmenu.prevent -->
@@ -102,6 +102,7 @@
               :style="
                 viewDisplay==='Back View'? 'transform: scale(-1,1); transform-origin:center; transform-box:fill-box;'
                 : ''"
+              :class="viewDisplay==='Back View' ? 'invert' : ''"
             >
               >
               <g id="viewport" :transform="transformStr" />
@@ -271,6 +272,24 @@ const searchValue = ref<string[]>([])
 const searchRow = ref<string>('R1')
 const items = ref(['Front View', 'Back View'])
 const viewDisplay = ref('Front View')
+
+// Computed class for body background based on view
+const bodyClass = computed(() => {
+  const base = 'relative select-none !p-0 !mt-0 h-full w-full '
+  const gridLight = 'bg-[linear-gradient(to_right,#e5e7eb_.5px,transparent_.5px),linear-gradient(to_bottom,#e5e7eb_.5px,transparent_.5px)] bg-[size:20px_20px]'
+  const gridDark = 'dark:bg-[linear-gradient(to_right,#2d2d2d_.5px,transparent_.5px),linear-gradient(to_bottom,#2d2d2d_.5px,transparent_.5px)] dark:bg-[size:20px_20px]'
+  const bgLight = 'bg-white'
+  const bgDark = 'dark:bg-neutral-950'
+
+  if (viewDisplay.value === 'Back View') {
+    // For back view, use a reddish grid to differentiate
+    const gridLightBack = 'bg-[linear-gradient(to_right,#ffcccc_.5px,transparent_.5px),linear-gradient(to_bottom,#ffcccc_.5px,transparent_.5px)] bg-[size:20px_20px]'
+    const gridDarkBack = 'dark:bg-[linear-gradient(to_right,#4d0000_.5px,transparent_.5px),linear-gradient(to_bottom,#4d0000_.5px,transparent_.5px)] dark:bg-[size:20px_20px]'
+    return `${base} ${gridLightBack} ${gridDarkBack} ${bgLight} ${bgDark}`
+  } else {
+    return `${base} ${gridLight} ${gridDark} ${bgLight} ${bgDark}`
+  }
+})
 
 // Cache DOM elements for fast access
 const elById = new Map<string, SVGCircleElement>()
