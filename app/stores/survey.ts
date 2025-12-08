@@ -13,7 +13,6 @@ export const useSurveyStore = defineStore('survey', () => {
     const api = useAxios()
     try {
       const data = await api.$post(`api/v2/survey/createSurveyReactor`, survey)
-      await api.$patch(`api/v2/survey/resetAll`)
       currentSurveyId.value = data.id
       await getSurveyUpdates()
       return data

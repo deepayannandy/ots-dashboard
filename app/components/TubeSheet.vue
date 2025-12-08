@@ -169,6 +169,18 @@
       :color="statusColor(localState.status)"
       variant="outline"
       class="mt-auto"
+      :disabled="isActionDisabled(localState.status)"
+      @click.stop="handleNextStep(localState.status, localState._id, localState.reactorId)"
+    />
+    <UButton
+      v-if="localState.status==='REACTOR_CREATED'"
+      block
+      size="xs"
+      label="Calibrate Camera"
+      color="neutral"
+      variant="outline"
+      class="mt-auto"
+      :disabled="true"
       @click.stop="handleNextStep(localState.status, localState._id, localState.reactorId)"
     />
 
@@ -242,32 +254,38 @@ const stateFlow = {
   TUBE_SHEET_CREATED: {
     description: 'Tube sheet created',
     next: 'CAMERA_CONFIGURED',
-    action: 'Configure Cameras'
+    action: 'Configure Cameras',
+    disabled: false
   },
   CAMERA_CONFIGURED: {
     description: 'Camera configured',
     next: 'REACTOR_CREATED',
-    action: 'Create Reactor'
+    action: 'Create Reactor',
+    disabled: false
   },
   REACTOR_CREATED: {
     description: 'Reactor created',
     next: 'CAMERA_CALIBRATED',
-    action: 'Calibrate Camera'
+    action: 'Start Survey',
+    disabled: false
   },
   CAMERA_CALIBRATED: {
     description: 'Camera calibrated',
-    next: 'IDLE',
-    action: 'Start Survey'
+    next: 'UNDER_SURVEY',
+    action: 'Start Survey',
+    disabled: true
   },
   IDLE: {
     description: 'System idle',
     next: 'UNDER_SURVEY',
-    action: 'Continue Survey'
+    action: 'Continue Survey',
+    disabled: false
   },
   UNDER_SURVEY: {
     description: 'System performing a survey',
     next: null,
-    action: 'View Survey'
+    action: 'View Survey',
+    disabled: false
   }
 }
 
@@ -397,6 +415,14 @@ const getActionLabel = (status?: string) => {
     return stateFlow[status as keyof typeof stateFlow].action
   }
   return 'Open'
+}
+
+/* ✅ Check if action is disabled */
+const isActionDisabled = (status?: string) => {
+  if (status && stateFlow[status as keyof typeof stateFlow]) {
+    return stateFlow[status as keyof typeof stateFlow].disabled || false
+  }
+  return false
 }
 
 /* ✅ Dynamic progress value */
