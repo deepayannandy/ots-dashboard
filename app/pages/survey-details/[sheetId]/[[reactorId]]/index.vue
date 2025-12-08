@@ -52,11 +52,18 @@
 
       <UDashboardToolbar>
         <template #right>
+          <USelectMenu
+            v-model="selectedPhase"
+            placeholder="Select Phase"
+            :items="typeOfPhasesItems"
+            value-key="value"
+            class="min-w-64"
+          />
           <UButton
             label="Start Survey"
             color="primary"
             icon="i-lucide-target"
-            :disabled="loading"
+            :disabled="loading || !selectedPhase"
             @click="stratSurvey"
           />
         </template>
@@ -113,7 +120,16 @@
                 <p><span class="font-medium">Material:</span> {{ tubeSheetDetails.material || 'N/A' }}</p>
                 <p><span class="font-medium">Total Tubes:</span> {{ tubeSheetDetails.totalNoOfTubes || 0 }}</p>
                 <p><span class="font-medium">Cameras:</span> {{ tubeSheetDetails.numberOfCameras || 0 }}</p>
-                <p><span class="font-medium">Phases:</span> {{ getPhaseLabels(tubeSheetDetails.typeOfPhases) }}</p>
+                <div v-if="getPhaseLabels(tubeSheetDetails.typeOfPhases).length > 0">
+                  <p class="font-medium mb-1">
+                    Phases:
+                  </p>
+                  <ul class="list-disc list-inside space-y-0.5 ml-2">
+                    <li v-for="(phase, idx) in getPhaseLabels(tubeSheetDetails.typeOfPhases)" :key="idx" class="text-[11px]">
+                      {{ phase }}
+                    </li>
+                  </ul>
+                </div>
                 <p>
                   <span class="font-medium">Status:</span>
                   <span
@@ -259,6 +275,7 @@ const sheetId = useRoute().params?.sheetId as string
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const tubeSheetDetails = ref<any>(null)
+const selectedPhase = ref<string>('')
 
 // Equipment type mapping from TubeSheet.vue
 const tubeSheetTypeItems = [
@@ -270,8 +287,8 @@ const tubeSheetTypeItems = [
   { label: 'Gas Cooler', value: 'GAS_COOLER' }
 ]
 
-// Type of phases mapping from TubeSheet.vue
-const typeOfPhasesItems = [
+// Type of phases mapping from TubeSheet.vue (full list for label lookup)
+const allTypeOfPhasesItems = [
   { label: 'Initial tube sheet inspection top and bottom. Front and back', value: 'INITIAL_TUBE_SHEET_INSPECTION' },
   { label: 'High pressure cleaning- water and nozzle entry detection', value: 'HIGH_PRESSURE_CLEANING' },
   { label: 'Eddy current or RFT probe detection', value: 'EDDY_CURRENT_OR_RFT_PROBE_DETECTION' },
@@ -289,17 +306,28 @@ const typeOfPhasesItems = [
   { label: 'Catalyst Outage Tracking', value: 'CATALYST_OUTAGE_TRACKING' }
 ]
 
+// Computed property to get only phases from tubesheet details
+const typeOfPhasesItems = computed(() => {
+  if (!tubeSheetDetails.value?.typeOfPhases || tubeSheetDetails.value.typeOfPhases.length === 0) {
+    return []
+  }
+  return tubeSheetDetails.value.typeOfPhases.map((phaseValue: string) => {
+    const item = allTypeOfPhasesItems.find(p => p.value === phaseValue)
+    return item || { label: phaseValue, value: phaseValue }
+  })
+})
+
 const getEquipmentTypeLabel = (value: string) => {
   const item = tubeSheetTypeItems.find(t => t.value === value)
   return item ? item.label : value
 }
 
 const getPhaseLabels = (phases: string[]) => {
-  if (!phases || phases.length === 0) return 'N/A'
+  if (!phases || phases.length === 0) return []
   return phases.map((phase) => {
-    const item = typeOfPhasesItems.find(p => p.value === phase)
+    const item = allTypeOfPhasesItems.find(p => p.value === phase)
     return item ? item.label : phase
-  }).join(', ')
+  })
 }
 
 const settingsInput = reactive({
@@ -535,19 +563,24 @@ function renderAll() {
 }
 let interval: ReturnType<typeof setInterval> | null = null
 async function stratSurvey() {
+  if (!selectedPhase.value) {
+    useToast().add({ title: 'Please select a phase', color: 'error' })
+    return
+  }
+
   loading.value = true
   try {
     const data = await useSurveyStore().createSurvey({
       tubeSheetId: sheetId,
-      surveyType: 'SOD',
+      surveyType: selectedPhase.value,
       eactorId: reactorId
     })
     interval = setInterval(fetchUpdatedTubeColors, 5000)
     if (data.Success) {
-      useToast().add({ title: 'Survey Stated', color: 'success' })
+      useToast().add({ title: 'Survey Started', color: 'success' })
     }
   } catch {
-    // useToast().add({ title: 'Survey Stated', color: 'success' })
+    // useToast().add({ title: 'Survey Started', color: 'success' })
     loading.value = false
   }
 }

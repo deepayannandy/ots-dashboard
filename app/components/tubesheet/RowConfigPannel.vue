@@ -1,5 +1,5 @@
 <template>
-  <UPopover :dismissible="false">
+  <UPopover v-model:open="open" :dismissible="false">
     <UButton color="neutral" variant="subtle" icon="i-lucide-panel-bottom-close" />
 
     <template #content>
@@ -80,6 +80,8 @@ import {
   computeSetRowCountUpdate as computeSetRowCountUpdateModule,
   computeAddRowForIndex as computeAddRowForIndexModule
 } from '@/utils'
+
+const open = ref(true)
 
 /* ---------- Shared composable ---------- */
 const { config, tubes: currentTubes, handleUpdateTubes } = useReactorGenerator()
