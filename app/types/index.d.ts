@@ -57,7 +57,6 @@ export interface TubeSheet {
   equipmentId: string
   numberOfCameras: number
   cameras: string[]
-  equipmentName: string
   typeOfPhases: string[]
 
 }

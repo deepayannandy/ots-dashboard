@@ -37,12 +37,6 @@
         </UFieldGroup>
         <UFieldGroup class="grid grid-cols-2  w-full">
           <div variant="outline" class="text-xl">
-            Equipment Name
-          </div>
-          <UInput v-model="localState.equipmentName" />
-        </UFieldGroup>
-        <UFieldGroup class="grid grid-cols-2  w-full">
-          <div variant="outline" class="text-xl">
             Equipment Type
           </div>
           <USelect v-model="localState.type" :items="tubeSheetTypeItems" />
@@ -87,7 +81,7 @@
     </template>
     <template #footer>
       <div class="flex justify-end gap-4 w-full">
-        <UButton label="Reset" variant="outline" @click="open = false" />
+        <UButton label="Reset" variant="outline" @click="handleReset" />
         <UButton
           :label="isEditing ? 'Save' : 'Save'"
           color="primary"
@@ -131,7 +125,6 @@
 
     <!-- Info -->
     <div class="space-y-1 text-xs text-neutral-600 dark:text-neutral-400">
-      <p><span class="font-medium">Equipment:</span> {{ localState.equipmentName || 'N/A' }}</p>
       <p><span class="font-medium">Equipment ID:</span> {{ localState.equipmentId || 'N/A' }}</p>
       <p><span class="font-medium">Type:</span> {{ readableType(localState.type) }}</p>
       <p><span class="font-medium">Site:</span> {{ localState.clientAddress }}</p>
@@ -386,6 +379,20 @@ const handleSubmit = () => {
     console.error('Toast error:', err)
   }
   emit('saved', localState)
+}
+
+const handleReset = () => {
+  localState.equipmentId = ''
+  localState.type = ''
+  localState.typeOfPhases = []
+  localState.clientName = ''
+  localState.clientAddress = ''
+  localState.material = ''
+  localState.totalNoOfTubes = 0
+  localState.numberOfCameras = 0
+  localState.cameras = []
+  localState.projectStartDate = undefined
+  localState.date = new Date()
 }
 
 /* ✅ Dynamic color mapping */

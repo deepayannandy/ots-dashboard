@@ -113,7 +113,6 @@
                 {{ tubeSheetDetails.clientName }}
               </h3>
               <div class="space-y-2 text-xs text-neutral-600 dark:text-neutral-400">
-                <p><span class="font-medium">Equipment:</span> {{ tubeSheetDetails.equipmentName || 'N/A' }}</p>
                 <p><span class="font-medium">Equipment ID:</span> {{ tubeSheetDetails.equipmentId || 'N/A' }}</p>
                 <p><span class="font-medium">Type:</span> {{ getEquipmentTypeLabel(tubeSheetDetails.type) }}</p>
                 <p><span class="font-medium">Site:</span> {{ tubeSheetDetails.clientAddress }}</p>
