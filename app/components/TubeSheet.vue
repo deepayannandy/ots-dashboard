@@ -126,7 +126,7 @@
     <!-- Info -->
     <div class="space-y-1 text-xs text-neutral-600 dark:text-neutral-400">
       <p><span class="font-medium">Equipment ID:</span> {{ localState.equipmentId || 'N/A' }}</p>
-      <p><span class="font-medium">Type:</span> {{ readableType(localState.type) }}</p>
+      <p><span class="font-medium">Type:</span> {{ getEquipmentTypeLabel(localState.type as string | undefined) }}</p>
       <p><span class="font-medium">Site:</span> {{ localState.clientAddress }}</p>
       <p><span class="font-medium">Material:</span> {{ localState.material || 'N/A' }}</p>
       <p><span class="font-medium">Total Tubes:</span> {{ localState.totalNoOfTubes || 0 }}</p>
@@ -420,7 +420,11 @@ const progressValue = (status?: string) => {
 }
 
 /* ✅ Utilities */
-const readableType = (t?: string) => (t === 'REACTOR' ? 'Reactor' : 'Heat Exchanger')
+const getEquipmentTypeLabel = (value?: string) => {
+  if (!value) return 'N/A'
+  const item = tubeSheetTypeItems.find(t => t.value === value)
+  return item ? item.label : value
+}
 
 const shouldShowEditTubesheet = (status?: string) => {
   return status && ['TUBE_SHEET_CREATED', 'CAMERA_CONFIGURED', 'REACTOR_CREATED', 'CAMERA_CALIBRATED', 'IDLE', 'UNDER_SURVEY'].includes(status)
