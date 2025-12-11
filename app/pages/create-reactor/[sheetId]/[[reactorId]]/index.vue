@@ -1,7 +1,7 @@
 <template>
   <UDashboardPanel id="create-tubesheet" :ui="{ body: '!p-0' }">
     <template #header>
-      <UDashboardNavbar title="Create Reactor" :ui="{ right: 'gap-3' }">
+      <UDashboardNavbar :title="headerTitle" :ui="{ right: 'gap-3' }">
         <template #leading>
           <UDashboardSidebarCollapse />
         </template>
@@ -220,15 +220,33 @@
 
 <script setup lang="ts">
 import type { DropdownMenuItem } from '@nuxt/ui'
-import { ref, reactive, computed, watch } from 'vue'
+import { ref, reactive, computed, watch, onMounted } from 'vue'
 import type { Tube } from '@/types'
 import RowConfigPannel from '@/components/tubesheet/rowConfigPannel.vue'
 import { useReactorsStore } from '@/stores/reactors'
+import { useTubeSheets } from '@/stores/tubesheets'
+import { tubeSheetTypeItems } from '@/utils/tubesheetOptions'
 
 const { setConfig } = useReactorGenerator()
 
 const reactorId = useRoute().params?.reactorId as string
 const sheetId = useRoute().params?.sheetId as string
+
+const tubeSheetsStore = useTubeSheets()
+
+const tubeSheetDetails = computed(() =>
+  tubeSheetsStore.list.find(sheet => sheet._id === sheetId)
+)
+
+const getEquipmentTypeLabel = (value?: string) => {
+  if (!value) return 'Create Reactor'
+  const item = tubeSheetTypeItems.find(t => t.value === value)
+  return item ? item.label : value
+}
+
+const headerTitle = computed(() => {
+  return getEquipmentTypeLabel(tubeSheetDetails.value?.type as string | undefined)
+})
 
 const settingsInput = reactive({
 
@@ -582,6 +600,12 @@ function saveReactorData(autoUPdate = false) {
       color: 'success'
     })
 }
+
+onMounted(async () => {
+  if (!tubeSheetsStore.list.length) {
+    await tubeSheetsStore.getAllSheet()
+  }
+})
 
 // Load reactor data on mount
 onMounted(async () => {
