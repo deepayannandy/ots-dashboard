@@ -380,8 +380,8 @@ function updateCircleVisual(t: Tube) {
   c.setAttribute('cx', String(centerX + t.x * scalePx))
   c.setAttribute('cy', String(centerY + t.y * scalePx))
   c.setAttribute('r', String(t.r * scalePx))
-  c.setAttribute('fill', propertyColor ?? '#fff')
-  c.setAttribute('stroke', hasComment ? '#facc15' : isSelected ? '#FF0000' : '#0f172a')
+  c.setAttribute('fill', propertyColor ? propertyColor : isSelected ? '#FFA500' : '#fff')
+  c.setAttribute('stroke', hasComment ? '#facc15' : isSelected ? '#FFA500' : '#0f172a')
   c.setAttribute('stroke-width', isSelected || hasComment ? '1.5' : '0.3')
 }
 
