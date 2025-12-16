@@ -13,6 +13,14 @@ const links = [
       onSelect: () => {
         open.value = false
       }
+    },
+    {
+      label: 'Ruleboard',
+      icon: 'i-lucide-orbit',
+      to: '/ruleboard',
+      onSelect: () => {
+        open.value = false
+      }
     }
   ]
 ] satisfies NavigationMenuItem[][]

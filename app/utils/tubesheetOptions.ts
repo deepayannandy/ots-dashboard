@@ -24,3 +24,16 @@ export const typeOfPhases = [
   { label: 'Soring insertion Tracking', value: 'SPRING_INSERTION_TRACKING' },
   { label: 'Catalyst Outage Tracking', value: 'CATALYST_OUTAGE_TRACKING' }
 ]
+
+export const phaseColorPalette = [
+  { label: 'Solar Ember', value: 'Solar Ember', swatch: '#F97316' },
+  { label: 'Midnight Indigo', value: 'Midnight Indigo', swatch: '#312E81' },
+  { label: 'Fresh Mint', value: 'Fresh Mint', swatch: '#10B981' },
+  { label: 'Catalyst Cyan', value: 'Catalyst Cyan', swatch: '#06B6D4' },
+  { label: 'Signal Yellow', value: 'Signal Yellow', swatch: '#FACC15' },
+  { label: 'Plasma Pink', value: 'Plasma Pink', swatch: '#EC4899' },
+  { label: 'Carbon Black', value: 'Carbon Black', swatch: '#111827' },
+  { label: 'Arctic White', value: 'Arctic White', swatch: '#F9FAFB' },
+  { label: 'Copper Rust', value: 'Copper Rust', swatch: '#B45309' },
+  { label: 'Deep Violet', value: 'Deep Violet', swatch: '#7C3AED' }
+]
