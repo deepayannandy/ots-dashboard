@@ -176,24 +176,35 @@
         </template>
 
         <template #footer>
-          <div class="flex justify-end items-end w-full gap-3">
+          <div class="flex justify-between items-end w-full gap-3">
             <UButton
+              v-if="editingRuleId"
               type="button"
               variant="ghost"
-              color="neutral"
-              @click="closeModal"
+              color="error"
+              @click="handleDeleteRule"
             >
-              Cancel
+              Delete
             </UButton>
-            <UButton
-              type="submit"
-              form="phase-rule-form"
-              color="primary"
-              :loading="isSavingRule"
-              :disabled="!isFormValid"
-            >
-              {{ submitLabel }}
-            </UButton>
+            <div class="flex gap-3">
+              <UButton
+                type="button"
+                variant="ghost"
+                color="neutral"
+                @click="closeModal"
+              >
+                Cancel
+              </UButton>
+              <UButton
+                type="submit"
+                form="phase-rule-form"
+                color="primary"
+                :loading="isSavingRule"
+                :disabled="!isFormValid"
+              >
+                {{ submitLabel }}
+              </UButton>
+            </div>
           </div>
         </template>
       </UModal>
@@ -381,10 +392,21 @@ async function handleSaveRule() {
     closeModal()
     await fetchPhaseRules()
   } catch (error) {
-    console.error(error)
-    toast.add({ title: 'Unable to save rule', color: 'error' })
+    toast.add({ title: error as string, color: 'error' })
   } finally {
     isSavingRule.value = false
+  }
+}
+
+async function handleDeleteRule() {
+  if (!editingRuleId.value) return
+
+  try {
+    await axios.$delete(`/api/v2/phase/removePhase/${editingRuleId.value}`)
+    toast.add({ title: 'Rule deleted', color: 'success' })
+    closeModal()
+    await fetchPhaseRules()
+  } catch { // s
   }
 }
 

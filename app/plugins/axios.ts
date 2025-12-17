@@ -41,12 +41,14 @@ export default defineNuxtPlugin(() => {
       useToast().add({ title: 'Logging Out…', color: 'success' })
       logout()
     }
+    console.log({ error })
 
     useToast().add({
       title:
-        (error.response?.data as any)?.message
-        || error.message
-        || 'Something went wrong',
+(error.response?.data as any)?.error
+|| (error.response?.data as any)?.message
+|| error.message
+|| 'Something went wrong',
       color: 'error'
     })
 

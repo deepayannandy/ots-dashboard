@@ -47,7 +47,7 @@
           </div>
           <USelect
             v-model="localState.typeOfPhases"
-            :items="typeOfPhases"
+            :items="phaseItems"
             multiple
             :ui="{ content: 'min-w-fit' }"
             class="w-full"
@@ -209,6 +209,7 @@ import { useTubeSheets } from '@/stores/tubesheets'
 import type { TubeSheet } from '@/types'
 import { tubeSheetTypeItems, typeOfPhases } from '@/utils/tubesheetOptions'
 import { USelect } from '#components'
+import { usePhases } from '@/composables/usePhases'
 
 const props = defineProps<{ modelValue: Partial<TubeSheet>, addNew?: boolean }>()
 const emit = defineEmits(['update:modelValue', 'saved', 'update:openConfigCamera'])
@@ -471,4 +472,14 @@ const handleNextStep = (status?: string, sheetId?: string, reactorId?: string) =
     }
   }
 }
+
+const phases = usePhases()
+
+const phaseItems = computed(() => {
+  const labelMap = Object.fromEntries(typeOfPhases.map(item => [item.value, item.label]))
+  return phases.value.map((phase: any) => ({
+    label: labelMap[phase.phaseName] || phase.phaseName,
+    value: phase.phaseName
+  }))
+})
 </script>
