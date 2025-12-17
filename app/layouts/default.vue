@@ -21,6 +21,14 @@ const links = [
       onSelect: () => {
         open.value = false
       }
+    },
+    {
+      label: 'Assets',
+      icon: 'i-lucide-package',
+      to: '/assets',
+      onSelect: () => {
+        open.value = false
+      }
     }
   ]
 ] satisfies NavigationMenuItem[][]
