@@ -80,7 +80,7 @@
       </UDashboardToolbar>
     </template>
     <template #body>
-      <UPage class="flex">
+      <UPage class="flex gap-0" :ui="{ root: 'gap-0!' }">
         <UPageBody
           class="relative  select-none bg-[linear-gradient(to_right,#e5e7eb_.5px,transparent_.5px),linear-gradient(to_bottom,#e5e7eb_.5px,transparent_.5px)] bg-[size:20px_20px] dark:bg-[linear-gradient(to_right,#2d2d2d_.5px,transparent_.5px),linear-gradient(to_bottom,#2d2d2d_.5px,transparent_.5px)] dark:bg-[size:20px_20px] dark:bg-neutral-950 bg-white !p-0 !mt-0 h-full w-full"
         >
@@ -148,83 +148,8 @@
             </div>
           </UPageCard>
 
-          <!-- Backend Tube Progress Widget -->
-          <UPageCard spotlight spotlight-color="primary" class="absolute top-6 right-6 z-50 flex flex-col items-center gap-2 bg-white/90 dark:bg-black/90 p-4 rounded-2xl ">
-            <svg
-              width="120"
-              height="120"
-              viewBox="0 0 36 36"
-              class="drop-shadow-sm"
-            >
-
-              <!-- Background Track -->
-              <circle
-                cx="18"
-                cy="18"
-                r="16"
-                stroke="currentColor"
-                stroke-width="3"
-                fill="none"
-                class="text-gray-300 dark:text-neutral-700"
-              />
-
-              <!-- Progress Ring -->
-              <circle
-                cx="18"
-                cy="18"
-                r="16"
-                :stroke-dasharray="`${progressPercent}, 100`"
-                stroke-width="3.8"
-                fill="none"
-                stroke-linecap="round"
-                transform="rotate(-90 18 18)"
-                class="transition-all duration-700"
-                style="stroke: url(#grad)"
-              />
-
-              <!-- Gradient Definition -->
-              <defs>
-                <linearGradient
-                  id="grad"
-                  x1="1"
-                  y1="0"
-                  x2="0"
-                  y2="1"
-                >
-                  <stop offset="0%" stop-color="#10B981" /> <!-- green -->
-                  <stop offset="100%" stop-color="#2563EB" /> <!-- blue -->
-                </linearGradient>
-              </defs>
-
-              <!-- % text inside -->
-              <text
-                x="18"
-                y="20"
-                text-anchor="middle"
-                font-size="9"
-                class="fill-black dark:fill-white font-bold"
-              >
-                {{ progressPercent }}%
-              </text>
-            </svg>
-
-            <!-- Tube count -->
-            <div class="text-sm font-semibold text-center text-neutral-700 dark:text-neutral-200">
-              <span class="text-green-600 dark:text-green-400">{{ backendUpdatedCount }}</span>
-              /
-              <span class="text-neutral-600 dark:text-neutral-400">{{ totalCount }}</span>
-            </div>
-            <div class="flex items-center gap-2 bg-white dark:bg-black shadow px-3 py-2 rounded-md text-xs font-medium">
-              <span>Progress:</span>
-              <span class="text-green-600">
-                {{ backendUpdatedCount }} ✅
-              </span>
-              <span>/ {{ totalCount }}</span>
-            </div>
-          </UPageCard>
-
-          <div class="sticky  sm:bottom-0 flex justify-between">
-            <div class="flex flex-col items-center gap-2 z-50 bg-white dark:bg-black shadow p-2 rounded w-fit">
+          <div class="fixed bottom-4 left-4 right-4 flex justify-between items-end pointer-events-none">
+            <div class="flex flex-col items-center gap-2 z-50 bg-white dark:bg-black shadow-lg p-2 rounded-lg w-fit pointer-events-auto">
               <ZoomControls
                 @zoom-in="zoomIn"
                 @zoom-out="zoomOut"
@@ -235,14 +160,71 @@
                 Zoom: {{ scale.toFixed(2) }}
               </p>
             </div>
-            <div
-              v-if="selectedIds.size"
-              class=" flex flex-col items-center gap-2 z-50 bg-white dark:bg-black shadow p-2 rounded w-fit"
+          </div>
+        </UPageBody>
+        <template #right>
+          <div class="w-full h-full overflow-y-auto p-4 space-y-4">
+            <UPageCard
+              spotlight
+              spotlight-color="primary"
+              class="h-fit"
+              :ui="{ container: 'sm:p-2' }"
             >
-              <p class="font-semibold mb-1">
-                Selected Tubes ({{ selectedIds.size }})
-              </p>
-              <div class="flex flex-wrap gap-1 max-w-auto max-h-50">
+              <template #header>
+                <h3 class="font-semibold text-sm">
+                  Survey Progress
+                </h3>
+              </template>
+              <div class="space-y-3">
+                <UProgress
+                  v-model="backendUpdatedCount"
+                  :max="totalCount"
+                  status
+                  size="lg"
+                />
+                <div class="text-sm text-center text-neutral-700 dark:text-neutral-200">
+                  <span class="font-semibold">{{ backendUpdatedCount }}</span> of <span class="font-semibold">{{ totalCount }}</span> tubes updated
+                </div>
+              </div>
+            </UPageCard>
+
+            <UPageCard
+              spotlight
+              spotlight-color="secondary"
+              class="h-fit p-0"
+              :ui="{ container: 'sm:p-2' }"
+              titile="Property Legend"
+            >
+              <div class="grid grid-cols-2 gap-2 p-0">
+                <div
+                  v-for="item in propertyLegend"
+                  :key="item.value"
+                  class="flex items-center justify-between p-2 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
+                >
+                  <div class="flex items-center gap-3">
+                    <div
+                      class="size-2 rounded border border-neutral-300 dark:border-neutral-600"
+                      :style="{ backgroundColor: item.color }"
+                    />
+                    <span class="text-xs font-medium text-neutral-700 dark:text-neutral-200">
+                      {{ item.label }}
+                    </span>
+                  </div>
+                  <span class="text-[8px] font-bold text-neutral-900 dark:text-neutral-100 px-2 py-1 bg-neutral-100 dark:bg-neutral-800 rounded">
+                    {{ item.count }}
+                  </span>
+                </div>
+              </div>
+            </UPageCard>
+            <UPageCard
+              v-if="selectedIds.size"
+              spotlight
+              spotlight-color="secondary"
+              class="h-fit p-0"
+              :title="`Selected Hole Data`"
+              :ui="{ container: 'sm:p-2' }"
+            >
+              <div class="flex flex-wrap gap-2">
                 <span
                   v-for="id in [...selectedIds]"
                   :key="id"
@@ -251,9 +233,22 @@
                   {{ id }}
                 </span>
               </div>
-            </div>
+            </UPageCard>
+            <UPageCard
+              v-if="tableData.length > 0"
+              spotlight
+              spotlight-color="primary"
+              class="h-fit"
+            >
+              <template #header>
+                <h3 class="font-semibold text-sm">
+                  Recent Updates
+                </h3>
+              </template>
+              <UTable :data="tableData" :rows="10" />
+            </UPageCard>
           </div>
-        </UPageBody>
+        </template>
       </UPage>
     </template>
   </UDashboardPanel>
@@ -272,7 +267,7 @@ const { setConfig } = useReactorGenerator()
 
 const reactorId = useRoute().params?.reactorId as string
 const sheetId = useRoute().params?.sheetId as string
-
+const tableData = ref([])
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const tubeSheetDetails = ref<any>(null)
 const selectedPhase = ref<string>('')
@@ -614,12 +609,11 @@ async function fetchUpdatedTubeColors() {
     data.forEach((element: { tubeId: string | number, color: string }) => {
       const tube = currentTubes.value[element.tubeId as number]
       if (!tube) return
-
-      tube.propertyColor = element.color // update color
+      tube.propertyColor = element.color
       tube._backendUpdated = true
-
       updateCircleVisual(tube, element.color)
     })
+    tableData.value = data
   } catch (err) {
     console.error('Failed to fetch tube colors:', err)
   }
@@ -632,9 +626,29 @@ const backendUpdatedCount = computed(() =>
 // total tubes
 const totalCount = computed(() => currentTubes.value.length)
 
-const progressPercent = computed(() => {
-  if (!totalCount.value) return 0
-  return Math.round((backendUpdatedCount.value / totalCount.value) * 100)
+// Property legend with counts
+const propertyLegend = computed(() => {
+  const counts: Record<string, number> = {}
+
+  // Initialize counts for all properties
+  propertiesOptions.forEach((prop) => {
+    counts[prop.value] = 0
+  })
+
+  // Count tubes by property
+  currentTubes.value.forEach((tube) => {
+    if (tube.property && !tube.deleted) {
+      counts[tube.property] = (counts[tube.property] || 0) + 1
+    }
+  })
+
+  // Map to legend items with property details
+  return propertiesOptions.map(prop => ({
+    label: prop.label,
+    value: prop.value,
+    color: prop.color,
+    count: counts[prop.value] || 0
+  }))
 })
 
 onUnmounted(() => {
