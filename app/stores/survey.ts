@@ -3,7 +3,7 @@ import { defineStore } from 'pinia'
 export interface Survey {
   tubeSheetId: string
   surveyType: string
-  eactorId: string
+  reactorId: string
 }
 
 export const useSurveyStore = defineStore('survey', () => {

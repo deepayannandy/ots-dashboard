@@ -1,7 +1,17 @@
 <template>
   <UDashboardPanel id="create-tubesheet" :ui="{ body: '!p-0' }">
     <template #header>
-      <UDashboardNavbar :title="currentSurvey" :ui="{ right: 'gap-3' }">
+      <UDashboardNavbar :ui="{ right: 'gap-3' }">
+        <template #title>
+          <div class="flex flex-col">
+            <span class="font-semibold text-sm">
+              {{ tubeSheetDetails?.equipmentId }} {{ currentSurvey? `- ${currentSurvey}` : '' }}
+            </span>
+            <span class="text-xs text-neutral-600 dark:text-neutral-400">
+              {{ currentSurveyTime ? `Last Update: ${currentSurveyTime}` : '' }}
+            </span>
+          </div>
+        </template>
         <template #right>
           <UFieldGroup>
             <UInput value="Tube Count" disabled class="cursor-grab! font-bold max-w-fit">
@@ -43,7 +53,7 @@
               color="neutral"
               variant="subtle"
               icon="i-lucide-x"
-              @click="searchValue = '';deselectAll()"
+              @click="searchValue = ''; deselectAll(); resetView()"
             />
           </UFieldGroup>
         </template>
@@ -81,6 +91,15 @@
             label="Info"
             @click="showDetails = !showDetails"
           />
+          <URadioGroup
+            v-model="viewDisplay"
+            indicator="hidden"
+            variant="card"
+            size="xs"
+            orientation="horizontal"
+            default-value=""
+            :items="items"
+          />
         </template>
       </UDashboardToolbar>
     </template>
@@ -88,6 +107,7 @@
       <UPage class="flex gap-0" :ui="{ root: 'gap-0!' }">
         <UPageBody
           class="relative  select-none bg-[linear-gradient(to_right,#e5e7eb_.5px,transparent_.5px),linear-gradient(to_bottom,#e5e7eb_.5px,transparent_.5px)] bg-[size:20px_20px] dark:bg-[linear-gradient(to_right,#2d2d2d_.5px,transparent_.5px),linear-gradient(to_bottom,#2d2d2d_.5px,transparent_.5px)] dark:bg-[size:20px_20px] dark:bg-neutral-950 bg-white !p-0 !mt-0 h-full w-full"
+          :class="bodyClass"
         >
           <!--  @click="deselectAll"
             @contextmenu.prevent -->
@@ -98,6 +118,10 @@
               :viewBox="`0 0 ${svgWidth} ${svgHeight}`"
               xmlns="http://www.w3.org/2000/svg"
               preserveAspectRatio="xMinYMin meet"
+              :style="
+                viewDisplay==='Back View'? 'transform: scale(-1,1); transform-origin:center; transform-box:fill-box;'
+                : ''"
+              :class="viewDisplay==='Back View' ? 'invert' : ''"
             >
               <g id="viewport" :transform="transformStr" />
             </svg>
@@ -191,6 +215,7 @@
                   <span class="font-semibold">{{ backendUpdatedCount }}</span> of <span class="font-semibold">{{ totalCount }}</span> tubes updated
                 </div>
               </div>
+              <div>Repeat {{ repeatCount }}</div>
             </UPageCard>
 
             <UPageCard
@@ -266,8 +291,28 @@ const tableData = ref([])
 const tubeSheetDetails = ref<any>(null)
 const selectedPhase = ref<string>('')
 const currentSurvey = ref('')
-const showDetails = ref(true)
+const currentSurveyTime = ref('')
+const showDetails = ref(false)
+const items = ref(['Front View', 'Back View'])
+const viewDisplay = ref('Front View')
+const repeatCount = ref(0)
 
+const bodyClass = computed(() => {
+  const base = 'relative select-none !p-0 !mt-0 h-full w-full '
+  const gridLight = 'bg-[linear-gradient(to_right,#e5e7eb_.5px,transparent_.5px),linear-gradient(to_bottom,#e5e7eb_.5px,transparent_.5px)] bg-[size:20px_20px]'
+  const gridDark = 'dark:bg-[linear-gradient(to_right,#2d2d2d_.5px,transparent_.5px),linear-gradient(to_bottom,#2d2d2d_.5px,transparent_.5px)] dark:bg-[size:20px_20px]'
+  const bgLight = 'bg-white'
+  const bgDark = 'dark:bg-neutral-950'
+
+  if (viewDisplay.value === 'Back View') {
+    // For back view, use a reddish grid to differentiate
+    const gridLightBack = 'bg-[linear-gradient(to_right,#ffcccc_.5px,transparent_.5px),linear-gradient(to_bottom,#ffcccc_.5px,transparent_.5px)] bg-[size:20px_20px]'
+    const gridDarkBack = 'dark:bg-[linear-gradient(to_right,#4d0000_.5px,transparent_.5px),linear-gradient(to_bottom,#4d0000_.5px,transparent_.5px)] dark:bg-[size:20px_20px]'
+    return `${base} ${gridLightBack} ${gridDarkBack} ${bgLight} ${bgDark}`
+  } else {
+    return `${base} ${gridLight} ${gridDark} ${bgLight} ${bgDark}`
+  }
+})
 // Computed property to get only phases from tubesheet details
 const typeOfPhasesItems = computed(() => {
   if (!tubeSheetDetails.value?.typeOfPhases || tubeSheetDetails.value.typeOfPhases.length === 0) {
@@ -553,7 +598,7 @@ async function stratSurvey() {
     const data = await useSurveyStore().createSurvey({
       tubeSheetId: sheetId,
       surveyType: selectedPhase.value,
-      eactorId: reactorId
+      reactorId: reactorId
     })
     interval = setInterval(fetchUpdatedTubeColors, 5000)
     if (data.Success) {
@@ -618,8 +663,10 @@ onMounted(async () => {
 
 async function fetchUpdatedTubeColors() {
   try {
-    const { data, surveyType, createdAt } = await useSurveyStore().getSurveyUpdates()
-    currentSurvey.value = `${typeOfPhases.find(phase => phase.value === surveyType)?.label}- ${new Date(createdAt).toLocaleString()}`
+    const { data, surveyType, createdAt, repeat } = await useSurveyStore().getSurveyUpdates()
+    repeatCount.value = repeat || 0
+    currentSurvey.value = typeOfPhases.find(phase => phase.value === surveyType)?.label as string || ''
+    currentSurveyTime.value = new Date(createdAt).toLocaleString()
     data.forEach((element: { tubeId: string | number, color: string }) => {
       const tube = currentTubes.value[element.tubeId as number]
       if (!tube) return
