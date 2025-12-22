@@ -76,6 +76,12 @@
               icon="i-lucide-settings"
             />
           </UDropdownMenu>
+          <UButton
+            color="neutral"
+            variant="subtle"
+            label="Info"
+            @click="showDetails = !showDetails"
+          />
         </template>
       </UDashboardToolbar>
     </template>
@@ -103,10 +109,10 @@
           <!-- Backend Progress Indicator -->
           <!-- Tubesheet Details Card -->
           <UPageCard
-            v-if="tubeSheetDetails"
+            v-if="tubeSheetDetails && showDetails"
             spotlight
             spotlight-color="secondary"
-            class="absolute top-6 left-6 z-50 bg-white/90 dark:bg-black/90 p-4 rounded-2xl max-w-sm"
+            class="absolute top-6 left-6 z-50 bg-white/90 dark:bg-black/90 p-0 rounded-2xl max-w-sm"
           >
             <div class="space-y-3">
               <h3 class="font-bold text-lg text-neutral-900 dark:text-neutral-100">
@@ -234,19 +240,8 @@
                 </span>
               </div>
             </UPageCard>
-            <UPageCard
-              v-if="tableData.length > 0"
-              spotlight
-              spotlight-color="primary"
-              class="h-fit"
-            >
-              <template #header>
-                <h3 class="font-semibold text-sm">
-                  Recent Updates
-                </h3>
-              </template>
-              <UTable :data="tableData" :rows="10" />
-            </UPageCard>
+
+            <UTable v-if="tableData.length > 0" :data="tableData" :rows="10" />
           </div>
         </template>
       </UPage>
@@ -271,6 +266,9 @@ const tableData = ref([])
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const tubeSheetDetails = ref<any>(null)
 const selectedPhase = ref<string>('')
+
+const showDetails = ref(true)
+const detailsIcon = computed(() => showDetails.value ? 'i-lucide-eye' : 'i-lucide-eye-off')
 
 // Computed property to get only phases from tubesheet details
 const typeOfPhasesItems = computed(() => {
@@ -613,7 +611,12 @@ async function fetchUpdatedTubeColors() {
       tube._backendUpdated = true
       updateCircleVisual(tube, element.color)
     })
-    tableData.value = data
+    tableData.value = data.map(item => ({
+      tube: item.tubeIdAsperLayout,
+      Activity: item.activity,
+      time: new Date(item.timeStamp).toLocaleString(),
+      Action: 'more'
+    }))
   } catch (err) {
     console.error('Failed to fetch tube colors:', err)
   }
