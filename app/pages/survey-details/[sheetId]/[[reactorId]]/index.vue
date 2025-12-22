@@ -1,7 +1,7 @@
 <template>
   <UDashboardPanel id="create-tubesheet" :ui="{ body: '!p-0' }">
     <template #header>
-      <UDashboardNavbar title="Surevy" :ui="{ right: 'gap-3' }">
+      <UDashboardNavbar :title="currentSurvey" :ui="{ right: 'gap-3' }">
         <template #right>
           <UFieldGroup>
             <UInput value="Tube Count" disabled class="cursor-grab! font-bold max-w-fit">
@@ -266,9 +266,8 @@ const tableData = ref([])
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const tubeSheetDetails = ref<any>(null)
 const selectedPhase = ref<string>('')
-
+const currentSurvey = ref('')
 const showDetails = ref(true)
-const detailsIcon = computed(() => showDetails.value ? 'i-lucide-eye' : 'i-lucide-eye-off')
 
 // Computed property to get only phases from tubesheet details
 const typeOfPhasesItems = computed(() => {
@@ -602,8 +601,8 @@ onMounted(async () => {
 
 async function fetchUpdatedTubeColors() {
   try {
-    const { data } = await useSurveyStore().getSurveyUpdates()
-
+    const { data, surveyType, createdAt } = await useSurveyStore().getSurveyUpdates()
+    currentSurvey.value = `${typeOfPhases.find(phase => phase.value === surveyType)?.label}- ${new Date(createdAt).toLocaleString()}`
     data.forEach((element: { tubeId: string | number, color: string }) => {
       const tube = currentTubes.value[element.tubeId as number]
       if (!tube) return
