@@ -21,7 +21,6 @@
             />
             <USelectMenu
               v-model="searchValue"
-              multiple
               value-key="value"
               placeholder="Search Tubes"
               :search-input="{ icon: 'i-lucide-search' }"
@@ -44,7 +43,7 @@
               color="neutral"
               variant="subtle"
               icon="i-lucide-x"
-              @click="searchValue = [];deselectAll()"
+              @click="searchValue = '';deselectAll()"
             />
           </UFieldGroup>
         </template>
@@ -311,7 +310,7 @@ const settingitems = computed<DropdownMenuItem[]>(() => [
 ])
 
 const { config, tubes: currentTubes } = useReactorGenerator()
-const { scale, tx, ty, zoom, pan, reset } = useViewportTransform()
+const { scale, tx, ty, zoom, pan, reset, setZoom, setPan } = useViewportTransform()
 
 // Initialize stores
 const reactorsStore = useReactorsStore()
@@ -320,7 +319,7 @@ const transformStr = computed(() => `translate(${tx.value} ${ty.value}) scale(${
 const svgRef = ref<SVGSVGElement | null>(null)
 const svgWidth = 1200, svgHeight = 760
 const centerX = svgWidth / 2, centerY = svgHeight / 2, scalePx = 2
-const searchValue = ref<string[]>([])
+const searchValue = ref<string>('')
 const searchRow = ref<string>('R1')
 
 // Cache DOM elements for fast access
@@ -474,11 +473,29 @@ function handleTubeClick(e: MouseEvent, id: string) {
 }
 
 /* ----------------------------
-   SEARCH MULTI SELECT
+   SEARCH SINGLE TUBE WITH ZOOM
 ----------------------------- */
 function searchTubes() {
-  const toSelect = [...searchValue.value]
-  toSelect.forEach(id => selectWithMirrors(id))
+  if (!searchValue.value) return
+
+  const tube = currentTubes.value.find(t => t.id === searchValue.value)
+  if (!tube) return
+
+  // Zoom to a reasonable level for viewing a single tube
+  const zoomLevel = 3
+  setZoom(zoomLevel)
+
+  // Calculate position to center the tube
+  // Tube position in SVG coordinates (when scale=1): centerX + tube.x * scalePx, centerY + tube.y * scalePx
+  // After transform translate(tx, ty) scale(s), final position = tx + (centerX + tube.x * scalePx) * s
+  // We want this to equal svgWidth/2, so: tx = svgWidth/2 - (centerX + tube.x * scalePx) * s
+  const tx = svgWidth / 2 - (centerX + tube.x * scalePx) * zoomLevel
+  const ty = svgHeight / 2 - (centerY + tube.y * scalePx) * zoomLevel
+
+  setPan(tx, ty)
+
+  // Select the tube
+  selectOnly(searchValue.value)
 }
 
 /* ----------------------------
