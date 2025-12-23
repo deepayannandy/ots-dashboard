@@ -77,14 +77,14 @@
           />
         </template>
         <template #left>
-          <UDropdownMenu :items="settingitems" :content="{ align: 'start' }" :ui="{ content: 'w-56' }">
+          <!-- <UDropdownMenu :items="settingitems" :content="{ align: 'start' }" :ui="{ content: 'w-56' }">
             <UButton
               label="Settings"
               color="neutral"
               variant="outline"
               icon="i-lucide-settings"
             />
-          </UDropdownMenu>
+          </UDropdownMenu> -->
           <UButton
             color="neutral"
             variant="subtle"
@@ -274,7 +274,6 @@
 </template>
 
 <script setup lang="ts">
-import type { DropdownMenuItem } from '@nuxt/ui'
 import { ref, reactive, computed } from 'vue'
 import type { Tube } from '@/types'
 import { useReactorsStore } from '@/stores/reactors'
@@ -342,17 +341,17 @@ const settingsInput = reactive({
   mirrorX: false
 })
 
-const settingitems = computed<DropdownMenuItem[]>(() => [
+// const settingitems = computed<DropdownMenuItem[]>(() => [
 
-  {
-    label: 'Mirror  (Top ↔ Buttom)',
-    icon: 'i-lucide-arrow-up-down',
-    type: 'checkbox',
-    checked: settingsInput.mirrorX,
-    onUpdateChecked(v: boolean) { settingsInput.mirrorX = v },
-    onSelect(e: Event) { e.preventDefault() }
-  }
-])
+//   {
+//     label: 'Mirror  (Top ↔ Buttom)',
+//     icon: 'i-lucide-arrow-up-down',
+//     type: 'checkbox',
+//     checked: settingsInput.mirrorX,
+//     onUpdateChecked(v: boolean) { settingsInput.mirrorX = v },
+//     onSelect(e: Event) { e.preventDefault() }
+//   }
+// ])
 
 const { config, tubes: currentTubes } = useReactorGenerator()
 const { scale, tx, ty, zoom, pan, reset, setZoom, setPan } = useViewportTransform()
