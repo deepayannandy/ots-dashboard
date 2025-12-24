@@ -199,25 +199,27 @@
               spotlight
               spotlight-color="primary"
               class="h-fit"
-              :ui="{ container: 'sm:p-2' }"
+              title="Survey Progress"
+              :ui="{ container: 'sm:p-2 gap-2!' }"
             >
-              <template #header>
-                <h3 class="font-semibold text-sm">
-                  Survey Progress
-                </h3>
-              </template>
-              <div class="space-y-3">
-                <UProgress
-                  v-model="backendUpdatedCount"
-                  :max="totalCount"
-                  status
-                  size="lg"
-                />
-                <div class="text-sm text-center text-neutral-700 dark:text-neutral-200">
-                  <span class="font-semibold">{{ backendUpdatedCount }}</span> of <span class="font-semibold">{{ totalCount }}</span> tubes updated
+              <div class="grid grid-cols-4">
+                <div class="col-span-2">
+                  <Pie :data="chartData" :options="chartOptions" class="max-h-40" />
+                </div>
+                <div class="text-sm text-neutral-700 dark:text-neutral-200 flex  justify-center">
+                  <div>
+                    <h1>Progress</h1>
+                    <span class="font-semibold">{{ backendUpdatedCount }}</span> / <span class="font-semibold">{{ totalCount }}</span>
+                  </div>
+                </div>
+                <div class="flex  justify-center text-center text-sm text-neutral-700 dark:text-neutral-200">
+                  <div>
+                    Repeat
+                    <br>
+                    {{ repeatCount }}
+                  </div>
                 </div>
               </div>
-              <div>Repeat {{ repeatCount }}</div>
             </UPageCard>
 
             <UPageCard
@@ -321,6 +323,11 @@ import { useReactorsStore } from '@/stores/reactors'
 import { useSurveyStore } from '@/stores/survey'
 import { tubeSheetTypeItems, typeOfPhases as allTypeOfPhasesItems } from '@/utils/tubesheetOptions'
 import { UFieldGroup } from '#components'
+import { Pie } from 'vue-chartjs'
+import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js'
+import type { TooltipItem } from 'chart.js'
+
+ChartJS.register(ArcElement, Tooltip, Legend)
 
 const loading = ref(false)
 const { setConfig } = useReactorGenerator()
@@ -749,7 +756,7 @@ async function fetchUpdatedTubeColors() {
 }
 
 const backendUpdatedCount = computed(() =>
-  currentTubes.value.filter(t => t._backendUpdated).length
+  currentTubes.value.filter(t => t._backendUpdated && !propertiesOptions.some(p => p.value === t.property)).length
 )
 
 // total tubes
@@ -779,6 +786,42 @@ const propertyLegend = computed(() => {
     count: counts[prop.value] || 0
   }))
 })
+
+const specialTubes = computed(() => propertyLegend.value.reduce((sum, item) => sum + item.count, 0))
+const effectiveTotal = computed(() => totalCount.value - specialTubes.value)
+const completed = computed(() => backendUpdatedCount.value)
+const remaining = computed(() => Math.max(0, effectiveTotal.value - completed.value))
+
+const chartData = computed(() => ({
+  labels: ['Completed', 'Remaining', 'Special Tubes'],
+  datasets: [{
+    data: [completed.value, remaining.value, specialTubes.value],
+    backgroundColor: ['#4CAF50', '#FFC107', '#9C27B0'],
+    borderWidth: 1
+  }]
+}))
+
+const chartOptions = {
+  responsive: true,
+  plugins: {
+    legend: {
+      position: 'right' as const,
+      align: 'start' as const,
+      labels: { boxWidth: 10 }
+    },
+    tooltip: {
+      callbacks: {
+        label: function (context: TooltipItem<'pie'>) {
+          const label = context.label || ''
+          const value = context.parsed
+          const total = context.dataset.data.reduce((a: number, b: number) => a + b, 0)
+          const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0
+          return `${label}: ${value} (${percentage}%)`
+        }
+      }
+    }
+  }
+}
 
 onUnmounted(() => {
   if (interval) clearInterval(interval)
