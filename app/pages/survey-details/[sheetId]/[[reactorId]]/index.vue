@@ -104,23 +104,25 @@
       </UDashboardToolbar>
     </template>
     <template #body>
-      <UPage class="flex gap-0" :ui="{ root: 'gap-0!' }">
+      <UPage class="flex gap-0" :ui="{ root: 'gap-0!', right: 'lg:col-span-4 order-first lg:order-last', center: 'lg:col-span-6' }">
         <UPageBody
-          class="relative  select-none bg-[linear-gradient(to_right,#e5e7eb_.5px,transparent_.5px),linear-gradient(to_bottom,#e5e7eb_.5px,transparent_.5px)] bg-[size:20px_20px] dark:bg-[linear-gradient(to_right,#2d2d2d_.5px,transparent_.5px),linear-gradient(to_bottom,#2d2d2d_.5px,transparent_.5px)] dark:bg-[size:20px_20px] dark:bg-neutral-950 bg-white !p-0 !mt-0 h-full w-full"
+          class="select-none bg-[linear-gradient(to_right,#e5e7eb_.5px,transparent_.5px),linear-gradient(to_bottom,#e5e7eb_.5px,transparent_.5px)] bg-size-[20px_20px] dark:bg-[linear-gradient(to_right,#2d2d2d_.5px,transparent_.5px),linear-gradient(to_bottom,#2d2d2d_.5px,transparent_.5px)] dark:bg-size-[20px_20px] dark:bg-neutral-950 bg-white  max-h-[calc(100dvh-var(--ui-header-height)-49px)] min-h-[calc(100dvh-var(--ui-header-height)-49px)] w-full flex justify-center items-center"
           :class="bodyClass"
         >
           <!--  @click="deselectAll"
             @contextmenu.prevent -->
-          <div>
+          <div class="h-full p-10 w-full flex justify-center items-center ">
             <!-- SVG Canvas -->
             <svg
               ref="svgRef"
               :viewBox="`0 0 ${svgWidth} ${svgHeight}`"
               xmlns="http://www.w3.org/2000/svg"
               preserveAspectRatio="xMinYMin meet"
-              :style="
-                viewDisplay==='Back View'? 'transform: scale(-1,1); transform-origin:center; transform-box:fill-box;'
-                : ''"
+              :style="{
+                width: '100%',
+                height: '100%',
+                ...(viewDisplay==='Back View' ? { transform: 'scale(-1,1)', transformOrigin: 'center', transformBox: 'fill-box' } : {})
+              }"
               :class="viewDisplay==='Back View' ? 'invert' : ''"
             >
               <g id="viewport" :transform="transformStr" />
@@ -192,7 +194,7 @@
           </div>
         </UPageBody>
         <template #right>
-          <div class="w-full h-full overflow-y-auto p-4 space-y-4">
+          <div class="w-full max-h-[calc(100dvh-var(--ui-header-height)-49px)] overflow-y-auto p-4 space-y-4">
             <UPageCard
               spotlight
               spotlight-color="primary"
@@ -236,15 +238,51 @@
                       class="size-2 rounded border border-neutral-300 dark:border-neutral-600"
                       :style="{ backgroundColor: item.color }"
                     />
-                    <span class="text-xs font-medium text-neutral-700 dark:text-neutral-200">
+                    <span class="text-sm font-medium text-neutral-700 dark:text-neutral-200">
                       {{ item.label }}
                     </span>
                   </div>
-                  <span class="text-[8px] font-bold text-neutral-900 dark:text-neutral-100 px-2 py-1 bg-neutral-100 dark:bg-neutral-800 rounded">
+                  <span class="text-sm font-bold text-neutral-900 dark:text-neutral-100 px-2 py-1 bg-neutral-100 dark:bg-neutral-800 rounded">
                     {{ item.count }}
                   </span>
                 </div>
               </div>
+            </UPageCard>
+            <UPageCard
+              :ui="{ container: 'sm:p-2' }"
+              spotlight-color="secondary"
+              class="h-fit p-0"
+            >
+              <UTabs :items="tabs" class="w-full">
+                <template #content="{ item }">
+                  <UTable
+                    :data="item.label==='Progress' ? tableData : repeatTableData"
+                    class="flex-1 max-h-[312px]"
+                    :rows="10"
+                    sticky="header"
+                  >
+                    <template #Action-cell="{ row }">
+                      <UFieldGroup>
+                        <UButton
+                          size="xs"
+                          color="primary"
+                          variant="outline"
+                          label="Locate"
+                          @click="searchValue = row.original?.tube; searchTubes()"
+                        />
+                        <UButton
+                          v-if="searchValue===row.original?.tube"
+                          size="xs"
+                          color="primary"
+                          variant="outline"
+                          trailing-icon="i-lucide-x"
+                          @click="searchValue=''; deselectAll(); resetView()"
+                        />
+                      </UFieldGroup>
+                    </template>
+                  </UTable>
+                </template>
+              </UTabs>
             </UPageCard>
             <UPageCard
               v-if="selectedIds.size"
@@ -252,20 +290,23 @@
               spotlight-color="secondary"
               class="h-fit p-0"
               :title="`Selected Hole Data`"
-              :ui="{ container: 'sm:p-2' }"
+              :ui="{ container: 'sm:p-2 gap-y-2' }"
             >
               <div class="flex flex-wrap gap-2">
-                <span
+                <div
                   v-for="id in [...selectedIds]"
                   :key="id"
-                  class="px-2 py-1 rounded-md bg-primary-100 dark:bg-primary-900/50 text-primary-800 dark:text-primary-200"
                 >
-                  {{ id }}
-                </span>
+                  <div v-if="tableData.find((t) => t.tube===id)" class="text-sm text-neutral-700 dark:text-neutral-200">
+                    Activity: {{ tableData.find((t) => t.tube===id).Activity }} <br>
+                    Time: {{ tableData.find((t) => t.tube===id).time }} <br>
+                  </div>
+                  <div v-else class="text-sm text-neutral-700 dark:text-neutral-200">
+                    Tube not detected yet.
+                  </div>
+                </div>
               </div>
             </UPageCard>
-
-            <UTable v-if="tableData.length > 0" :data="tableData" :rows="10" />
           </div>
         </template>
       </UPage>
@@ -279,6 +320,7 @@ import type { Tube } from '@/types'
 import { useReactorsStore } from '@/stores/reactors'
 import { useSurveyStore } from '@/stores/survey'
 import { tubeSheetTypeItems, typeOfPhases as allTypeOfPhasesItems } from '@/utils/tubesheetOptions'
+import { UFieldGroup } from '#components'
 
 const loading = ref(false)
 const { setConfig } = useReactorGenerator()
@@ -286,6 +328,8 @@ const { setConfig } = useReactorGenerator()
 const reactorId = useRoute().params?.reactorId as string
 const sheetId = useRoute().params?.sheetId as string
 const tableData = ref([])
+const repeatTableData = ref([])
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const tubeSheetDetails = ref<any>(null)
 const selectedPhase = ref<string>('')
@@ -295,6 +339,17 @@ const showDetails = ref(false)
 const items = ref(['Front View', 'Back View'])
 const viewDisplay = ref('Front View')
 const repeatCount = ref(0)
+
+const tabs = [
+  {
+    label: 'Progress',
+    icon: 'i-lucide-activity'
+  },
+  {
+    label: 'Repeat',
+    icon: 'i-lucide-refresh-ccw'
+  }
+]
 
 const bodyClass = computed(() => {
   const base = 'relative select-none !p-0 !mt-0 h-full w-full '
@@ -361,7 +416,7 @@ const reactorsStore = useReactorsStore()
 
 const transformStr = computed(() => `translate(${tx.value} ${ty.value}) scale(${scale.value})`)
 const svgRef = ref<SVGSVGElement | null>(null)
-const svgWidth = 1200, svgHeight = 760
+const svgWidth = 1200, svgHeight = 1200
 const centerX = svgWidth / 2, centerY = svgHeight / 2, scalePx = 2
 const searchValue = ref<string>('')
 const searchRow = ref<string>('R1')
@@ -440,15 +495,13 @@ function getMirroredIds(id: string): string[] {
 function updateCircleVisual(t: Tube, newPropertyColor = '') {
   const c = elById.get(t.id)
   if (!c) return
-  const propertyColor = propertiesOptions.find(p => p.value === t.property)?.color
+  const propertyColor = propertiesOptions.find(p => p.value === t.property)?.color || t.propertyColor
   const isSelected = selectedIds.value.has(t.id)
   const hasComment = !!t.comment
 
   c.setAttribute('cx', String(centerX + t.x * scalePx))
   c.setAttribute('cy', String(centerY + t.y * scalePx))
   c.setAttribute('r', String(t.r * scalePx))
-  console.log(newPropertyColor)
-
   c.setAttribute('fill', newPropertyColor || propertyColor || '#fff')
   c.setAttribute('stroke', hasComment ? '#facc15' : isSelected ? '#FF0000' : '#0f172a')
   c.setAttribute('stroke-width', isSelected || hasComment ? '1.5' : '0.3')
@@ -482,14 +535,14 @@ function selectWithMirrors(id: string, exclusive = false) {
   addSelection(all)
 }
 
-function toggleSelect(id: string) {
-  if (selectedIds.value.has(id)) {
-    const mirrors = getMirroredIds(id)
-    removeSelection([id, ...mirrors])
-  } else {
-    selectWithMirrors(id)
-  }
-}
+// function toggleSelect(id: string) {
+//   if (selectedIds.value.has(id)) {
+//     const mirrors = getMirroredIds(id)
+//     removeSelection([id, ...mirrors])
+//   } else {
+//     selectWithMirrors(id)
+//   }
+// }
 
 function selectOnly(id: string) {
   selectWithMirrors(id, true)
@@ -511,8 +564,7 @@ function deselectAll() {
 ----------------------------- */
 function handleTubeClick(e: MouseEvent, id: string) {
   e.stopPropagation()
-  if (e.shiftKey) toggleSelect(id)
-  else if (selectedIds.value.has(id)) deselect(id)
+  if (selectedIds.value.has(id)) deselect(id)
   else selectOnly(id)
 }
 
@@ -673,12 +725,24 @@ async function fetchUpdatedTubeColors() {
       tube._backendUpdated = true
       updateCircleVisual(tube, element.color)
     })
-    tableData.value = data.map(item => ({
-      tube: item.tubeIdAsperLayout,
-      Activity: item.activity,
-      time: new Date(item.timeStamp).toLocaleString(),
-      Action: 'more'
-    }))
+
+    tableData.value = data?.filter(e => !e?.isDuplicate).map((item) => {
+      return {
+        tube: item.tubeIdAsperLayout,
+        Activity: item.activity,
+        time: new Date(item.timeStamp).toLocaleString(),
+        Action: 'Locate'
+      }
+    })
+
+    repeatTableData.value = data?.filter(e => e?.isDuplicate).map((item) => {
+      return {
+        tube: item.tubeIdAsperLayout,
+        Activity: item.activity,
+        time: new Date(item.timeStamp).toLocaleString(),
+        Action: 'Locate'
+      }
+    })
   } catch (err) {
     console.error('Failed to fetch tube colors:', err)
   }
