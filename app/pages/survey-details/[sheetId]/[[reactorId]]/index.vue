@@ -14,45 +14,25 @@
         </template>
         <template #right>
           <UFieldGroup>
-            <UInput value="Tube Count" disabled class="cursor-grab! font-bold max-w-fit">
-              <template #trailing>
-                <div>
-                  {{ currentTubes.length }}
-                </div>
-              </template>
-            </UInput>
-            <USelectMenu
-              v-model="searchRow"
-              placeholder="Select Row"
-              :search-input="{ icon: '' }"
-              leading-icon="i-lucide-rows-4"
-              :items="Object.keys(tubesByRow)"
-              class="min-w-2  "
-            />
-            <USelectMenu
+            <UInput value="Individual Tube Address" disabled class="cursor-grab! font-bold w-full" />
+            <UInput
               v-model="searchValue"
-              value-key="value"
               placeholder="Search Tubes"
-              :search-input="{ icon: 'i-lucide-search' }"
-              leading-icon="i-lucide-circle"
-              :items="tubesByRow[searchRow]"
+              leading-icon="i-lucide-search"
               class="min-w-96 max-w-60"
-            >
-              <template #item-leading="{ item }">
-                <span :style="{ backgroundColor: item.color||'' }" class="size-2 rounded-full" />
-              </template>
-            </USelectMenu>
+              @update:model-value="searchValue = $event.toUpperCase()"
+            />
 
             <UButton
               color="neutral"
               variant="subtle"
-              icon="i-lucide-search"
+              label="Search"
               @click="searchTubes"
             />
             <UButton
               color="neutral"
               variant="subtle"
-              icon="i-lucide-x"
+              label="Reset"
               @click="searchValue = ''; deselectAll(); resetView()"
             />
           </UFieldGroup>
@@ -61,13 +41,17 @@
 
       <UDashboardToolbar>
         <template #right>
-          <USelectMenu
-            v-model="selectedPhase"
-            placeholder="Select Phase"
-            :items="typeOfPhasesItems"
-            value-key="value"
-            class="min-w-64"
-          />
+          <UFieldGroup>
+            <UInput value="Phases:" disabled class="cursor-grab! font-bold max-w-18" />
+            <USelectMenu
+              v-model="selectedPhase"
+              placeholder="Select Phase"
+              :items="typeOfPhasesItems"
+              value-key="value"
+              class="min-w-64"
+              :disabled="loading"
+            />
+          </UFieldGroup>
           <UButton
             label="Start Survey"
             color="primary"
@@ -75,16 +59,14 @@
             :disabled="loading || !selectedPhase"
             @click="stratSurvey"
           />
+          <UButton
+            color="neutral"
+            variant="subtle"
+            :icon="isRightOpen ? 'i-lucide-panel-right-close' : 'i-lucide-panel-right-open'"
+            @click="isRightOpen = !isRightOpen"
+          />
         </template>
         <template #left>
-          <!-- <UDropdownMenu :items="settingitems" :content="{ align: 'start' }" :ui="{ content: 'w-56' }">
-            <UButton
-              label="Settings"
-              color="neutral"
-              variant="outline"
-              icon="i-lucide-settings"
-            />
-          </UDropdownMenu> -->
           <UButton
             color="neutral"
             variant="subtle"
@@ -104,7 +86,7 @@
       </UDashboardToolbar>
     </template>
     <template #body>
-      <UPage class="flex gap-0" :ui="{ root: 'gap-0!', right: 'lg:col-span-4 order-first lg:order-last', center: 'lg:col-span-6' }">
+      <UPage class="flex gap-0" :ui="pageUi">
         <UPageBody
           class="select-none bg-[linear-gradient(to_right,#e5e7eb_.5px,transparent_.5px),linear-gradient(to_bottom,#e5e7eb_.5px,transparent_.5px)] bg-size-[20px_20px] dark:bg-[linear-gradient(to_right,#2d2d2d_.5px,transparent_.5px),linear-gradient(to_bottom,#2d2d2d_.5px,transparent_.5px)] dark:bg-size-[20px_20px] dark:bg-neutral-950 bg-white  max-h-[calc(100dvh-var(--ui-header-height)-49px)] min-h-[calc(100dvh-var(--ui-header-height)-49px)] w-full flex justify-center items-center"
           :class="bodyClass"
@@ -172,13 +154,12 @@
                       'bg-warning-100 text-warning-700 dark:bg-warning-900/30 dark:text-warning-300': tubeSheetDetails.status === 'UNDER_SURVEY'
                     }"
                   >
-                    {{ tubeSheetDetails.status?.replace(/_/g, ' ') || 'N/A' }}
+                    {{ tubeSheetStatusLabels[tubeSheetDetails.status] || 'N/A' }}
                   </span>
                 </p>
               </div>
             </div>
           </UPageCard>
-
           <div class="fixed bottom-4 left-4 right-4 flex justify-between items-end pointer-events-none">
             <div class="flex flex-col items-center gap-2 z-50 bg-white dark:bg-black shadow-lg p-2 rounded-lg w-fit pointer-events-auto">
               <ZoomControls
@@ -193,8 +174,9 @@
             </div>
           </div>
         </UPageBody>
-        <template #right>
-          <div class="w-full max-h-[calc(100dvh-var(--ui-header-height)-49px)] overflow-y-auto p-4 space-y-4">
+        <template v-if="isRightOpen" #right>
+          <div class="w-full max-h-[calc(100dvh-var(--ui-header-height)-49px)] overflow-y-auto p-4 space-y-4 relative" :class="{ 'opacity-30 pointer-events-none bg-gray-200 dark:bg-gray-700': !loading }">
+            <div v-if="!loading" class="absolute inset-0 bg-gray-200 dark:bg-gray-700 opacity-50 z-10 flex items-center justify-center" />
             <UPageCard
               spotlight
               spotlight-color="primary"
@@ -202,21 +184,35 @@
               title="Survey Progress"
               :ui="{ container: 'sm:p-2 gap-2!' }"
             >
-              <div class="grid grid-cols-4">
-                <div class="col-span-2">
+              <div class="grid grid-cols-2">
+                <div>
                   <Pie :data="chartData" :options="chartOptions" class="max-h-40" />
                 </div>
-                <div class="text-sm text-neutral-700 dark:text-neutral-200 flex  justify-center">
-                  <div>
-                    <h1>Progress</h1>
-                    <span class="font-semibold">{{ backendUpdatedCount }}</span> / <span class="font-semibold">{{ totalCount }}</span>
+                <div class="w-full grid grid-cols-2 gap-2 text-center">
+                  <div class="text-sm text-neutral-700 dark:text-neutral-200 flex  justify-center">
+                    <div>
+                      <h1>Total Tube Count</h1>
+                      <span class="font-semibold">{{ totalCount }}</span>
+                    </div>
                   </div>
-                </div>
-                <div class="flex  justify-center text-center text-sm text-neutral-700 dark:text-neutral-200">
-                  <div>
-                    Repeat
-                    <br>
-                    {{ repeatCount }}
+                  <div class="text-sm text-neutral-700 dark:text-neutral-200 flex  justify-center">
+                    <div>
+                      <h1>Special Tubes</h1>
+                      <span class="font-semibold">{{ specialTubes }}</span>
+                    </div>
+                  </div>
+                  <div class="text-sm text-neutral-700 dark:text-neutral-200 flex  justify-center">
+                    <div>
+                      <h1>Progress</h1>
+                      <span class="font-semibold">{{ backendUpdatedCount }}</span> / <span class="font-semibold">{{ totalCount-specialTubes }}</span>
+                    </div>
+                  </div>
+                  <div class="flex  justify-center text-center text-sm text-neutral-700 dark:text-neutral-200">
+                    <div>
+                      Repeat
+                      <br>
+                      {{ repeatCount }}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -226,10 +222,11 @@
               spotlight
               spotlight-color="secondary"
               class="h-fit p-0"
-              :ui="{ container: 'sm:p-2' }"
-              titile="Property Legend"
+
+              :ui="{ container: 'sm:p-2 gap-0!' }"
+              title="Special Tubes"
             >
-              <div class="grid grid-cols-2 gap-2 p-0">
+              <div class="grid grid-cols-2 gap-1 p-0">
                 <div
                   v-for="item in propertyLegend"
                   :key="item.value"
@@ -266,6 +263,7 @@
                     <template #Action-cell="{ row }">
                       <UFieldGroup>
                         <UButton
+                          v-if="searchValue!==row.original?.tube"
                           size="xs"
                           color="primary"
                           variant="outline"
@@ -275,9 +273,9 @@
                         <UButton
                           v-if="searchValue===row.original?.tube"
                           size="xs"
-                          color="primary"
+                          color="error"
                           variant="outline"
-                          trailing-icon="i-lucide-x"
+                          label="Reset"
                           @click="searchValue=''; deselectAll(); resetView()"
                         />
                       </UFieldGroup>
@@ -291,7 +289,7 @@
               spotlight
               spotlight-color="secondary"
               class="h-fit p-0"
-              :title="`Selected Hole Data`"
+              :title="`Tube History`"
               :ui="{ container: 'sm:p-2 gap-y-2' }"
             >
               <div class="flex flex-wrap gap-2">
@@ -321,7 +319,7 @@ import { ref, reactive, computed } from 'vue'
 import type { Tube } from '@/types'
 import { useReactorsStore } from '@/stores/reactors'
 import { useSurveyStore } from '@/stores/survey'
-import { tubeSheetTypeItems, typeOfPhases as allTypeOfPhasesItems } from '@/utils/tubesheetOptions'
+import { tubeSheetTypeItems, typeOfPhases as allTypeOfPhasesItems, tubeSheetStatusLabels } from '@/utils/tubesheetOptions'
 import { UFieldGroup } from '#components'
 import { Pie } from 'vue-chartjs'
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js'
@@ -330,6 +328,7 @@ import type { TooltipItem } from 'chart.js'
 ChartJS.register(ArcElement, Tooltip, Legend)
 
 const loading = ref(false)
+const isRightOpen = ref(true)
 const { setConfig } = useReactorGenerator()
 
 const reactorId = useRoute().params?.reactorId as string
@@ -357,6 +356,12 @@ const tabs = [
     icon: 'i-lucide-refresh-ccw'
   }
 ]
+
+const pageUi = computed(() => ({
+  root: 'gap-0!',
+  right: isRightOpen.value ? 'lg:col-span-4 order-first lg:order-last' : '',
+  center: isRightOpen.value ? 'lg:col-span-6' : 'lg:col-span-10'
+}))
 
 const bodyClass = computed(() => {
   const base = 'relative select-none !p-0 !mt-0 h-full w-full '

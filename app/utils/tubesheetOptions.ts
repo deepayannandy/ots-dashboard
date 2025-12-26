@@ -37,3 +37,11 @@ export const phaseColorPalette = [
   { label: 'Copper Rust', value: 'Copper Rust', swatch: '#B45309' },
   { label: 'Deep Violet', value: 'Deep Violet', swatch: '#7C3AED' }
 ]
+
+export const tubeSheetStatusLabels = {
+  TUBE_SHEET_CREATED: 'Tube Sheet Created',
+  CAMERA_CONFIGURED: 'Camera Configured',
+  REACTOR_CREATED: 'Layout Created',
+  CAMERA_CALIBRATED: 'Camera Calibrated',
+  UNDER_SURVEY: 'Under Survey'
+}

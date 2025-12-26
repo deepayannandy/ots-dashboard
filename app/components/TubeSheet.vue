@@ -228,11 +228,11 @@ const stateFlow = {
   CAMERA_CONFIGURED: {
     description: 'Camera configured',
     next: 'REACTOR_CREATED',
-    action: 'Create Reactor',
+    action: 'Create Layout',
     disabled: false
   },
   REACTOR_CREATED: {
-    description: 'Reactor created',
+    description: 'Layout created',
     next: 'CAMERA_CALIBRATED',
     action: 'Start Survey',
     disabled: false
