@@ -552,6 +552,7 @@ function updateCircleVisual(t: Tube, newPropertyColor = '') {
   c.setAttribute('fill', newPropertyColor || propertyColor || '#fff')
   c.setAttribute('stroke', hasComment ? '#facc15' : isSelected ? '#FF0000' : '#0f172a')
   c.setAttribute('stroke-width', isSelected || hasComment ? '1.5' : '0.3')
+  c.setAttribute('filter', isBackView ? 'invert(1)' : 'none')
 }
 
 /* ----------------------------
@@ -786,7 +787,7 @@ onMounted(async () => {
 
 watch(viewDisplay, () => {
   // Update all tube visuals when switching between front and back view
-  currentTubes.value.forEach(tube => {
+  currentTubes.value.forEach((tube) => {
     updateCircleVisual(tube)
   })
 })
