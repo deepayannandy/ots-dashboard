@@ -53,11 +53,11 @@
             />
           </UFieldGroup>
           <UButton
-            label="Start Survey"
+            :label="loading ? 'Stop Survey' : 'Start Survey'"
             color="primary"
-            icon="i-lucide-target"
-            :disabled="loading || !selectedPhase"
-            @click="stratSurvey"
+            :icon="loading ? 'i-lucide-stop-circle' : 'i-lucide-target'"
+            :disabled="!selectedPhase"
+            @click="loading ? openStopModal() : stratSurvey()"
           />
           <UButton
             color="neutral"
@@ -312,6 +312,37 @@
       </UPage>
     </template>
   </UDashboardPanel>
+
+  <UModal v-model:open="stopModalOpen" title="Stop Survey" description="Are you sure you want to stop the survey?">
+    <template #footer>
+      <div class="w-full flex justify-end items-center gap-4">
+        <UButton
+          label="Cancel"
+          color="neutral"
+          variant="outline"
+          @click="stopModalOpen = false"
+        />
+        <UButton label="Confirm" color="primary" @click="stopSurvey" />
+      </div>
+    </template>
+  </UModal>
+
+  <UModal v-model:open="successModalOpen" :title="successMessage">
+    <template #body>
+      <p>The survey has been successfully stopped.</p>
+    </template>
+    <template #footer>
+      <div class="w-full flex justify-end items-center gap-4">
+        <UButton
+          label="Download Report"
+          color="neutral"
+          variant="outline"
+          @click="downloadReport"
+        />
+        <UButton label="Go back to home" color="primary" @click="goHome" />
+      </div>
+    </template>
+  </UModal>
 </template>
 
 <script setup lang="ts">
@@ -329,6 +360,9 @@ ChartJS.register(ArcElement, Tooltip, Legend)
 
 const loading = ref(false)
 const isRightOpen = ref(true)
+const stopModalOpen = ref(false)
+const successModalOpen = ref(false)
+const successMessage = ref('')
 const { setConfig } = useReactorGenerator()
 
 const reactorId = useRoute().params?.reactorId as string
@@ -671,6 +705,31 @@ async function stratSurvey() {
     // useToast().add({ title: 'Survey Started', color: 'success' })
     loading.value = false
   }
+}
+
+function openStopModal() {
+  stopModalOpen.value = true
+}
+
+async function stopSurvey() {
+  try {
+    await useSurveyStore().stopSurvey()
+    loading.value = false
+    if (interval) clearInterval(interval)
+    stopModalOpen.value = false
+    successMessage.value = 'Survey is ended'
+    successModalOpen.value = true
+  } catch {
+    useToast().add({ title: 'Failed to stop survey', color: 'error' })
+  }
+}
+
+function downloadReport() {
+  // do nothing for now
+}
+
+function goHome() {
+  navigateTo('/')
 }
 
 /* ----------------------------

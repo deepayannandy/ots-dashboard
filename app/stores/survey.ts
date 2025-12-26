@@ -31,10 +31,23 @@ export const useSurveyStore = defineStore('survey', () => {
     }
   }
 
+  async function stopSurvey() {
+    const api = useAxios()
+    try {
+      const data = await api.$post(`api/v2/survey/stopSurvey/${currentSurveyId.value}`)
+      currentSurveyId.value = ''
+      return data
+    } catch (e) {
+      console.error('Failed to stop survey:', e)
+      throw e
+    }
+  }
+
   return {
     currentSurveyId,
     createSurvey,
-    getSurveyUpdates
+    getSurveyUpdates,
+    stopSurvey
   }
 }, {
   persist: {
