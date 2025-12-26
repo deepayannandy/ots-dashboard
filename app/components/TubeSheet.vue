@@ -475,9 +475,13 @@ const handleNextStep = (status?: string, sheetId?: string, reactorId?: string) =
 
 const phases = usePhases()
 
+interface Phase {
+  phaseName: string
+}
+
 const phaseItems = computed(() => {
   const labelMap = Object.fromEntries(typeOfPhases.map(item => [item.value, item.label]))
-  return phases.value.map((phase: any) => ({
+  return phases.value.map((phase: Phase) => ({
     label: labelMap[phase.phaseName] || phase.phaseName,
     value: phase.phaseName
   }))

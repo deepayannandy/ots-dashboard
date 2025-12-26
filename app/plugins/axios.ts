@@ -33,6 +33,11 @@ export default defineNuxtPlugin(() => {
     return request
   }
 
+  interface ErrorResponseData {
+    error?: string
+    message?: string
+  }
+
   async function onError(error: AxiosError) {
     if (!axios.isAxiosError(error) || !error.config)
       return Promise.reject(error)
@@ -43,12 +48,10 @@ export default defineNuxtPlugin(() => {
     }
     console.log({ error })
 
+    const errorData = error.response?.data as ErrorResponseData | undefined
+
     useToast().add({
-      title:
-(error.response?.data as any)?.error
-|| (error.response?.data as any)?.message
-|| error.message
-|| 'Something went wrong',
+      title: errorData?.error || errorData?.message || error.message || 'Something went wrong',
       color: 'error'
     })
 

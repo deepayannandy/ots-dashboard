@@ -297,8 +297,8 @@
                 :key="id"
               >
                 <div v-if="(viewDisplay === 'Back View' ? backTableData : tableData).find((t) => t.tube===id)" class="text-sm text-neutral-700 dark:text-neutral-200">
-                  Activity: {{ (viewDisplay === 'Back View' ? backTableData : tableData).find((t) => t.tube===id).Activity }} <br>
-                  Time: {{ (viewDisplay === 'Back View' ? backTableData : tableData).find((t) => t.tube===id).time }} <br>
+                  Activity: {{ (viewDisplay === 'Back View' ? backTableData : tableData).find((t) => t.tube===id)!.Activity }} <br>
+                  Time: {{ (viewDisplay === 'Back View' ? backTableData : tableData).find((t) => t.tube===id)!.time }} <br>
                 </div>
                 <div v-else class="text-sm text-neutral-700 dark:text-neutral-200">
                   Tube not detected yet.
@@ -354,6 +354,12 @@ import { Pie } from 'vue-chartjs'
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js'
 import type { TooltipItem } from 'chart.js'
 
+type TubeDataTable = {
+  tube: string
+  Activity: string
+  time: string
+  face: string
+}
 ChartJS.register(ArcElement, Tooltip, Legend)
 
 const loading = ref(false)
@@ -365,10 +371,10 @@ const { setConfig } = useReactorGenerator()
 
 const reactorId = useRoute().params?.reactorId as string
 const sheetId = useRoute().params?.sheetId as string
-const tableData = ref([])
-const repeatTableData = ref([])
-const backTableData = ref([])
-const backRepeatTableData = ref([])
+const tableData = ref<TubeDataTable[]>([])
+const repeatTableData = ref<TubeDataTable[]>([])
+const backTableData = ref<TubeDataTable[]>([])
+const backRepeatTableData = ref<TubeDataTable[]>([])
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const tubeSheetDetails = ref<any>(null)
@@ -465,29 +471,10 @@ const svgRef = ref<SVGSVGElement | null>(null)
 const svgWidth = 1200, svgHeight = 1200
 const centerX = svgWidth / 2, centerY = svgHeight / 2, scalePx = 2
 const searchValue = ref<string>('')
-const searchRow = ref<string>('R1')
 
 // Cache DOM elements for fast access
 const elById = new Map<string, SVGCircleElement>()
 const selectedIds = ref<Set<string>>(new Set())
-
-const tubesByRow = computed(() => {
-  const grouped: Record<string, { label: string, color?: string | null, value: string }[]> = {}
-  currentTubes.value.forEach((tube) => {
-    const match = tube.id.match(/^R(\d+)C\d+$/)
-    if (match) {
-      const rowKey = `R${match[1]}`
-      if (!grouped[rowKey]) grouped[rowKey] = []
-      grouped[rowKey].push({
-        label: tube.id,
-        color: tube.propertyColor,
-        value: tube.id
-      })
-    }
-  })
-
-  return grouped
-})
 // Property options
 const propertiesOptions = [
   { label: 'Catalyst Tc', value: 'CATALYST_TC', color: '#FF6B6B' },
@@ -538,7 +525,7 @@ function getMirroredIds(id: string): string[] {
 /* ----------------------------
    VISUAL UPDATE
 ----------------------------- */
-function updateCircleVisual(t: Tube, newPropertyColor = '') {
+function updateCircleVisual(t: Tube & { backColor?: string, _backendUpdatedBack?: boolean }, newPropertyColor = '') {
   const c = elById.get(t.id)
   if (!c) return
   const isBackView = viewDisplay.value === 'Back View'
@@ -659,7 +646,8 @@ function renderAll() {
 
   drawBoundary(boundary, config.value, centerX, centerY, scalePx)
 
-  const activeTubes = currentTubes.value.filter(t => !t.deleted)
+  const isBackView = viewDisplay.value === 'Back View'
+  const activeTubes = currentTubes.value.filter(t => !t.deleted && (!isBackView || t._backendUpdatedBack))
   const presentIds = new Set(activeTubes.map(t => t.id))
 
   // Remove stale circles
@@ -796,7 +784,7 @@ async function fetchUpdatedTubeColors() {
   try {
     const { data, surveyType, createdAt, repeat } = await useSurveyStore().getSurveyUpdates()
     repeatCount.value = repeat || 0
-    currentSurvey.value = typeOfPhases.find(phase => phase.value === surveyType)?.label as string || ''
+    currentSurvey.value = allTypeOfPhasesItems.find(phase => phase.value === surveyType)?.label as string || ''
     currentSurveyTime.value = new Date(createdAt).toLocaleString()
     data.forEach((element: { tubeId: string | number, color: string, face?: string }) => {
       const tube = currentTubes.value[element.tubeId as number]
@@ -811,10 +799,10 @@ async function fetchUpdatedTubeColors() {
       updateCircleVisual(tube)
     })
 
-    const frontData = data?.filter(e => e.face !== 'back')
-    const backData = data?.filter(e => e.face === 'back')
+    const frontData = data?.filter((e: { face?: string }) => e.face !== 'back')
+    const backData = data?.filter((e: { face?: string }) => e.face === 'back')
 
-    tableData.value = frontData?.filter(e => !e?.isDuplicate).map((item) => {
+    tableData.value = frontData?.filter((e: { isDuplicate: boolean }) => !e?.isDuplicate).map((item: { tubeIdAsperLayout: string, activity: string, timeStamp: string, isDuplicate: boolean }) => {
       return {
         tube: item.tubeIdAsperLayout,
         Activity: item.activity,
@@ -823,7 +811,7 @@ async function fetchUpdatedTubeColors() {
       }
     })
 
-    repeatTableData.value = frontData?.filter(e => e?.isDuplicate).map((item) => {
+    repeatTableData.value = frontData?.filter((e: { isDuplicate: boolean }) => e?.isDuplicate).map((item: { tubeIdAsperLayout: string, activity: string, timeStamp: string, isDuplicate: boolean }) => {
       return {
         tube: item.tubeIdAsperLayout,
         Activity: item.activity,
@@ -832,7 +820,7 @@ async function fetchUpdatedTubeColors() {
       }
     })
 
-    backTableData.value = backData?.filter(e => !e?.isDuplicate).map((item) => {
+    backTableData.value = backData?.filter((e: { isDuplicate: boolean }) => !e?.isDuplicate).map((item: { tubeIdAsperLayout: string, activity: string, timeStamp: string, isDuplicate: boolean }) => {
       return {
         tube: item.tubeIdAsperLayout,
         Activity: item.activity,
@@ -841,7 +829,7 @@ async function fetchUpdatedTubeColors() {
       }
     })
 
-    backRepeatTableData.value = backData?.filter(e => e?.isDuplicate).map((item) => {
+    backRepeatTableData.value = backData?.filter((e: { isDuplicate: boolean }) => e?.isDuplicate).map((item: { tubeIdAsperLayout: string, activity: string, timeStamp: string, isDuplicate: boolean }) => {
       return {
         tube: item.tubeIdAsperLayout,
         Activity: item.activity,
