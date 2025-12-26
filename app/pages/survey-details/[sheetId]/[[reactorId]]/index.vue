@@ -204,7 +204,7 @@
                   <div class="text-sm text-neutral-700 dark:text-neutral-200 flex  justify-center">
                     <div>
                       <h1>Progress</h1>
-                      <span class="font-semibold">{{ backendUpdatedCount }}</span> / <span class="font-semibold">{{ totalCount-specialTubes }}</span>
+                      <span class="font-semibold">{{ viewDisplay === 'Back View' ? backBackendUpdatedCount : backendUpdatedCount }}</span> / <span class="font-semibold">{{ totalCount-specialTubes }}</span>
                     </div>
                   </div>
                   <div class="flex  justify-center text-center text-sm text-neutral-700 dark:text-neutral-200">
@@ -255,7 +255,7 @@
               <UTabs :items="tabs" class="w-full">
                 <template #content="{ item }">
                   <UTable
-                    :data="item.label==='Progress' ? tableData : repeatTableData"
+                    :data="item.label==='Progress' ? (viewDisplay === 'Back View' ? backTableData : tableData) : (viewDisplay === 'Back View' ? backRepeatTableData : repeatTableData)"
                     class="flex-1 max-h-[312px]"
                     :rows="10"
                     sticky="header"
@@ -289,21 +289,19 @@
               spotlight
               spotlight-color="secondary"
               class="h-fit p-0"
-              :title="`Tube History`"
+              :title="`Tube History: ${[...selectedIds].join(', ')}`"
               :ui="{ container: 'sm:p-2 gap-y-2' }"
             >
-              <div class="flex flex-wrap gap-2">
-                <div
-                  v-for="id in [...selectedIds]"
-                  :key="id"
-                >
-                  <div v-if="tableData.find((t) => t.tube===id)" class="text-sm text-neutral-700 dark:text-neutral-200">
-                    Activity: {{ tableData.find((t) => t.tube===id).Activity }} <br>
-                    Time: {{ tableData.find((t) => t.tube===id).time }} <br>
-                  </div>
-                  <div v-else class="text-sm text-neutral-700 dark:text-neutral-200">
-                    Tube not detected yet.
-                  </div>
+              <div
+                v-for="id in [...selectedIds]"
+                :key="id"
+              >
+                <div v-if="(viewDisplay === 'Back View' ? backTableData : tableData).find((t) => t.tube===id)" class="text-sm text-neutral-700 dark:text-neutral-200">
+                  Activity: {{ (viewDisplay === 'Back View' ? backTableData : tableData).find((t) => t.tube===id).Activity }} <br>
+                  Time: {{ (viewDisplay === 'Back View' ? backTableData : tableData).find((t) => t.tube===id).time }} <br>
+                </div>
+                <div v-else class="text-sm text-neutral-700 dark:text-neutral-200">
+                  Tube not detected yet.
                 </div>
               </div>
             </UPageCard>
@@ -346,7 +344,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, watch } from 'vue'
 import type { Tube } from '@/types'
 import { useReactorsStore } from '@/stores/reactors'
 import { useSurveyStore } from '@/stores/survey'
@@ -369,6 +367,8 @@ const reactorId = useRoute().params?.reactorId as string
 const sheetId = useRoute().params?.sheetId as string
 const tableData = ref([])
 const repeatTableData = ref([])
+const backTableData = ref([])
+const backRepeatTableData = ref([])
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const tubeSheetDetails = ref<any>(null)
@@ -541,7 +541,8 @@ function getMirroredIds(id: string): string[] {
 function updateCircleVisual(t: Tube, newPropertyColor = '') {
   const c = elById.get(t.id)
   if (!c) return
-  const propertyColor = propertiesOptions.find(p => p.value === t.property)?.color || t.propertyColor
+  const isBackView = viewDisplay.value === 'Back View'
+  const propertyColor = isBackView ? (t.backColor || propertiesOptions.find(p => p.value === t.property)?.color || t.propertyColor) : (propertiesOptions.find(p => p.value === t.property)?.color || t.propertyColor)
   const isSelected = selectedIds.value.has(t.id)
   const hasComment = !!t.comment
 
@@ -783,21 +784,36 @@ onMounted(async () => {
    WATCH
 ----------------------------- */
 
+watch(viewDisplay, () => {
+  // Update all tube visuals when switching between front and back view
+  currentTubes.value.forEach(tube => {
+    updateCircleVisual(tube)
+  })
+})
+
 async function fetchUpdatedTubeColors() {
   try {
     const { data, surveyType, createdAt, repeat } = await useSurveyStore().getSurveyUpdates()
     repeatCount.value = repeat || 0
     currentSurvey.value = typeOfPhases.find(phase => phase.value === surveyType)?.label as string || ''
     currentSurveyTime.value = new Date(createdAt).toLocaleString()
-    data.forEach((element: { tubeId: string | number, color: string }) => {
+    data.forEach((element: { tubeId: string | number, color: string, face?: string }) => {
       const tube = currentTubes.value[element.tubeId as number]
       if (!tube) return
-      tube.propertyColor = element.color
-      tube._backendUpdated = true
-      updateCircleVisual(tube, element.color)
+      if (element.face === 'back') {
+        tube.backColor = element.color
+        tube._backendUpdatedBack = true
+      } else {
+        tube.propertyColor = element.color
+        tube._backendUpdated = true
+      }
+      updateCircleVisual(tube)
     })
 
-    tableData.value = data?.filter(e => !e?.isDuplicate).map((item) => {
+    const frontData = data?.filter(e => e.face !== 'back')
+    const backData = data?.filter(e => e.face === 'back')
+
+    tableData.value = frontData?.filter(e => !e?.isDuplicate).map((item) => {
       return {
         tube: item.tubeIdAsperLayout,
         Activity: item.activity,
@@ -806,7 +822,25 @@ async function fetchUpdatedTubeColors() {
       }
     })
 
-    repeatTableData.value = data?.filter(e => e?.isDuplicate).map((item) => {
+    repeatTableData.value = frontData?.filter(e => e?.isDuplicate).map((item) => {
+      return {
+        tube: item.tubeIdAsperLayout,
+        Activity: item.activity,
+        time: new Date(item.timeStamp).toLocaleString(),
+        Action: 'Locate'
+      }
+    })
+
+    backTableData.value = backData?.filter(e => !e?.isDuplicate).map((item) => {
+      return {
+        tube: item.tubeIdAsperLayout,
+        Activity: item.activity,
+        time: new Date(item.timeStamp).toLocaleString(),
+        Action: 'Locate'
+      }
+    })
+
+    backRepeatTableData.value = backData?.filter(e => e?.isDuplicate).map((item) => {
       return {
         tube: item.tubeIdAsperLayout,
         Activity: item.activity,
@@ -821,6 +855,10 @@ async function fetchUpdatedTubeColors() {
 
 const backendUpdatedCount = computed(() =>
   currentTubes.value.filter(t => t._backendUpdated && !propertiesOptions.some(p => p.value === t.property)).length
+)
+
+const backBackendUpdatedCount = computed(() =>
+  currentTubes.value.filter(t => t._backendUpdatedBack && !propertiesOptions.some(p => p.value === t.property)).length
 )
 
 // total tubes
@@ -853,7 +891,7 @@ const propertyLegend = computed(() => {
 
 const specialTubes = computed(() => propertyLegend.value.reduce((sum, item) => sum + item.count, 0))
 const effectiveTotal = computed(() => totalCount.value - specialTubes.value)
-const completed = computed(() => backendUpdatedCount.value)
+const completed = computed(() => viewDisplay.value === 'Back View' ? backBackendUpdatedCount.value : backendUpdatedCount.value)
 const remaining = computed(() => Math.max(0, effectiveTotal.value - completed.value))
 
 const chartData = computed(() => ({
