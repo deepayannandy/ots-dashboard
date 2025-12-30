@@ -65,14 +65,21 @@
         </template>
 
         <template #left>
-          <UDropdownMenu :items="settingitems" :content="{ align: 'start' }" :ui="{ content: 'w-56' }">
-            <UButton
-              label="Settings"
-              color="neutral"
-              variant="outline"
-              icon="i-lucide-settings"
-            />
-          </UDropdownMenu>
+          <USwitch
+            v-model="settingsInput.mirrorX"
+            label="Mirror X (Top ↔ Bottom)"
+            size="xs"
+          />
+          <USwitch
+            v-model="settingsInput.mirrorY"
+            label="Mirror Y (Left ↔ Right)"
+            size="xs"
+          />
+          <USwitch
+            v-model="settingsInput.multiselect"
+            label="Multiselect"
+            size="xs"
+          />
           <URadioGroup
             v-model="viewDisplay"
             indicator="hidden"
@@ -219,7 +226,6 @@
 </template>
 
 <script setup lang="ts">
-import type { DropdownMenuItem } from '@nuxt/ui'
 import { ref, reactive, computed, watch, onMounted } from 'vue'
 import type { Tube } from '@/types'
 import RowConfigPannel from '@/components/tubesheet/rowConfigPannel.vue'
@@ -253,32 +259,20 @@ const isReactorCreated = computed(() => {
 })
 
 const settingsInput = reactive({
-
   mirrorX: false,
-  autoSave: false
+  mirrorY: false,
+  multiselect: false
+})
+
+// Ensure only one mirror option is active at a time
+watch(() => settingsInput.mirrorX, (val) => {
+  if (val) settingsInput.mirrorY = false
+})
+watch(() => settingsInput.mirrorY, (val) => {
+  if (val) settingsInput.mirrorX = false
 })
 
 const saveChangesModal = ref(false)
-const settingitems = computed<DropdownMenuItem[]>(() => [
-
-  {
-    label: 'Mirror  (Top ↔ Buttom)',
-    icon: 'i-lucide-arrow-up-down',
-    type: 'checkbox',
-    checked: settingsInput.mirrorX,
-    onUpdateChecked(v: boolean) { settingsInput.mirrorX = v },
-    onSelect(e: Event) { e.preventDefault() }
-  },
-
-  {
-    label: 'Auto Save',
-    icon: 'i-lucide-save',
-    type: 'checkbox',
-    checked: settingsInput.autoSave,
-    onUpdateChecked(v: boolean) { settingsInput.autoSave = v },
-    onSelect(e: Event) { e.preventDefault() }
-  }
-])
 
 const { config, tubes: currentTubes, handleUpdateTubes } = useReactorGenerator()
 const { scale, tx, ty, zoom, pan, reset } = useViewportTransform()
@@ -356,7 +350,7 @@ const editModal = reactive({
    UTIL: Find mirrored IDs
 ----------------------------- */
 function getMirroredIds(id: string): string[] {
-  if (!settingsInput.mirrorX) return []
+  if (!settingsInput.mirrorX && !settingsInput.mirrorY) return []
 
   const match = id.match(/^R(\d+)C(\d+)$/)
   if (!match) return []
@@ -364,15 +358,26 @@ function getMirroredIds(id: string): string[] {
   const row = Number(rStr)
   const col = Number(cStr)
 
-  const rows = currentTubes.value
-    .filter(t => !t.deleted)
+  const activeTubes = currentTubes.value.filter(t => !t.deleted)
+
+  // Get max row for X mirror
+  const rows = activeTubes
     .map((t) => {
       const m = t?.id?.match(/^R(\d+)C/)
       return m ? Number(m[1]) : undefined
     })
     .filter((n): n is number => n !== undefined)
-
   const maxRow = rows.length ? Math.max(...rows) : row
+
+  // Get max col for Y mirror (within the same row)
+  const colsInRow = activeTubes
+    .filter(t => t.id.startsWith(`R${row}C`))
+    .map((t) => {
+      const m = t?.id?.match(/^R\d+C(\d+)$/)
+      return m ? Number(m[1]) : undefined
+    })
+    .filter((n): n is number => n !== undefined)
+  const maxCol = colsInRow.length ? Math.max(...colsInRow) : col
 
   const mirrors = new Set<string>()
 
@@ -381,7 +386,10 @@ function getMirroredIds(id: string): string[] {
     mirrors.add(`R${maxRow - (row - 1)}C${col}`) // e.g. R1 -> Rmax, R2 -> Rmax-1
   }
 
-  // XY combined (diagonal mirror)
+  // Y mirror (left-right)
+  if (settingsInput.mirrorY && col !== maxCol) {
+    mirrors.add(`R${row}C${maxCol - (col - 1)}`) // e.g. C1 -> Cmax, C2 -> Cmax-1
+  }
 
   return [...mirrors].filter(mid =>
     mid !== id
@@ -464,7 +472,8 @@ function deselectAll() {
 ----------------------------- */
 function handleTubeClick(e: MouseEvent, id: string) {
   e.stopPropagation()
-  if (e.shiftKey) toggleSelect(id)
+  const isMultiselect = settingsInput.multiselect || e.shiftKey
+  if (isMultiselect) toggleSelect(id)
   else if (selectedIds.value.has(id)) deselect(id)
   else selectOnly(id)
 }
