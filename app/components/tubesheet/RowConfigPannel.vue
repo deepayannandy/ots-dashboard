@@ -1,16 +1,22 @@
 <template>
   <UPopover v-model:open="open" :dismissible="false">
-    <UButton color="neutral" variant="subtle" icon="i-lucide-panel-bottom-close" />
+    <UButton
+      color="neutral"
+      variant="subtle"
+      icon="i-lucide-panel-bottom-close"
+      :disabled="disabled"
+    />
 
     <template #content>
-      <div class="p-4">
+      <div class="p-4" :class="{ 'opacity-50 pointer-events-none': disabled }">
         <UFieldGroup orientation="vertical" class="w-full">
           <UTextarea
             v-model="rowCountsArrayInput"
             class="!rouned-b-none"
             placeholder="e.g., 7,12,15 or [7,12,15]"
+            :disabled="disabled"
           />
-          <UButton label="Apply Counts Array" @click="applyCountsArray" />
+          <UButton label="Apply Counts Array" :disabled="disabled" @click="applyCountsArray" />
         </UFieldGroup>
         <div class="max-h-96 overflow-auto  mt-2 space-y-2">
           <div
@@ -63,6 +69,7 @@
             label="Apply All"
             block
             variant="solid"
+            :disabled="disabled"
             @click="applyAllRowUpdates"
           />
         </div>
@@ -82,6 +89,13 @@ import {
 } from '@/utils'
 
 const open = ref(true)
+
+/* ---------- Props ---------- */
+const props = defineProps<{
+  disabled?: boolean
+}>()
+
+const disabled = computed(() => props.disabled ?? false)
 
 /* ---------- Shared composable ---------- */
 const { config, tubes: currentTubes, handleUpdateTubes } = useReactorGenerator()

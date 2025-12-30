@@ -1,8 +1,24 @@
 <script setup lang="ts">
 import type { NavigationMenuItem } from '@nuxt/ui'
+import { useTubeSheets } from '@/stores/tubesheets'
 
 const route = useRoute()
 const open = ref(false)
+
+const tubeSheetsStore = useTubeSheets()
+
+// Get sheetId from route params when on create-reactor page
+const sheetId = computed(() => {
+  const params = route.params as { sheetId?: string }
+  return params.sheetId
+})
+
+// Check if tubesheet status is REACTOR_CREATED
+const isReactorCreated = computed(() => {
+  if (!sheetId.value) return false
+  const sheet = tubeSheetsStore.list.find(s => s._id === sheetId.value)
+  return sheet?.status === 'REACTOR_CREATED'
+})
 
 const links = [
   [
@@ -81,7 +97,7 @@ const groups = computed(() => [
           tooltip
           popover
         />
-        <TubesheetConfigPannel v-else :collapsed="collapsed" />
+        <TubesheetConfigPannel v-else :collapsed="collapsed" :disabled="isReactorCreated" />
       </template>
 
       <template #footer="{ collapsed }">

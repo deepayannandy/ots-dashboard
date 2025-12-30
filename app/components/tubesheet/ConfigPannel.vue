@@ -4,6 +4,7 @@
       :schema="schema"
       :state="state"
       class="space-y-6"
+      :class="{ 'opacity-50 pointer-events-none': disabled }"
       @submit="onSubmit"
     >
       <!-- Shape Selection -->
@@ -153,7 +154,7 @@ import type { ReactorConfig } from '~/types'
 
 const { validateAndGenerate, setConfig, config } = useReactorGenerator()
 
-defineProps<{ collapsed?: boolean }>()
+defineProps<{ collapsed?: boolean, disabled?: boolean }>()
 
 const { shapes } = useUserSettings()
 

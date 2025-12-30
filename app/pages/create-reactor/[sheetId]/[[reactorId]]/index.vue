@@ -55,7 +55,7 @@
 
       <UDashboardToolbar>
         <template #right>
-          <RowConfigPannel class=" right-0 z-20 bg-white dark:bg-black" />
+          <RowConfigPannel class="right-0 z-20 bg-white dark:bg-black" :disabled="isReactorCreated" />
           <UButton
             label="Update"
             color="primary"
@@ -246,6 +246,10 @@ const getEquipmentTypeLabel = (value?: string) => {
 
 const headerTitle = computed(() => {
   return getEquipmentTypeLabel(tubeSheetDetails.value?.type as string | undefined)
+})
+
+const isReactorCreated = computed(() => {
+  return tubeSheetDetails.value?.status === 'REACTOR_CREATED'
 })
 
 const settingsInput = reactive({
