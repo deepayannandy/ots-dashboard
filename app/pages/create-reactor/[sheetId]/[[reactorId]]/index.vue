@@ -55,7 +55,27 @@
 
       <UDashboardToolbar>
         <template #right>
-          <RowConfigPannel class="right-0 z-20 bg-white dark:bg-black" :disabled="isReactorCreated" />
+          <UButtonGroup class="space-x-2">
+            <UButton
+              color="neutral"
+              variant="subtle"
+              icon="i-lucide-undo-2"
+              :disabled="!canUndo"
+              @click="undo"
+            />
+            <UButton
+              color="neutral"
+              variant="subtle"
+              icon="i-lucide-redo-2"
+              :disabled="!canRedo"
+              @click="redo"
+            />
+          </UButtonGroup>
+          <RowConfigPannel
+            class="right-0 z-20 bg-white dark:bg-black"
+            :disabled="isReactorCreated"
+            :on-before-update="pushHistory"
+          />
           <UButton
             label="Update"
             color="primary"
@@ -227,8 +247,8 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, watch, onMounted } from 'vue'
-import type { Tube } from '@/types'
-import RowConfigPannel from '@/components/tubesheet/rowConfigPannel.vue'
+import type { Tube, ReactorConfig } from '@/types'
+import RowConfigPannel from '@/components/tubesheet/RowConfigPannel.vue'
 import { useReactorsStore } from '@/stores/reactors'
 import { useTubeSheets } from '@/stores/tubesheets'
 import { tubeSheetTypeItems } from '@/utils/tubesheetOptions'
@@ -273,6 +293,63 @@ watch(() => settingsInput.mirrorY, (val) => {
 })
 
 const saveChangesModal = ref(false)
+
+/* ----------------------------
+   UNDO / REDO HISTORY
+----------------------------- */
+interface HistoryState {
+  config: ReactorConfig
+  tubes: Tube[]
+}
+
+const MAX_HISTORY = 50
+const undoStack = ref<HistoryState[]>([])
+const redoStack = ref<HistoryState[]>([])
+
+const canUndo = computed(() => undoStack.value.length > 0)
+const canRedo = computed(() => redoStack.value.length > 0)
+
+function cloneState(): HistoryState {
+  return {
+    config: JSON.parse(JSON.stringify(config.value)),
+    tubes: JSON.parse(JSON.stringify(currentTubes.value))
+  }
+}
+
+function pushHistory() {
+  undoStack.value.push(cloneState())
+  if (undoStack.value.length > MAX_HISTORY) {
+    undoStack.value.shift()
+  }
+  // Clear redo stack when new action is performed
+  redoStack.value = []
+}
+
+function undo() {
+  if (!canUndo.value) return
+
+  // Save current state to redo stack
+  redoStack.value.push(cloneState())
+
+  // Pop and apply previous state
+  const prevState = undoStack.value.pop()!
+  setConfig(prevState.config)
+  currentTubes.value = prevState.tubes
+  renderAll()
+}
+
+function redo() {
+  if (!canRedo.value) return
+
+  // Save current state to undo stack
+  undoStack.value.push(cloneState())
+
+  // Pop and apply next state
+  const nextState = redoStack.value.pop()!
+  setConfig(nextState.config)
+  currentTubes.value = nextState.tubes
+  renderAll()
+}
 
 const { config, tubes: currentTubes, handleUpdateTubes } = useReactorGenerator()
 const { scale, tx, ty, zoom, pan, reset } = useViewportTransform()
@@ -552,6 +629,9 @@ function handleTubeContextMenu(e: MouseEvent, id: string) {
    SAVE CHANGES (Partial Update)
 ----------------------------- */
 function saveChanges() {
+  // Push current state to history before making changes
+  pushHistory()
+
   const { comment, property, targetIds } = editModal
   const propertyColor = property
     ? propertiesOptions.find(p => p.value === property)?.color ?? undefined

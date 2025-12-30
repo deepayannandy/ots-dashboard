@@ -93,6 +93,7 @@ const open = ref(true)
 /* ---------- Props ---------- */
 const props = defineProps<{
   disabled?: boolean
+  onBeforeUpdate?: () => void
 }>()
 
 const disabled = computed(() => props.disabled ?? false)
@@ -182,6 +183,9 @@ function applyAllRowUpdates() {
     return
   }
 
+  // Call onBeforeUpdate to allow parent to save history
+  props.onBeforeUpdate?.()
+
   let tubesArr = currentTubes.value.slice()
 
   // Apply size changes using computeSetRowCountUpdateModule
@@ -238,6 +242,9 @@ function applyCountsArray() {
     useToast().add({ title: 'Invalid pitch', color: 'error' })
     return
   }
+
+  // Call onBeforeUpdate to allow parent to save history
+  props.onBeforeUpdate?.()
 
   let tubesArr = currentTubes.value.slice()
   const currentLen = computeRowsFrom(tubesArr).length
