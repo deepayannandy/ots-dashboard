@@ -1,7 +1,7 @@
 <template>
   <UDashboardPanel id="index">
     <template #header>
-      <UDashboardNavbar title="Tubesheets">
+      <UDashboardNavbar title="Projects">
         <template #leading>
           <UDashboardSidebarCollapse />
         </template>

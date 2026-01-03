@@ -3,25 +3,25 @@ export const tubeSheetTypeItems = [
   { label: 'Boiler', value: 'BOILER' },
   { label: 'EOEG Reactor', value: 'EOEG_REACTOR' },
   { label: 'Glycol', value: 'GLYCOL_REACTOR' },
-  { label: 'Aerylic Reactor', value: 'AERYLIC_REACTOR' },
+  { label: 'Acrylic Reactor', value: 'ACRYLIC_REACTOR' },
   { label: 'Gas Cooler', value: 'GAS_COOLER' }
 ]
 
 export const typeOfPhases = [
-  { label: 'Initial tube sheet inspection top and bottom. Front and back', value: 'INITIAL_TUBE_SHEET_INSPECTION' },
-  { label: 'High pressure cleaning- water and nozzle entry detection', value: 'HIGH_PRESSURE_CLEANING' },
-  { label: 'Eddy current or RFT probe detection', value: 'EDDY_CURRENT_OR_RFT_PROBE_DETECTION' },
-  { label: 'Boroscope inspection', value: 'BOROSCOPE_INSPECTION' },
-  { label: 'Unloading of the catalyst', value: 'UNLOADING_OF_CATALYST' },
-  { label: 'Foam swab cleaning and detection.', value: 'FOAM_SWAB_CLEANING_AND_DETECTION' },
-  { label: 'Mechanical cleaner detection', value: 'MECHANICAL_CLEANER_DETECTION' },
-  { label: 'Sand blasting- sand', value: 'SAND_BLASTING_SAND' },
-  { label: 'Sand Blasting- sand blasting nozzle detection', value: 'SAND_BLASTING_NOZZLE_DETECTION' },
-  { label: 'Color cap tracking', value: 'COLOR_CAP_TRACKING' },
-  { label: 'Fish tape tracking', value: 'FISH_TAPE_TRACKING' },
-  { label: 'Air lancing tip tracking', value: 'AIR_LANCING_TIP_TRACKING' },
-  { label: 'Spring removal Tracking', value: 'SPRING_REMOVAL_TRACKING' },
-  { label: 'Soring insertion Tracking', value: 'SPRING_INSERTION_TRACKING' },
+  { label: 'Initial Tube Sheet Inspection Top And Bottom. Front And Back', value: 'INITIAL_TUBE_SHEET_INSPECTION' },
+  { label: 'High Pressure Cleaning- Water And Nozzle Entry Detection', value: 'HIGH_PRESSURE_CLEANING' },
+  { label: 'Eddy Current Or RFT Probe Detection', value: 'EDDY_CURRENT_OR_RFT_PROBE_DETECTION' },
+  { label: 'Boroscope Inspection', value: 'BOROSCOPE_INSPECTION' },
+  { label: 'Unloading Of The Catalyst', value: 'UNLOADING_OF_CATALYST' },
+  { label: 'Foam Swab Cleaning And Detection.', value: 'FOAM_SWAB_CLEANING_AND_DETECTION' },
+  { label: 'Mechanical Cleaner Detection', value: 'MECHANICAL_CLEANER_DETECTION' },
+  { label: 'Sand Blasting- Sand', value: 'SAND_BLASTING_SAND' },
+  { label: 'Sand Blasting- Sand Blasting Nozzle Detection', value: 'SAND_BLASTING_NOZZLE_DETECTION' },
+  { label: 'Color Cap Tracking', value: 'COLOR_CAP_TRACKING' },
+  { label: 'Fish Tape Tracking', value: 'FISH_TAPE_TRACKING' },
+  { label: 'Air Lancing Tip Tracking', value: 'AIR_LANCING_TIP_TRACKING' },
+  { label: 'Spring Removal Tracking', value: 'SPRING_REMOVAL_TRACKING' },
+  { label: 'Soring Insertion Tracking', value: 'SPRING_INSERTION_TRACKING' },
   { label: 'Catalyst Outage Tracking', value: 'CATALYST_OUTAGE_TRACKING' }
 ]
 

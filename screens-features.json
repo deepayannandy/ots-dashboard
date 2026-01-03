@@ -3,8 +3,12 @@
     {
       "screen": "Dashboard",
       "path": "/",
-      "features": ["View all tubesheets", "Create new tubesheet", "Edit tubesheet details"],
-      "description": "Main dashboard showing all tubesheets with creation and editing capabilities"
+      "features": [
+        "View all projects",
+        "Create new project",
+        "Edit project details"
+      ],
+      "description": "Main dashboard showing all projects with creation and editing capabilities"
     },
     {
       "screen": "Login",
@@ -33,15 +37,19 @@
     {
       "screen": "Survey Details",
       "path": "/survey-details/[sheetId]/[[reactorId]]",
-      "features": ["View reactor tubes", "Zoom controls", "Interactive SVG rendering"],
+      "features": [
+        "View reactor tubes",
+        "Zoom controls",
+        "Interactive SVG rendering"
+      ],
       "description": "Detailed survey view with interactive controls for reactor visualization"
     }
   ],
   "components": [
     {
       "name": "TubeSheet",
-      "features": ["Display tubesheet card", "Edit tubesheet properties"],
-      "description": "Component for displaying and editing tubesheet information"
+      "features": ["Display project card", "Edit project properties"],
+      "description": "Component for displaying and editing project information"
     },
     {
       "name": "UserMenu",
@@ -61,7 +69,7 @@
     {
       "name": "RowConfigPannel",
       "features": ["Configure row settings"],
-      "description": "Panel for configuring row properties in tubesheets"
+      "description": "Panel for configuring row properties in projects"
     }
   ],
   "stores": [
@@ -82,8 +90,8 @@
     },
     {
       "name": "tubesheets",
-      "features": ["Tubesheet list", "Tubesheet operations"],
-      "description": "Store for managing tubesheet data"
+      "features": ["Project list", "Project operations"],
+      "description": "Store for managing project data"
     },
     {
       "name": "userSettings",
@@ -102,7 +110,7 @@
     },
     {
       "name": "TubeSheet",
-      "description": "Data structure for tubesheet information"
+      "description": "Data structure for project information"
     },
     {
       "name": "ReactorConfig",
@@ -132,5 +140,3 @@
     }
   ]
 }
-
-

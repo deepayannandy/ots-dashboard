@@ -2,21 +2,10 @@
   <!-- Modal -->
   <UModal
     v-model:open="open"
-    :description="`Status: ${getLabel(localState.status)}`"
+    description="Project Details"
   >
     <template #body>
       <UForm :state="localState" class="grid grid-cols-1 gap-2">
-        <UFieldGroup class="grid grid-cols-2  w-full">
-          <div variant="outline" class="text-xl">
-            Date
-          </div>
-          <UInput
-            v-model="dateDisplay"
-            class="rounded-l-none"
-            type="date"
-            readonly
-          />
-        </UFieldGroup>
         <UFieldGroup class="grid grid-cols-2  w-full">
           <div variant="outline" class="text-xl">
             Project Start Date
@@ -100,7 +89,7 @@
     <div class="flex flex-col items-center justify-center gap-2 text-neutral-400 dark:text-neutral-500">
       <UIcon name="i-lucide-plus" class="size-8 opacity-60 group-hover:opacity-100" />
       <p class="text-sm font-medium opacity-70">
-        Add Tube Sheet
+        Create Project
       </p>
     </div>
   </UPageCard>
@@ -183,7 +172,7 @@
         v-if="shouldShowEditTubesheet(localState.status)"
         block
         size="xs"
-        label="Edit Tubesheet"
+        label="Edit Project"
         color="neutral"
         variant="soft"
         icon="i-lucide-edit"

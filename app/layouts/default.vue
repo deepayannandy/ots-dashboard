@@ -23,7 +23,7 @@ const isReactorCreated = computed(() => {
 const links = [
   [
     {
-      label: 'Tubesheets',
+      label: 'Projects',
       icon: 'i-lucide-layers-2',
       to: '/',
       onSelect: () => {

@@ -8,7 +8,7 @@
       @submit="onSubmit"
     >
       <!-- Shape Selection -->
-      <UFormField label="Tubesheet Shape" name="shape" class="w-full">
+      <UFormField label="Project Shape" name="shape" class="w-full">
         <URadioGroup
           v-model="state.shape"
           indicator="hidden"
