@@ -83,7 +83,10 @@
   <!-- Add New Card -->
   <UPageCard
     v-if="addNew"
-    class="cursor-pointer border border-dashed ring-0 border-neutral-200 "
+    class="cursor-pointer border border-dashed ring-0 border-neutral-200"
+    :ui="{
+      root: 'h-full'
+    }"
     @click="open = true"
   >
     <div class="flex flex-col items-center justify-center gap-2 text-neutral-400 dark:text-neutral-500">
@@ -100,6 +103,9 @@
     :spotlight-color="statusColor(localState.status)"
     spotlight
     class="cursor-pointer"
+    :ui="{
+      root: 'h-full elevation-1'
+    }"
     @click="handleCardClick"
   >
     <!-- Header -->
@@ -107,9 +113,6 @@
       <h3 class="font-semibold text-neutral-900 dark:text-neutral-100 truncate">
         {{ localState.clientName }}
       </h3>
-      <div :color="statusColor(localState.status)" variant="soft">
-        {{ getLabel(localState.status) }}
-      </div>
     </div>
 
     <!-- Info -->

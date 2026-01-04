@@ -136,50 +136,48 @@
             </svg>
 
             <!-- Zoom Controls -->
+            <UPageCard v-if="selectedIds.size" heading="Edit Tube Properties" class="absolute top-0 left-0 max-w-sm">
+              <div class="space-y-2  ">
+                <div class="text-xs text-gray-500">
+                  Editing
+                </div>
+                <div class="flex flex-wrap gap-1 max-w-auto max-h-50">
+                  <span
+                    v-for="id in [...selectedIds]"
+                    :key="id"
+                    class="px-2 py-1 rounded-md bg-primary-100 dark:bg-primary-900/50 text-primary-800 dark:text-primary-200"
+                  >
+                    {{ id }}
+                  </span>
+                </div>
 
-            <!-- Modal -->
-            <UModal v-model:open="editModal.visible">
-              <template #content>
-                <div class="p-4 space-y-4">
-                  <h3 class="font-semibold text-lg">
-                    Edit Tube Properties
-                  </h3>
+                <UTextarea
+                  v-model="editModal.comment"
+                  placeholder="Add comment for selected tube(s)..."
+                  autoresize
+                  class="w-full"
+                />
 
-                  <div v-if="editModal.targetIds.length > 1" class="text-xs text-gray-500">
-                    Editing {{ editModal.targetIds.length }} tubes
-                  </div>
-
-                  <UTextarea
-                    v-model="editModal.comment"
-                    placeholder="Add comment for selected tube(s)..."
-                    autoresize
-                    class="w-full"
-                  />
-
-                  <div class="flex flex-wrap gap-2">
-                    <div
-                      v-for="p in propertiesOptions"
-                      :key="p.value"
-                      class="cursor-pointer px-3 py-1 rounded-full border flex items-center gap-2 transition"
-                      :class="editModal.property === p.value ? 'border-primary-500 ring-2 ring-primary-200' : 'border-gray-300 hover:bg-gray-100'"
-                      @click="editModal.property = p.value"
-                    >
-                      <div class="w-3 h-3 rounded-full" :style="{ backgroundColor: p.color }" />
-                      <span class="text-sm">{{ p.label }}</span>
-                    </div>
-                  </div>
-
-                  <div class="flex justify-end gap-2">
-                    <UButton variant="ghost" @click="editModal.visible = false">
-                      Cancel
-                    </UButton>
-                    <UButton color="primary" @click="saveChanges">
-                      Save
-                    </UButton>
+                <div class="flex flex-wrap gap-2">
+                  <div
+                    v-for="p in propertiesOptions"
+                    :key="p.value"
+                    class="cursor-pointer px-3 py-1 rounded-full border flex items-center gap-2 transition"
+                    :class="editModal.property === p.value ? 'border-primary-500 ring-2 ring-primary-200' : 'border-gray-300 hover:bg-gray-100'"
+                    @click="editModal.property = p.value"
+                  >
+                    <div class="w-3 h-3 rounded-full" :style="{ backgroundColor: p.color }" />
+                    <span class="text-sm">{{ p.label }}</span>
                   </div>
                 </div>
-              </template>
-            </UModal>
+
+                <div class="flex justify-end gap-2">
+                  <UButton color="primary" @click="saveChanges">
+                    Save
+                  </UButton>
+                </div>
+              </div>
+            </UPageCard>
             <UModal v-model:open="saveChangesModal">
               <template #content>
                 <div class="text-center space-y-4 p-6">
@@ -221,23 +219,6 @@
                 Zoom: {{ scale.toFixed(2) }}
               </p>
             </div>
-            <div
-              v-if="selectedIds.size"
-              class=" flex flex-col items-center gap-2 z-50 bg-white dark:bg-black shadow p-2 rounded w-fit"
-            >
-              <p class="font-semibold mb-1">
-                Selected Tubes ({{ selectedIds.size }})
-              </p>
-              <div class="flex flex-wrap gap-1 max-w-auto max-h-50">
-                <span
-                  v-for="id in [...selectedIds]"
-                  :key="id"
-                  class="px-2 py-1 rounded-md bg-primary-100 dark:bg-primary-900/50 text-primary-800 dark:text-primary-200"
-                >
-                  {{ id }}
-                </span>
-              </div>
-            </div>
           </div>
         </UPageBody>
       </UPage>
@@ -252,6 +233,7 @@ import RowConfigPannel from '@/components/tubesheet/RowConfigPannel.vue'
 import { useReactorsStore } from '@/stores/reactors'
 import { useTubeSheets } from '@/stores/tubesheets'
 import { tubeSheetTypeItems } from '@/utils/tubesheetOptions'
+import { UPage } from '#components'
 
 const { setConfig } = useReactorGenerator()
 
@@ -631,8 +613,9 @@ function handleTubeContextMenu(e: MouseEvent, id: string) {
 function saveChanges() {
   // Push current state to history before making changes
   pushHistory()
-
-  const { comment, property, targetIds } = editModal
+  const targetIds = Array.from(selectedIds.value)
+  const comment = editModal.comment
+  const property = editModal.property
   const propertyColor = property
     ? propertiesOptions.find(p => p.value === property)?.color ?? undefined
     : undefined
@@ -640,8 +623,8 @@ function saveChanges() {
   for (const id of targetIds) {
     const tube = currentTubes.value.find(t => t.id === id)
     if (!tube) continue
-    tube.comment = comment || null
-    tube.property = property || null
+    tube.comment = comment || ''
+    tube.property = property || ''
     tube.propertyColor = propertyColor ?? tube.propertyColor
     if (property === 'SOLID') {
       tube.deleted = true
@@ -654,7 +637,12 @@ function saveChanges() {
     renderAll()
     selectedIds.value.clear()
   }
-  editModal.visible = false
+
+  // Reset editModal
+  editModal.comment = ''
+  editModal.property = ''
+  editModal.targetIds = []
+  selectedIds.value.clear()
 }
 
 /* ----------------------------
