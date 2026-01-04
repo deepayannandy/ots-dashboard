@@ -113,25 +113,29 @@
       </UDashboardToolbar>
     </template>
     <template #body>
-      <UPage class="flex">
+      <UPage class="flex min-h-fit">
         <UPageBody
           :class="bodyClass"
+          class="max-h-[calc(100dvh-var(--ui-header-height)-49px)] min-h-[calc(100dvh-var(--ui-header-height)-49px)] w-full flex justify-center items-center relative"
         >
           <!--  @click="deselectAll"
             @contextmenu.prevent -->
-          <div>
+          <div class="h-full w-full flex justify-center items-center">
             <!-- SVG Canvas -->
             <svg
               ref="svgRef"
               :viewBox="`0 0 ${svgWidth} ${svgHeight}`"
               xmlns="http://www.w3.org/2000/svg"
               preserveAspectRatio="xMinYMin meet"
-              :style="
-                viewDisplay==='Back View'? 'transform: scale(-1,1); transform-origin:center; transform-box:fill-box;'
-                : ''"
+              :style="{
+                width: '100%',
+                height: '100%',
+                transform: viewDisplay === 'Back View' ? 'scale(-1,1)' : 'none',
+                transformOrigin: 'center',
+                transformBox: 'fill-box'
+              }"
               :class="viewDisplay==='Back View' ? 'invert' : ''"
             >
-              >
               <g id="viewport" :transform="transformStr" />
             </svg>
 
@@ -207,7 +211,7 @@
 
             <!-- Optional: show selected IDs -->
           </div>
-          <div class="sticky  sm:bottom-0 flex justify-between">
+          <div class="absolute sm:bottom-0 flex justify-between left-0">
             <div class="flex flex-col items-center gap-2 z-50 bg-white dark:bg-black shadow p-2 rounded w-fit">
               <ZoomControls
                 @zoom-in="zoomIn"
@@ -341,7 +345,7 @@ const reactorsStore = useReactorsStore()
 
 const transformStr = computed(() => `translate(${tx.value} ${ty.value}) scale(${scale.value})`)
 const svgRef = ref<SVGSVGElement | null>(null)
-const svgWidth = 1200, svgHeight = 760
+const svgWidth = 1200, svgHeight = 1200
 const centerX = svgWidth / 2, centerY = svgHeight / 2, scalePx = 2
 const searchValue = ref<string[]>([])
 const searchRow = ref<string>('R1')
