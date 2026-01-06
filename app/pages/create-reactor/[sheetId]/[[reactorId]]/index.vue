@@ -338,7 +338,28 @@ function redo() {
 }
 
 const { config, tubes: currentTubes, handleUpdateTubes } = useReactorGenerator()
-const { scale, tx, ty, zoom, pan, reset } = useViewportTransform()
+const { scale, tx, ty, zoom, pan, reset, setZoom, setPan } = useViewportTransform()
+
+const viewportStorageKey = reactorId ? `viewport:${reactorId}` : 'viewport:default'
+
+function loadViewportState() {
+  if (typeof localStorage === 'undefined') return
+  const raw = localStorage.getItem(viewportStorageKey)
+  if (!raw) return
+  try {
+    const parsed = JSON.parse(raw) as { scale?: number, tx?: number, ty?: number }
+    if (typeof parsed.scale === 'number') setZoom(parsed.scale)
+    if (typeof parsed.tx === 'number' && typeof parsed.ty === 'number') setPan(parsed.tx, parsed.ty)
+  } catch (err) {
+    console.error('Failed to load viewport state', err)
+  }
+}
+
+function persistViewportState() {
+  if (typeof localStorage === 'undefined') return
+  const payload = { scale: scale.value, tx: tx.value, ty: ty.value }
+  localStorage.setItem(viewportStorageKey, JSON.stringify(payload))
+}
 
 // Initialize stores
 const reactorsStore = useReactorsStore()
@@ -690,6 +711,10 @@ onMounted(async () => {
   if (!tubeSheetsStore.list.length) {
     await tubeSheetsStore.getAllSheet()
   }
+
+  loadViewportState()
+
+  watch(() => [scale.value, tx.value, ty.value], persistViewportState, { deep: false })
 })
 
 // Load reactor data on mount
