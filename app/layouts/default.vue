@@ -4,6 +4,7 @@ import { useTubeSheets } from '@/stores/tubesheets'
 
 const route = useRoute()
 const open = ref(false)
+const collapsed = ref(false)
 
 const tubeSheetsStore = useTubeSheets()
 
@@ -20,6 +21,12 @@ const isReactorCreated = computed(() => {
   return sheet?.status === 'REACTOR_CREATED'
 })
 
+watch(isReactorCreated, (newValue) => {
+  if (newValue) (collapsed.value = true)
+  else {
+    collapsed.value = false
+  }
+})
 const links = [
   [
     {
@@ -87,16 +94,17 @@ const groups = computed(() => [
       v-if="!useRoute().path.startsWith('/survey-details')"
       id="default"
       v-model:open="open"
+      v-model:collapsed="collapsed"
       collapsible
-      resizable
+      :collapsed-size="4"
       class="bg-elevated/25"
       :ui="{ footer: 'lg:border-t lg:border-default' }"
     >
-      <template #header="{ collapsed }">
-        <img src="/ots.jpeg" class="size-12" :class="collapsed&&'!size-8'">
+      <template #header>
+        <img src="/ots.jpeg" class="size-12" :class="collapsed&&'size-8!'">
       </template>
 
-      <template #default="{ collapsed }">
+      <template #default>
         <UNavigationMenu
           v-if="!useRoute().path.startsWith('/create-reactor')"
           :collapsed="collapsed"
@@ -105,10 +113,14 @@ const groups = computed(() => [
           tooltip
           popover
         />
-        <TubesheetConfigPannel v-else :collapsed="collapsed" :disabled="isReactorCreated" />
+        <TubesheetConfigPannel
+          v-else
+          :collapsed="collapsed"
+          :disabled="isReactorCreated"
+        />
       </template>
 
-      <template #footer="{ collapsed }">
+      <template #footer>
         <UserMenu :collapsed="collapsed" />
       </template>
     </UDashboardSidebar>

@@ -140,7 +140,7 @@
             </svg>
 
             <!-- Zoom Controls -->
-            <UPageCard v-if="selectedIds.size" heading="Edit Tube Properties" class="absolute top-0 left-0 max-w-sm">
+            <UPageCard v-if="selectedIds.size" heading="Edit Tube Properties" class="absolute bottom-0 right-0 max-w-sm">
               <div class="space-y-2  ">
                 <div class="text-xs text-gray-500">
                   Editing

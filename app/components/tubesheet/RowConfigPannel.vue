@@ -4,7 +4,6 @@
       color="neutral"
       variant="subtle"
       icon="i-lucide-panel-bottom-close"
-      :disabled="disabled"
     />
 
     <template #content>
@@ -88,7 +87,7 @@ import {
   computeAddRowForIndex as computeAddRowForIndexModule
 } from '@/utils'
 
-const open = ref(true)
+const open = ref(false)
 
 /* ---------- Props ---------- */
 const props = defineProps<{
@@ -96,7 +95,15 @@ const props = defineProps<{
   onBeforeUpdate?: () => void
 }>()
 
-const disabled = computed(() => props.disabled ?? false)
+const disabled = computed(() => props.disabled)
+
+watch(
+  disabled,
+  (newVal) => {
+    if (newVal) open.value = false
+    else { open.value = true }
+  }, { immediate: true }
+)
 
 /* ---------- Shared composable ---------- */
 const { config, tubes: currentTubes, handleUpdateTubes } = useReactorGenerator()
