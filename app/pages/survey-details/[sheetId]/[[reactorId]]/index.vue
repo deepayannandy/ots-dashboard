@@ -53,6 +53,7 @@
             />
           </UFieldGroup>
           <UButton
+            v-if="!viewMode"
             :label="loading ? 'Stop Survey' : 'Start Survey'"
             color="primary"
             :icon="loading ? 'i-lucide-stop-circle' : 'i-lucide-target'"
@@ -175,8 +176,8 @@
           </div>
         </UPageBody>
         <template v-if="isRightOpen" #right>
-          <div class="w-full max-h-[calc(100dvh-var(--ui-header-height)-49px)] overflow-y-auto p-4 space-y-4 relative" :class="{ 'opacity-30 pointer-events-none bg-gray-200 dark:bg-gray-700': !loading }">
-            <div v-if="!loading" class="absolute inset-0 bg-gray-200 dark:bg-gray-700 opacity-50 z-10 flex items-center justify-center" />
+          <div class="w-full max-h-[calc(100dvh-var(--ui-header-height)-49px)] overflow-y-auto p-4 space-y-4 relative" :class="{ 'opacity-30 pointer-events-none bg-gray-200 dark:bg-gray-700': !loading && !viewMode }">
+            <div v-if="!loading && !viewMode" class="absolute inset-0 bg-gray-200 dark:bg-gray-700 opacity-50 z-10 flex items-center justify-center" />
             <UPageCard
               spotlight
               spotlight-color="primary"
@@ -385,6 +386,7 @@ const showDetails = ref(false)
 const items = ref(['Front View', 'Back View'])
 const viewDisplay = ref('Front View')
 const repeatCount = ref(0)
+const viewMode = ref(false)
 
 const tabs = [
   {
@@ -752,6 +754,10 @@ onMounted(async () => {
     } catch (err) {
       console.error('Failed to fetch tubesheet details:', err)
     }
+    if (useRoute().query.surveyId) {
+      fetchUpdatedTubeColors(useRoute().query.surveyId as string)
+      viewMode.value = true
+    }
   }
 
   if (reactorId) {
@@ -780,9 +786,9 @@ watch(viewDisplay, () => {
   })
 })
 
-async function fetchUpdatedTubeColors() {
+async function fetchUpdatedTubeColors(surveyId: string) {
   try {
-    const { data, surveyType, createdAt, repeat } = await useSurveyStore().getSurveyUpdates()
+    const { data, surveyType, createdAt, repeat } = await useSurveyStore().getSurveyUpdates(surveyId)
     repeatCount.value = repeat || 0
     currentSurvey.value = allTypeOfPhasesItems.find(phase => phase.value === surveyType)?.label as string || ''
     currentSurveyTime.value = new Date(createdAt).toLocaleString()

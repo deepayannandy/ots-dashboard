@@ -185,7 +185,7 @@
         v-if="shouldShowEditReactor(localState.status)"
         block
         size="xs"
-        label="Edit Reactor"
+        label="Edit Layout"
         color="neutral"
         variant="soft"
         icon="i-lucide-box"

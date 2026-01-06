@@ -21,10 +21,10 @@ export const useSurveyStore = defineStore('survey', () => {
     }
   }
 
-  async function getSurveyUpdates() {
+  async function getSurveyUpdates(id?: string) {
     const api = useAxios()
     try {
-      const { data } = await api.$get(`api/v2/survey/getSurveyData/${currentSurveyId.value}`)
+      const { data } = await api.$get(`api/v2/survey/getSurveyData/${id || currentSurveyId.value}`)
       return data
     } catch (e) {
       console.error('Failed to get survey updates:', e)

@@ -45,6 +45,14 @@ const links = [
       onSelect: () => {
         open.value = false
       }
+    },
+    {
+      label: 'Survey History',
+      icon: 'i-lucide-clock-3',
+      to: '/survey-history',
+      onSelect: () => {
+        open.value = false
+      }
     }
   ]
 ] satisfies NavigationMenuItem[][]
