@@ -150,7 +150,7 @@
     <UButton
       block
       size="xs"
-      :label="getActionLabel(localState.status)"
+      :label="primaryActionLabel(localState.status)"
       :color="statusColor(localState.status)"
       variant="outline"
       class="mt-auto"
@@ -348,6 +348,13 @@ const handleSubmit = () => {
   emit('saved', localState)
 }
 
+const hasResumeJourney = computed(() => !!localState.isUnderSurvey && !!localState.surveyId)
+
+const primaryActionLabel = (status?: string) => {
+  if (hasResumeJourney.value) return 'Resume Survey'
+  return getActionLabel(status)
+}
+
 const handleReset = () => {
   localState.equipmentId = ''
   localState.type = ''
@@ -436,6 +443,21 @@ const formatDate = (d?: Date | string) =>
     minute: '2-digit'
   })
 const handleNextStep = (status?: string, sheetId?: string, reactorId?: string) => {
+  if (hasResumeJourney.value) {
+    if (sheetId && reactorId) {
+      return navigateTo({
+        path: `/survey-details/${sheetId}/${reactorId}`,
+        query: { surveyId: localState.surveyId, resumedJourney: 'true' }
+      })
+    }
+    if (sheetId) {
+      return navigateTo({
+        path: `/survey-details/${sheetId}`,
+        query: { surveyId: localState.surveyId, resumedJourney: 'true' }
+      })
+    }
+  }
+
   if (status === 'TUBE_SHEET_CREATED') {
     currentSheet.value = localState
     emit('update:openConfigCamera', localState)

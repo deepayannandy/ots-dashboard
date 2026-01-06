@@ -10,15 +10,6 @@
 
     <template #body>
       <div class="space-y-4">
-        <div class="flex justify-end">
-          <UButton
-            icon="i-lucide-refresh-ccw"
-            variant="outline"
-            :loading="isLoading"
-            @click="fetchSurveyHistory"
-          />
-        </div>
-
         <UTable
           :data="surveyHistory"
           :columns="columns"
@@ -47,9 +38,11 @@ interface SurveyHistoryItem {
   reactorId?: string
   repeat?: number
   endTimeStamp?: string
+  createdAt?: string
   tubeSheet?: {
     _id?: string
     clientName?: string
+    totalNoOfTubes?: number
   }
 }
 
@@ -71,14 +64,22 @@ const columns: TableColumn<SurveyHistoryItem>[] = [
     header: 'Survey Type',
     cell: ({ row }) => getSurveyTypeLabel(row.original.surveyType)
   },
+
   {
-    accessorKey: 'status',
-    header: 'Status'
+    id: 'totalNoOfTubes',
+    header: 'Total Tubes',
+    cell: ({ row }) => row.original.tubeSheet?.totalNoOfTubes ?? 'N/A'
+
   },
   {
     id: 'endTime',
     header: 'End Time',
     cell: ({ row }) => formatDate(row.original.endTimeStamp)
+  },
+  {
+    id: 'createdAt',
+    header: 'Start Time',
+    cell: ({ row }) => formatDate(row.original.createdAt)
   },
   {
     id: 'actions',
@@ -102,10 +103,7 @@ function formatDate(value?: string) {
   return date.toLocaleString(undefined, {
     year: 'numeric',
     month: 'short',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit'
+    day: '2-digit'
   })
 }
 

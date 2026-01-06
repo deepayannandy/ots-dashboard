@@ -387,6 +387,7 @@ const items = ref(['Front View', 'Back View'])
 const viewDisplay = ref('Front View')
 const repeatCount = ref(0)
 const viewMode = ref(false)
+const activeSurveyId = ref<string | undefined>(undefined)
 
 const tabs = [
   {
@@ -754,9 +755,18 @@ onMounted(async () => {
     } catch (err) {
       console.error('Failed to fetch tubesheet details:', err)
     }
-    if (useRoute().query.surveyId) {
-      fetchUpdatedTubeColors(useRoute().query.surveyId as string)
-      viewMode.value = true
+    const querySurveyId = useRoute().query.surveyId as string | undefined
+    const resumedJourney = useRoute().query.resumedJourney
+    if (querySurveyId) {
+      activeSurveyId.value = querySurveyId
+      if (resumedJourney) {
+        loading.value = true
+        await fetchUpdatedTubeColors(activeSurveyId.value)
+        interval = setInterval(() => fetchUpdatedTubeColors(activeSurveyId.value as string), 5000)
+      } else {
+        fetchUpdatedTubeColors(activeSurveyId.value)
+        viewMode.value = true
+      }
     }
   }
 
@@ -788,7 +798,10 @@ watch(viewDisplay, () => {
 
 async function fetchUpdatedTubeColors(surveyId: string) {
   try {
-    const { data, surveyType, createdAt, repeat } = await useSurveyStore().getSurveyUpdates(surveyId)
+    const idToUse = surveyId || activeSurveyId.value
+    const { data, surveyType, createdAt, repeat } = idToUse
+      ? await useSurveyStore().getSurveyUpdates(idToUse)
+      : await useSurveyStore().getSurveyUpdates()
     repeatCount.value = repeat || 0
     currentSurvey.value = allTypeOfPhasesItems.find(phase => phase.value === surveyType)?.label as string || ''
     currentSurveyTime.value = new Date(createdAt).toLocaleString()
