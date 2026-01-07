@@ -829,6 +829,7 @@ async function fetchUpdatedTubeColors(surveyId: string) {
     repeatCount.value = repeat || 0
     currentSurvey.value = allTypeOfPhasesItems.find(phase => phase.value === surveyType)?.label as string || ''
     currentSurveyTime.value = new Date(createdAt).toLocaleString()
+    selectedPhase.value = surveyType || ''
     data.forEach((element: { tubeId: string | number, color: string, face?: string }) => {
       const tube = currentTubes.value[element.tubeId as number]
       if (!tube) return
