@@ -83,15 +83,17 @@
   <!-- Add New Card -->
   <UPageCard
     v-if="addNew"
-    class="cursor-pointer border border-dashed ring-0 border-neutral-200"
+    class="cursor-pointer border-2 border-dashed ring-0 border-neutral-300 dark:border-neutral-600 interactive-lift hover:border-primary/60 hover:bg-primary/5"
     :ui="{
-      root: 'h-full'
+      root: 'h-full min-h-[200px] flex items-center justify-center'
     }"
     @click="open = true"
   >
-    <div class="flex flex-col items-center justify-center gap-2 text-neutral-400 dark:text-neutral-500">
-      <UIcon name="i-lucide-plus" class="size-8 opacity-60 group-hover:opacity-100" />
-      <p class="text-sm font-medium opacity-70">
+    <div class="flex flex-col items-center justify-center gap-3 text-neutral-400 dark:text-neutral-500">
+      <div class="p-3 rounded-full bg-neutral-100 dark:bg-neutral-800 elevation-1">
+        <UIcon name="i-lucide-plus" class="size-6" />
+      </div>
+      <p class="text-sm font-medium">
         Create Project
       </p>
     </div>
@@ -102,9 +104,9 @@
     v-else
     :spotlight-color="statusColor(localState.status)"
     spotlight
-    class="cursor-pointer"
+    class="cursor-pointer interactive-lift"
     :ui="{
-      root: 'h-full elevation-1'
+      root: 'h-full'
     }"
     @click="handleCardClick"
   >

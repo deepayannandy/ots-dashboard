@@ -97,11 +97,11 @@ const groups = computed(() => [
       v-model:collapsed="collapsed"
       collapsible
       :collapsed-size="4"
-      class="bg-elevated/25"
-      :ui="{ footer: 'lg:border-t lg:border-default' }"
+      class="gradient-card elevation-3 border-r border-neutral-200/60 dark:border-neutral-800/40"
+      :ui="{ footer: 'lg:border-t lg:border-neutral-200/60 dark:lg:border-neutral-800/40' }"
     >
       <template #header>
-        <img src="/ots.jpeg" class="size-12" :class="collapsed&&'size-8!'">
+        <img src="/ots.jpeg" class="size-12 rounded-lg elevation-1" :class="collapsed&&'size-8!'">
       </template>
 
       <template #default>

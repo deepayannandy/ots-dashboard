@@ -1,9 +1,9 @@
 <template>
-  <div v-if="!collapsed">
+  <div v-if="!collapsed" class="p-2">
     <UForm
       :schema="schema"
       :state="state"
-      class="space-y-6"
+      class="space-y-6 p-4 gradient-card rounded-xl elevation-2 border border-neutral-200/60 dark:border-neutral-700/40"
       :class="{ 'opacity-50 pointer-events-none': disabled }"
       @submit="onSubmit"
     >
