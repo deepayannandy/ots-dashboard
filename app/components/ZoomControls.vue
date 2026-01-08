@@ -1,6 +1,6 @@
 <template>
   <div class="flex items-center gap-2">
-    <button
+    <!-- <button
       :class="[
         'px-2 py-1 rounded text-white transition-all duration-150',
         activeButton === 'zoomIn' ? 'bg-primary-700 scale-95' : 'bg-primary-500'
@@ -53,6 +53,24 @@
       @click="handlePan(0, 40, 'down')"
     >
       ▼
+    </button> -->
+    <button
+      :class="[
+        'px-2 py-1 rounded text-white transition-all duration-150',
+        activeButton === 'rotateLeft' ? 'bg-amber-600 scale-95' : 'bg-amber-500'
+      ]"
+      @click="handleRotateLeft"
+    >
+      ↺
+    </button>
+    <button
+      :class="[
+        'px-2 py-1 rounded text-white transition-all duration-150',
+        activeButton === 'rotateRight' ? 'bg-amber-600 scale-95' : 'bg-amber-500'
+      ]"
+      @click="handleRotateRight"
+    >
+      ↻
     </button>
     <button
       :class="[
@@ -69,7 +87,7 @@
 <script lang="ts" setup>
 import { ref } from 'vue'
 
-const emit = defineEmits(['zoomIn', 'zoomOut', 'pan', 'reset'])
+const emit = defineEmits(['zoomIn', 'zoomOut', 'pan', 'reset', 'rotateLeft', 'rotateRight'])
 const activeButton = ref<string | null>(null)
 
 function triggerActive(key: string) {
@@ -89,6 +107,14 @@ function handlePan(x: number, y: number, key: string) {
   emit('pan', x, y)
   triggerActive(key)
 }
+function handleRotateLeft() {
+  emit('rotateLeft')
+  triggerActive('rotateLeft')
+}
+function handleRotateRight() {
+  emit('rotateRight')
+  triggerActive('rotateRight')
+}
 function handleReset() {
   emit('reset')
   triggerActive('reset')
@@ -101,6 +127,8 @@ defineShortcuts({
   'ArrowRight': () => handlePan(40, 0, 'right'),
   '+': handleZoomIn,
   '-': handleZoomOut,
-  '0': handleReset
+  '0': handleReset,
+  '[': handleRotateLeft,
+  ']': handleRotateRight
 })
 </script>

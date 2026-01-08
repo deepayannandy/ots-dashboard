@@ -83,6 +83,14 @@
             default-value=""
             :items="items"
           />
+          <ZoomControls
+            @zoom-in="zoomIn"
+            @zoom-out="zoomOut"
+            @pan="panXY"
+            @rotate-left="rotateLeft"
+            @rotate-right="rotateRight"
+            @reset="resetView"
+          />
         </template>
       </UDashboardToolbar>
     </template>
@@ -107,6 +115,7 @@
                 ...(viewDisplay==='Back View' ? { transform: 'scale(-1,1)', transformOrigin: 'center', transformBox: 'fill-box' } : {})
               }"
               :class="viewDisplay==='Back View' ? 'invert' : ''"
+              @wheel.prevent="handleWheel"
             >
               <g id="viewport" :transform="transformStr" />
             </svg>
@@ -161,19 +170,6 @@
               </div>
             </div>
           </UPageCard>
-          <div class="fixed bottom-4 left-4 right-4 flex justify-between items-end pointer-events-none">
-            <div class="flex flex-col items-center gap-2 z-50 bg-white dark:bg-black shadow-lg p-2 rounded-lg w-fit pointer-events-auto">
-              <ZoomControls
-                @zoom-in="zoomIn"
-                @zoom-out="zoomOut"
-                @pan="panXY"
-                @reset="resetView"
-              />
-              <p class="text-[10px] sm:text-xs">
-                Zoom: {{ scale.toFixed(2) }}
-              </p>
-            </div>
-          </div>
         </UPageBody>
         <template v-if="isRightOpen" #right>
           <div class="w-full max-h-[calc(100dvh-var(--ui-header-height)-49px)] overflow-y-auto p-4 space-y-4 relative" :class="{ 'opacity-30 pointer-events-none bg-gray-200 dark:bg-gray-700': !loading && !viewMode }">
@@ -464,7 +460,7 @@ const settingsInput = reactive({
 // ])
 
 const { config, tubes: currentTubes } = useReactorGenerator()
-const { scale, tx, ty, zoom, pan, reset, setZoom, setPan } = useViewportTransform()
+const { scale, tx, ty, rotation, zoom, pan, rotate, reset, setZoom, setPan, setRotation } = useViewportTransform()
 
 const viewportStorageKey = reactorId ? `viewport:${reactorId}` : 'viewport:default'
 
@@ -473,9 +469,10 @@ function loadViewportState() {
   const raw = localStorage.getItem(viewportStorageKey)
   if (!raw) return
   try {
-    const parsed = JSON.parse(raw) as { scale?: number, tx?: number, ty?: number }
+    const parsed = JSON.parse(raw) as { scale?: number, tx?: number, ty?: number, rotation?: number }
     if (typeof parsed.scale === 'number') setZoom(parsed.scale)
     if (typeof parsed.tx === 'number' && typeof parsed.ty === 'number') setPan(parsed.tx, parsed.ty)
+    if (typeof parsed.rotation === 'number') setRotation(parsed.rotation)
   } catch (err) {
     console.error('Failed to load viewport state', err)
   }
@@ -483,14 +480,14 @@ function loadViewportState() {
 
 function persistViewportState() {
   if (typeof localStorage === 'undefined') return
-  const payload = { scale: scale.value, tx: tx.value, ty: ty.value }
+  const payload = { scale: scale.value, tx: tx.value, ty: ty.value, rotation: rotation.value }
   localStorage.setItem(viewportStorageKey, JSON.stringify(payload))
 }
 
 // Initialize stores
 const reactorsStore = useReactorsStore()
 
-const transformStr = computed(() => `translate(${tx.value} ${ty.value}) scale(${scale.value})`)
+const transformStr = computed(() => `translate(${tx.value} ${ty.value}) scale(${scale.value}) rotate(${rotation.value} 600 600)`)
 const svgRef = ref<SVGSVGElement | null>(null)
 const svgWidth = 1200, svgHeight = 1200
 const centerX = svgWidth / 2, centerY = svgHeight / 2, scalePx = 2
@@ -758,6 +755,17 @@ function zoomOut() {
 function panXY(dx: number, dy: number) {
   pan(dx, dy)
 }
+function rotateLeft() {
+  rotate(-15)
+}
+function rotateRight() {
+  rotate(15)
+}
+function handleWheel(event: WheelEvent) {
+  // Slower zoom factor (1.03 instead of 1.1) for smoother control
+  const factor = event.deltaY < 0 ? 1.03 : 1 / 1.03
+  zoom(factor)
+}
 function resetView() {
   reset()
 }
@@ -769,9 +777,24 @@ function resetView() {
 // Load reactor data on mount
 onMounted(async () => {
   loadViewportState()
-  watch(() => [scale.value, tx.value, ty.value], persistViewportState, { deep: false })
+  watch(() => [scale.value, tx.value, ty.value, rotation.value], persistViewportState, { deep: false })
 
   // Fetch tubesheet details
+
+  if (reactorId) {
+    const reactor = await reactorsStore.getAReactor(reactorId)
+    if (reactor) {
+      if (reactor.config) {
+        setConfig(reactor.config)
+      }
+
+      if (reactor.tubes && reactor.tubes.length > 0) {
+        currentTubes.value = [...reactor.tubes]
+        renderAll()
+      }
+    }
+  }
+
   if (sheetId) {
     try {
       const { data } = await useAxios().$get(`/api/v2/tubeSheet/getSpecificTubeSheet/${sheetId}`)
@@ -790,20 +813,6 @@ onMounted(async () => {
       } else {
         fetchUpdatedTubeColors(activeSurveyId.value)
         viewMode.value = true
-      }
-    }
-  }
-
-  if (reactorId) {
-    const reactor = await reactorsStore.getAReactor(reactorId)
-    if (reactor) {
-      if (reactor.config) {
-        setConfig(reactor.config)
-      }
-
-      if (reactor.tubes && reactor.tubes.length > 0) {
-        currentTubes.value = [...reactor.tubes]
-        renderAll()
       }
     }
   }
