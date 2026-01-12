@@ -292,6 +292,8 @@
         <template v-if="isRightOpen" #right>
           <div class="w-full max-h-[calc(100dvh-var(--ui-header-height)-49px)] overflow-y-auto p-4 space-y-4 relative" :class="{ 'opacity-30 pointer-events-none bg-gray-200 dark:bg-gray-700': !loading && !viewMode }">
             <div v-if="!loading && !viewMode" class="absolute inset-0 bg-gray-200 dark:bg-gray-700 opacity-50 z-10 flex items-center justify-center" />
+
+            <!-- Survey Progress Card with Pie Chart and Stats -->
             <UPageCard
               spotlight
               spotlight-color="primary"
@@ -333,35 +335,57 @@
               </div>
             </UPageCard>
 
-            <UPageCard
-              spotlight
-              spotlight-color="secondary"
-              class="h-fit p-0"
+            <!-- Progress Line Chart Card -->
+            <div class="flex gap-3">
+              <UPageCard
+                v-if="progressData.length > 0"
+                spotlight
+                spotlight-color="success"
+                class="h-fit"
+                :ui="{ container: 'sm:p-2 gap-2!' }"
+              >
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2">
+                    <UIcon name="i-lucide-clock" class="text-lg text-amber-500" />
+                    <span class="text-sm font-medium text-neutral-700 dark:text-neutral-200">Time Since Last Update</span>
+                  </div>
+                  <span class="text-lg font-bold text-amber-600 dark:text-amber-400 font-mono">{{ elapsedTime }}</span>
+                </div>
+                <div class="h-40">
+                  <Bar :data="progressChartData" :options="progressChartOptions" />
+                </div>
+              </UPageCard>
 
-              :ui="{ container: 'sm:p-2 gap-0!' }"
-              title="Special Tubes"
-            >
-              <div class="grid grid-cols-2 gap-1 p-0">
-                <div
-                  v-for="item in propertyLegend"
-                  :key="item.value"
-                  class="flex items-center justify-between p-2 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
-                >
-                  <div class="flex items-center gap-3">
-                    <div
-                      class="size-2 rounded border border-neutral-300 dark:border-neutral-600"
-                      :style="{ backgroundColor: item.color }"
-                    />
-                    <span class="text-sm font-medium text-neutral-700 dark:text-neutral-200">
-                      {{ item.label }}
+              <UPageCard
+                spotlight
+                spotlight-color="secondary"
+                class="p-0 w-full"
+
+                :ui="{ container: 'sm:p-2 gap-0! h-full' }"
+                title="Special Tubes"
+              >
+                <div class="grid grid-cols-2 gap-1 p-0 h-full">
+                  <div
+                    v-for="item in propertyLegend"
+                    :key="item.value"
+                    class="flex items-center justify-between p-2 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
+                  >
+                    <div class="flex items-center gap-1">
+                      <div
+                        class="size-2 rounded border border-neutral-300 dark:border-neutral-600"
+                        :style="{ backgroundColor: item.color }"
+                      />
+                      <span class="text-[8px] font-medium text-neutral-700 dark:text-neutral-200">
+                        {{ item.label }}
+                      </span>
+                    </div>
+                    <span class="text-[8px] font-bold text-neutral-900 dark:text-neutral-100 p-1 bg-neutral-100 dark:bg-neutral-800 rounded ml-2">
+                      {{ item.count }}
                     </span>
                   </div>
-                  <span class="text-sm font-bold text-neutral-900 dark:text-neutral-100 px-2 py-1 bg-neutral-100 dark:bg-neutral-800 rounded">
-                    {{ item.count }}
-                  </span>
                 </div>
-              </div>
-            </UPageCard>
+              </UPageCard>
+            </div>
             <UPageCard
               :ui="{ container: 'sm:p-2' }"
               spotlight-color="secondary"
@@ -465,8 +489,8 @@ import { useReactorsStore } from '@/stores/reactors'
 import { useSurveyStore } from '@/stores/survey'
 import { tubeSheetTypeItems, typeOfPhases as allTypeOfPhasesItems, tubeSheetStatusLabels } from '@/utils/tubesheetOptions'
 import { UFieldGroup } from '#components'
-import { Pie } from 'vue-chartjs'
-import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js'
+import { Pie, Bar } from 'vue-chartjs'
+import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title } from 'chart.js'
 import type { TooltipItem } from 'chart.js'
 
 type TubeDataTable = {
@@ -475,7 +499,7 @@ type TubeDataTable = {
   time: string
   face: string
 }
-ChartJS.register(ArcElement, Tooltip, Legend)
+ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title)
 
 const loading = ref(false)
 const isRightOpen = ref(true)
@@ -502,6 +526,24 @@ const viewDisplay = ref('Front View')
 const repeatCount = ref(0)
 const viewMode = ref(false)
 const activeSurveyId = ref<string | undefined>(undefined)
+
+// Progress data from API and timer
+const progressData = ref<{ time: string, tubes: number }[]>([])
+const lastUpdatedAt = ref<string | null>(null)
+const elapsedTime = ref('0:00')
+
+// Update elapsed time when API is called
+function updateElapsedTime() {
+  if (lastUpdatedAt.value) {
+    const now = Date.now()
+    const updated = new Date(lastUpdatedAt.value).getTime()
+    const diffMs = now - updated
+    const diffMins = Math.floor(diffMs / 60000)
+    elapsedTime.value = `${diffMins} min`
+  } else {
+    elapsedTime.value = '0 min'
+  }
+}
 
 const tabs = [
   {
@@ -857,7 +899,10 @@ async function stratSurvey() {
       surveyType: selectedPhase.value,
       reactorId: reactorId
     })
-    interval = setInterval(fetchUpdatedTubeColors, 5000)
+    // Call fetchUpdatedTubeColors immediately
+    await fetchUpdatedTubeColors(data.id || activeSurveyId.value as string)
+    // Then set interval for 1 minute (60000ms)
+    interval = setInterval(() => fetchUpdatedTubeColors(data.id || activeSurveyId.value as string), 60000)
     if (data.Success) {
       useToast().add({ title: 'Survey Started', color: 'success' })
     }
@@ -960,7 +1005,7 @@ onMounted(async () => {
       if (resumedJourney) {
         loading.value = true
         await fetchUpdatedTubeColors(activeSurveyId.value)
-        interval = setInterval(() => fetchUpdatedTubeColors(activeSurveyId.value as string), 5000)
+        interval = setInterval(() => fetchUpdatedTubeColors(activeSurveyId.value as string), 60000)
       } else {
         fetchUpdatedTubeColors(activeSurveyId.value)
         viewMode.value = true
@@ -983,10 +1028,20 @@ watch(viewDisplay, () => {
 async function fetchUpdatedTubeColors(surveyId: string) {
   try {
     const idToUse = surveyId || activeSurveyId.value
-    const { data, surveyType, createdAt, repeat } = idToUse
+    const { data, surveyType, createdAt, repeat, progress, updatedAt } = idToUse
       ? await useSurveyStore().getSurveyUpdates(idToUse)
       : await useSurveyStore().getSurveyUpdates()
     repeatCount.value = repeat || 0
+
+    // Update progress data and timer
+    if (progress && Array.isArray(progress)) {
+      progressData.value = progress
+    }
+    if (updatedAt) {
+      lastUpdatedAt.value = updatedAt
+    }
+    updateElapsedTime()
+
     currentSurvey.value = allTypeOfPhasesItems.find(phase => phase.value === surveyType)?.label as string || ''
     currentSurveyTime.value = new Date(createdAt).toLocaleString()
     selectedPhase.value = surveyType || ''
@@ -1113,6 +1168,61 @@ const chartOptions = {
           const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0
           return `${label}: ${value} (${percentage}%)`
         }
+      }
+    }
+  }
+}
+
+// Progress Bar Chart Data
+const progressChartData = computed(() => ({
+  labels: progressData.value.map((p) => {
+    const date = new Date(p.time)
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  }),
+  datasets: [{
+    label: 'Tubes Completed',
+    data: progressData.value.map(p => p.tubes),
+    backgroundColor: '#4CAF50',
+    borderColor: '#388E3C',
+    borderWidth: 1,
+    borderRadius: 4
+  }]
+}))
+
+const progressChartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: {
+      display: false
+    },
+    title: {
+      display: true,
+      text: 'Hourly Efficiency',
+      font: { size: 12 }
+    }
+  },
+  scales: {
+    x: {
+      display: true,
+      title: {
+        display: false
+      },
+      ticks: {
+        maxRotation: 45,
+        font: { size: 9 }
+      }
+    },
+    y: {
+      display: true,
+      beginAtZero: true,
+      title: {
+        display: true,
+        text: 'Tubes',
+        font: { size: 10 }
+      },
+      ticks: {
+        font: { size: 9 }
       }
     }
   }
