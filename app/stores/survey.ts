@@ -31,10 +31,10 @@ export const useSurveyStore = defineStore('survey', () => {
     }
   }
 
-  async function stopSurvey() {
+  async function stopSurvey(surveyId?: string) {
     const api = useAxios()
     try {
-      const data = await api.$post(`api/v2/survey/stopSurvey/${currentSurveyId.value}`)
+      const data = await api.$post(`api/v2/survey/stopSurvey/${surveyId || currentSurveyId.value}`)
       currentSurveyId.value = ''
       return data
     } catch (e) {

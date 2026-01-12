@@ -116,11 +116,83 @@
               :class="viewDisplay==='Back View' ? 'invert' : ''"
               @wheel.prevent="handleWheel"
             >
-              <g id="viewport" :transform="transformStr" />
-            </svg>
+              <g id="viewport" :transform="transformStr">
+                <!-- Compass overlay on reactor (plus sign lines) - inside viewport to move/zoom with reactor -->
+                <g :transform="`rotate(${rotation} ${centerX} ${centerY})`">
+                  <!-- Vertical line (North-South) -->
+                  <line
+                    :x1="centerX"
+                    :y1="centerY - compassSize.vertical - 40"
+                    :x2="centerX"
+                    :y2="centerY + compassSize.vertical + 40"
+                    stroke="#dc2626"
+                    stroke-width="2"
+                    opacity="0.7"
+                  />
 
-            <!-- Zoom Controls -->
-            <!-- Optional: show selected IDs -->
+                  <!-- Horizontal line (East-West) -->
+                  <line
+                    :x1="centerX - compassSize.horizontal - 40"
+                    :y1="centerY"
+                    :x2="centerX + compassSize.horizontal + 40"
+                    :y2="centerY"
+                    stroke="#dc2626"
+                    stroke-width="2"
+                    opacity="0.7"
+                  />
+
+                  <!-- North indicator -->
+                  <g :transform="`translate(${centerX}, ${centerY - compassSize.vertical - 50})`">
+                    <polygon points="0,-12 -8,8 0,4 8,8" fill="#dc2626" />
+                    <text
+                      y="-18"
+                      text-anchor="middle"
+                      fill="#dc2626"
+                      font-weight="bold"
+                      font-size="18"
+                    >N</text>
+                  </g>
+
+                  <!-- South indicator -->
+                  <g :transform="`translate(${centerX}, ${centerY + compassSize.vertical + 50})`">
+                    <polygon points="0,12 -8,-8 0,-4 8,-8" fill="#dc2626" opacity="0.6" />
+                    <text
+                      y="32"
+                      text-anchor="middle"
+                      fill="#dc2626"
+                      font-weight="bold"
+                      font-size="18"
+                    >S</text>
+                  </g>
+
+                  <!-- East indicator -->
+                  <g :transform="`translate(${centerX + compassSize.horizontal + 50}, ${centerY})`">
+                    <polygon points="12,0 -8,-8 -4,0 -8,8" fill="#dc2626" opacity="0.6" />
+                    <text
+                      x="22"
+                      text-anchor="start"
+                      dominant-baseline="middle"
+                      fill="#dc2626"
+                      font-weight="bold"
+                      font-size="18"
+                    >E</text>
+                  </g>
+
+                  <!-- West indicator -->
+                  <g :transform="`translate(${centerX - compassSize.horizontal - 50}, ${centerY})`">
+                    <polygon points="-12,0 8,-8 4,0 8,8" fill="#dc2626" opacity="0.6" />
+                    <text
+                      x="-22"
+                      text-anchor="end"
+                      dominant-baseline="middle"
+                      fill="#dc2626"
+                      font-weight="bold"
+                      font-size="18"
+                    >W</text>
+                  </g>
+                </g>
+              </g>
+            </svg>
           </div>
           <!-- Backend Progress Indicator -->
           <!-- Tubesheet Details Card -->
@@ -169,6 +241,53 @@
               </div>
             </div>
           </UPageCard>
+
+          <div class=" w-20 h-20 top-0 absolute right-0 m-4">
+            <svg viewBox="0 0 64 64" class="w-full h-full">
+
+              <!-- Rotating compass needle group -->
+              <g :style="{ transform: `rotate(${rotation}deg)`, transformOrigin: 'center' }">
+                <!-- North needle (red) -->
+                <polygon points="32,8 28,32 32,28 36,32" fill="#dc2626" />
+                <!-- South needle (gray) -->
+                <polygon points="32,56 28,32 32,36 36,32" fill="#9ca3af" />
+              </g>
+
+              <!-- Fixed direction labels -->
+              <text
+                x="32"
+                y="7"
+                text-anchor="middle"
+                fill="#dc2626"
+                font-weight="bold"
+                font-size="8"
+              >N</text>
+              <text
+                x="32"
+                y="63"
+                text-anchor="middle"
+                fill="#6b7280"
+                font-size="8"
+              >S</text>
+              <text
+                x="58"
+                y="34"
+                text-anchor="middle"
+                fill="#6b7280"
+                font-size="8"
+              >E</text>
+              <text
+                x="6"
+                y="34"
+                text-anchor="middle"
+                fill="#6b7280"
+                font-size="8"
+              >W</text>
+            </svg>
+            <div class="text-center mt-2">
+              <span class="text-lg font-bold text-red-600 dark:text-red-500">{{ rotation }}°</span>
+            </div>
+          </div>
         </UPageBody>
         <template v-if="isRightOpen" #right>
           <div class="w-full max-h-[calc(100dvh-var(--ui-header-height)-49px)] overflow-y-auto p-4 space-y-4 relative" :class="{ 'opacity-30 pointer-events-none bg-gray-200 dark:bg-gray-700': !loading && !viewMode }">
@@ -459,7 +578,7 @@ const settingsInput = reactive({
 // ])
 
 const { config, tubes: currentTubes } = useReactorGenerator()
-const { scale, tx, ty, rotation, zoom, pan, rotate, reset, setZoom, setPan, setRotation } = useViewportTransform()
+const { scale, tx, ty, rotation, zoom, pan, reset, setZoom, setPan, setRotation } = useViewportTransform()
 
 const viewportStorageKey = reactorId ? `viewport:${reactorId}` : 'viewport:default'
 
@@ -491,6 +610,37 @@ const svgRef = ref<SVGSVGElement | null>(null)
 const svgWidth = 1200, svgHeight = 1200
 const centerX = svgWidth / 2, centerY = svgHeight / 2, scalePx = 2
 const searchValue = ref<string>('')
+
+// Computed compass dimensions based on shape type
+const compassSize = computed(() => {
+  const shape = config.value.shape
+  const outerDim = config.value.outerDimension || 100
+  const width = config.value.width || outerDim
+  const height = config.value.height || outerDim
+
+  switch (shape) {
+    case 'RECTANGLE': {
+      // Use diagonal distance to ensure compass stays visible at all rotation angles
+      const diagonal = Math.sqrt((width / 2) ** 2 + (height / 2) ** 2) * scalePx
+      return {
+        horizontal: diagonal,
+        vertical: diagonal
+      }
+    }
+    case 'HEXAGONE':
+      return {
+        horizontal: outerDim * scalePx,
+        vertical: outerDim * scalePx * 0.866 // hex height ratio
+      }
+    case 'DONUT':
+    case 'CIRCLE':
+    default:
+      return {
+        horizontal: outerDim * scalePx,
+        vertical: outerDim * scalePx
+      }
+  }
+})
 
 // Cache DOM elements for fast access
 const elById = new Map<string, SVGCircleElement>()
@@ -723,7 +873,7 @@ function openStopModal() {
 
 async function stopSurvey() {
   try {
-    await useSurveyStore().stopSurvey()
+    await useSurveyStore().stopSurvey(activeSurveyId.value as string)
     loading.value = false
     if (interval) clearInterval(interval)
     stopModalOpen.value = false
