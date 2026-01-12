@@ -346,7 +346,6 @@
               >
                 <div class="flex items-center justify-between">
                   <div class="flex items-center gap-2">
-                    <UIcon name="i-lucide-clock" class="text-lg text-amber-500" />
                     <span class="text-sm font-medium text-neutral-700 dark:text-neutral-200">Time Since Last Update</span>
                   </div>
                   <span class="text-lg font-bold text-amber-600 dark:text-amber-400 font-mono">{{ elapsedTime }}</span>
@@ -386,6 +385,55 @@
                 </div>
               </UPageCard>
             </div>
+
+            <!-- Add Comment Section -->
+            <div v-if="selectedIds.size > 0" class="space-y-2">
+              <div v-if="!showCommentInput" class="flex justify-end">
+                <UButton
+                  label="Add Comment"
+                  color="primary"
+                  variant="outline"
+                  icon="i-lucide-message-square-plus"
+                  size="sm"
+                  @click="showCommentInput = true"
+                />
+              </div>
+              <UPageCard
+                v-if="showCommentInput"
+                spotlight
+                spotlight-color="info"
+                class="h-fit"
+                :ui="{ container: 'sm:p-3 gap-3!' }"
+              >
+                <div class="text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-2">
+                  Add comment for tube: {{ [...selectedIds].join(', ') }}
+                </div>
+                <UTextarea
+                  v-model="commentText"
+                  placeholder="Enter your comment..."
+                  :rows="3"
+                  class="w-full"
+                />
+                <div class="flex justify-end gap-2 mt-2">
+                  <UButton
+                    label="Cancel"
+                    color="neutral"
+                    variant="outline"
+                    size="sm"
+                    @click="showCommentInput = false; commentText = ''"
+                  />
+                  <UButton
+                    label="Add Comment"
+                    color="primary"
+                    size="sm"
+                    :loading="addingComment"
+                    :disabled="!commentText.trim()"
+                    @click="submitComment"
+                  />
+                </div>
+              </UPageCard>
+            </div>
+
             <UPageCard
               :ui="{ container: 'sm:p-2' }"
               spotlight-color="secondary"
@@ -441,6 +489,9 @@
                 </div>
                 <div v-else class="text-sm text-neutral-700 dark:text-neutral-200">
                   Tube not detected yet.
+                </div>
+                <div v-if="tubeComments.find((c) => c.tubeIdAsperLayout === id)?.comment" class="text-amber-600 dark:text-amber-400 mt-1">
+                  <span class="font-medium">Comment:</span> {{ tubeComments.find((c) => c.tubeIdAsperLayout === id)?.comment }}
                 </div>
               </div>
             </UPageCard>
@@ -498,6 +549,7 @@ type TubeDataTable = {
   Activity: string
   time: string
   face: string
+  comment?: string
 }
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title)
 
@@ -531,6 +583,12 @@ const activeSurveyId = ref<string | undefined>(undefined)
 const progressData = ref<{ time: string, tubes: number }[]>([])
 const lastUpdatedAt = ref<string | null>(null)
 const elapsedTime = ref('0:00')
+
+// Comment functionality
+const showCommentInput = ref(false)
+const commentText = ref('')
+const addingComment = ref(false)
+const tubeComments = ref<{ tubeIdAsperLayout: string, comment: string, timeStamp: string, _id: string }[]>([])
 
 // Update elapsed time when API is called
 function updateElapsedTime() {
@@ -842,6 +900,42 @@ function searchTubes() {
 }
 
 /* ----------------------------
+   COMMENT FUNCTIONALITY
+----------------------------- */
+async function submitComment() {
+  if (!commentText.value.trim() || selectedIds.value.size === 0) return
+
+  const surveyId = activeSurveyId.value
+  if (!surveyId) {
+    useToast().add({ title: 'No active survey', color: 'error' })
+    return
+  }
+
+  addingComment.value = true
+  try {
+    // Add comment for each selected tube
+    for (const tubeId of selectedIds.value) {
+      await useAxios().$post(`/api/v2/survey/addComment/${surveyId}`, {
+        tubeIdAsperLayout: tubeId,
+        comment: commentText.value.trim()
+      })
+    }
+
+    useToast().add({ title: 'Comment added successfully', color: 'success' })
+    showCommentInput.value = false
+    commentText.value = ''
+
+    // Refresh data to show updated comments
+    await fetchUpdatedTubeColors(surveyId)
+  } catch (err) {
+    console.error('Failed to add comment:', err)
+    useToast().add({ title: 'Failed to add comment', color: 'error' })
+  } finally {
+    addingComment.value = false
+  }
+}
+
+/* ----------------------------
    RENDERING
 ----------------------------- */
 function renderAll() {
@@ -1028,10 +1122,15 @@ watch(viewDisplay, () => {
 async function fetchUpdatedTubeColors(surveyId: string) {
   try {
     const idToUse = surveyId || activeSurveyId.value
-    const { data, surveyType, createdAt, repeat, progress, updatedAt } = idToUse
+    const { data, surveyType, createdAt, repeat, progress, updatedAt, comments } = idToUse
       ? await useSurveyStore().getSurveyUpdates(idToUse)
       : await useSurveyStore().getSurveyUpdates()
     repeatCount.value = repeat || 0
+
+    // Update comments from API
+    if (comments && Array.isArray(comments)) {
+      tubeComments.value = comments
+    }
 
     // Update progress data and timer
     if (progress && Array.isArray(progress)) {
@@ -1061,39 +1160,43 @@ async function fetchUpdatedTubeColors(surveyId: string) {
     const frontData = data?.filter((e: { face?: string }) => e.face !== 'back')
     const backData = data?.filter((e: { face?: string }) => e.face === 'back')
 
-    tableData.value = frontData?.filter((e: { isDuplicate: boolean }) => !e?.isDuplicate).map((item: { tubeIdAsperLayout: string, activity: string, timeStamp: string, isDuplicate: boolean }) => {
+    tableData.value = frontData?.filter((e: { isDuplicate: boolean }) => !e?.isDuplicate).map((item: { tubeIdAsperLayout: string, activity: string, timeStamp: string, isDuplicate: boolean, comment?: string }) => {
       return {
         tube: item.tubeIdAsperLayout,
         Activity: item.activity,
         time: new Date(item.timeStamp).toLocaleString(),
-        Action: 'Locate'
+        Action: 'Locate',
+        comment: item.comment
       }
     })
 
-    repeatTableData.value = frontData?.filter((e: { isDuplicate: boolean }) => e?.isDuplicate).map((item: { tubeIdAsperLayout: string, activity: string, timeStamp: string, isDuplicate: boolean }) => {
+    repeatTableData.value = frontData?.filter((e: { isDuplicate: boolean }) => e?.isDuplicate).map((item: { tubeIdAsperLayout: string, activity: string, timeStamp: string, isDuplicate: boolean, comment?: string }) => {
       return {
         tube: item.tubeIdAsperLayout,
         Activity: item.activity,
         time: new Date(item.timeStamp).toLocaleString(),
-        Action: 'Locate'
+        Action: 'Locate',
+        comment: item.comment
       }
     })
 
-    backTableData.value = backData?.filter((e: { isDuplicate: boolean }) => !e?.isDuplicate).map((item: { tubeIdAsperLayout: string, activity: string, timeStamp: string, isDuplicate: boolean }) => {
+    backTableData.value = backData?.filter((e: { isDuplicate: boolean }) => !e?.isDuplicate).map((item: { tubeIdAsperLayout: string, activity: string, timeStamp: string, isDuplicate: boolean, comment?: string }) => {
       return {
         tube: item.tubeIdAsperLayout,
         Activity: item.activity,
         time: new Date(item.timeStamp).toLocaleString(),
-        Action: 'Locate'
+        Action: 'Locate',
+        comment: item.comment
       }
     })
 
-    backRepeatTableData.value = backData?.filter((e: { isDuplicate: boolean }) => e?.isDuplicate).map((item: { tubeIdAsperLayout: string, activity: string, timeStamp: string, isDuplicate: boolean }) => {
+    backRepeatTableData.value = backData?.filter((e: { isDuplicate: boolean }) => e?.isDuplicate).map((item: { tubeIdAsperLayout: string, activity: string, timeStamp: string, isDuplicate: boolean, comment?: string }) => {
       return {
         tube: item.tubeIdAsperLayout,
         Activity: item.activity,
         time: new Date(item.timeStamp).toLocaleString(),
-        Action: 'Locate'
+        Action: 'Locate',
+        comment: item.comment
       }
     })
   } catch (err) {
