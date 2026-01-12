@@ -84,11 +84,10 @@
             :items="items"
           />
           <ZoomControls
+            hide-rotation
             @zoom-in="zoomIn"
             @zoom-out="zoomOut"
             @pan="panXY"
-            @rotate-left="rotateLeft"
-            @rotate-right="rotateRight"
             @reset="resetView"
           />
         </template>
@@ -755,12 +754,6 @@ function zoomOut() {
 function panXY(dx: number, dy: number) {
   pan(dx, dy)
 }
-function rotateLeft() {
-  rotate(-15)
-}
-function rotateRight() {
-  rotate(15)
-}
 function handleWheel(event: WheelEvent) {
   // Slower zoom factor (1.03 instead of 1.1) for smoother control
   const factor = event.deltaY < 0 ? 1.03 : 1 / 1.03
@@ -786,6 +779,14 @@ onMounted(async () => {
     if (reactor) {
       if (reactor.config) {
         setConfig(reactor.config)
+
+        // Load viewport positions from config if available
+        if (reactor.config.positions) {
+          const { scale: savedScale, tx: savedTx, ty: savedTy, rotation: savedRotation } = reactor.config.positions
+          if (typeof savedScale === 'number') setZoom(savedScale)
+          if (typeof savedTx === 'number' && typeof savedTy === 'number') setPan(savedTx, savedTy)
+          if (typeof savedRotation === 'number') setRotation(savedRotation)
+        }
       }
 
       if (reactor.tubes && reactor.tubes.length > 0) {

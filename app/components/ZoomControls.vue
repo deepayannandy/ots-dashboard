@@ -55,6 +55,7 @@
       ▼
     </button> -->
     <button
+      v-if="!hideRotation"
       :class="[
         'px-2.5 py-1.5 rounded-md text-sm font-medium transition-all duration-150 border',
         activeButton === 'rotateLeft'
@@ -66,6 +67,7 @@
       ↺
     </button>
     <button
+      v-if="!hideRotation"
       :class="[
         'px-2.5 py-1.5 rounded-md text-sm font-medium transition-all duration-150 border',
         activeButton === 'rotateRight'
@@ -76,7 +78,7 @@
     >
       ↻
     </button>
-    <div class="w-px h-5 bg-neutral-200 dark:bg-neutral-700 mx-0.5" />
+    <div v-if="!hideRotation" class="w-px h-5 bg-neutral-200 dark:bg-neutral-700 mx-0.5" />
     <button
       :class="[
         'px-2.5 py-1.5 rounded-md text-sm font-medium transition-all duration-150 border',
@@ -93,6 +95,10 @@
 
 <script lang="ts" setup>
 import { ref } from 'vue'
+
+defineProps<{
+  hideRotation?: boolean
+}>()
 
 const emit = defineEmits(['zoomIn', 'zoomOut', 'pan', 'reset', 'rotateLeft', 'rotateRight'])
 const activeButton = ref<string | null>(null)

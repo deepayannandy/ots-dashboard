@@ -19,6 +19,12 @@ export interface ReactorConfig {
   pitch: number
   lattice: LatticeType
   angle: 30 | 45 | 60 | 90
+  positions?: {
+    scale: number
+    tx: number
+    ty: number
+    rotation: number
+  }
 }
 
 export interface Tube {

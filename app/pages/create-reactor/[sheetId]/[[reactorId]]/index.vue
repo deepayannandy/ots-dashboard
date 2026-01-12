@@ -702,7 +702,15 @@ function saveReactorData(autoUPdate = false) {
   reactorsStore.saveReactor({
     sheetId: sheetId,
     reactorId: reactorId,
-    config: config.value,
+    config: {
+      ...config.value,
+      positions: {
+        scale: scale.value,
+        tx: tx.value,
+        ty: ty.value,
+        rotation: rotation.value
+      }
+    },
     tubes: currentTubes.value
 
   })
@@ -732,6 +740,14 @@ onMounted(async () => {
     if (reactor) {
       if (reactor.config) {
         setConfig(reactor.config)
+        
+        // Load viewport positions from config if available
+        if (reactor.config.positions) {
+          const { scale: savedScale, tx: savedTx, ty: savedTy, rotation: savedRotation } = reactor.config.positions
+          if (typeof savedScale === 'number') setZoom(savedScale)
+          if (typeof savedTx === 'number' && typeof savedTy === 'number') setPan(savedTx, savedTy)
+          if (typeof savedRotation === 'number') setRotation(savedRotation)
+        }
       }
 
       if (reactor.tubes && reactor.tubes.length > 0) {
