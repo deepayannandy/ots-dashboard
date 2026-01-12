@@ -1,6 +1,6 @@
 <template>
-  <div class="flex flex-col items-center justify-center gap-4 p-4 h-dvh w-full">
-    <UPageCard class="w-full max-w-md" spotlight-color="primary" spotlight>
+  <div class="flex flex-col items-center justify-center gap-4 p-4 h-dvh w-full bg-gradient-to-br from-neutral-100 via-neutral-50 to-neutral-100 dark:from-neutral-950 dark:via-neutral-900 dark:to-neutral-950">
+    <UPageCard class="w-full max-w-md elevation-4" spotlight-color="primary" spotlight>
       <UAuthForm
         :schema="schema"
         :fields="fields"
@@ -10,7 +10,7 @@
       >
         <template #title>
           <div class="flex justify-center w-full">
-            <img src="/ots.jpeg" class="size-20">
+            <img src="/ots.jpeg" class="size-20 rounded-xl elevation-2">
           </div>
           <h1 class="text-xl font-bold text-center">
             Login to your account

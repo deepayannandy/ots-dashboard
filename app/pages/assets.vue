@@ -27,7 +27,7 @@
           :data="cameras"
           :columns="columns"
           :loading="isFetching"
-          class="flex-1"
+          class="flex-1 elevation-1 rounded-lg overflow-hidden"
         />
       </div>
 

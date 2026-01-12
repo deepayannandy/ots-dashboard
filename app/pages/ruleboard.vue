@@ -10,14 +10,14 @@
 
     <template #body>
       <div class="space-y-6">
-        <UPageGrid class="gap-4">
+        <UPageGrid class="gap-5">
           <UPageCard
-            class="flex min-h-[220px] cursor-pointer items-center justify-center border border-dashed border-primary/40 text-center transition hover:border-primary hover:bg-primary/5"
+            class="flex min-h-[220px] cursor-pointer items-center justify-center border-2 border-dashed border-neutral-300 dark:border-neutral-600 text-center transition hover:border-primary/60 hover:bg-primary/5 interactive-lift"
             @click="openCreateModal"
           >
-            <div class="space-y-2">
-              <span class="inline-flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary">
-                <UIcon name="i-lucide-plus" class="size-6" />
+            <div class="space-y-3">
+              <span class="inline-flex size-14 items-center justify-center rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-500 elevation-1">
+                <UIcon name="i-lucide-plus" class="size-7" />
               </span>
               <div class="space-y-1">
                 <p class="text-lg font-semibold">
@@ -46,7 +46,7 @@
             <UPageCard
               v-for="rule in phaseRules"
               :key="rule._id || rule.phaseName"
-              class="flex flex-col gap-4"
+              class="flex flex-col gap-4 interactive-lift"
               :spotlight="true"
               :spotlight-color="getColorSwatch(rule?.configs?.baseColor || rule?.configs?.fsdEntry)
                 || 'var(--color-primary)'"

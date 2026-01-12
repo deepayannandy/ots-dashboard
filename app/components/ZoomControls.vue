@@ -1,5 +1,5 @@
 <template>
-  <div class="flex items-center gap-2">
+  <div class="flex items-center gap-1.5 gradient-card rounded-xl p-2 elevation-3 border border-neutral-200/60 dark:border-neutral-700/40">
     <!-- <button
       :class="[
         'px-2 py-1 rounded text-white transition-all duration-150',
@@ -56,8 +56,10 @@
     </button> -->
     <button
       :class="[
-        'px-2 py-1 rounded text-white transition-all duration-150',
-        activeButton === 'rotateLeft' ? 'bg-amber-600 scale-95' : 'bg-amber-500'
+        'px-2.5 py-1.5 rounded-md text-sm font-medium transition-all duration-150 border',
+        activeButton === 'rotateLeft'
+          ? 'bg-neutral-200 dark:bg-neutral-700 border-neutral-300 dark:border-neutral-600 scale-95'
+          : 'bg-neutral-100 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 hover:bg-neutral-150 dark:hover:bg-neutral-750'
       ]"
       @click="handleRotateLeft"
     >
@@ -65,17 +67,22 @@
     </button>
     <button
       :class="[
-        'px-2 py-1 rounded text-white transition-all duration-150',
-        activeButton === 'rotateRight' ? 'bg-amber-600 scale-95' : 'bg-amber-500'
+        'px-2.5 py-1.5 rounded-md text-sm font-medium transition-all duration-150 border',
+        activeButton === 'rotateRight'
+          ? 'bg-neutral-200 dark:bg-neutral-700 border-neutral-300 dark:border-neutral-600 scale-95'
+          : 'bg-neutral-100 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 hover:bg-neutral-150 dark:hover:bg-neutral-750'
       ]"
       @click="handleRotateRight"
     >
       ↻
     </button>
+    <div class="w-px h-5 bg-neutral-200 dark:bg-neutral-700 mx-0.5" />
     <button
       :class="[
-        'px-2 py-1 rounded text-slate-800 transition-all duration-150',
-        activeButton === 'reset' ? 'bg-slate-300 scale-95' : 'bg-slate-200'
+        'px-2.5 py-1.5 rounded-md text-sm font-medium transition-all duration-150 border',
+        activeButton === 'reset'
+          ? 'bg-neutral-200 dark:bg-neutral-700 border-neutral-300 dark:border-neutral-600 scale-95'
+          : 'bg-neutral-100 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 hover:bg-neutral-150 dark:hover:bg-neutral-750'
       ]"
       @click="handleReset"
     >
