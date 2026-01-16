@@ -1,12 +1,16 @@
 <script setup lang="ts">
 import type { NavigationMenuItem } from '@nuxt/ui'
 import { useTubeSheets } from '@/stores/tubesheets'
+import { useCompany } from '@/stores/company'
 
 const route = useRoute()
 const open = ref(false)
 const collapsed = ref(false)
 
 const tubeSheetsStore = useTubeSheets()
+const companyStore = useCompany()
+
+const companyLogo = computed(() => companyStore.logoUrl)
 
 // Get sheetId from route params when on create-reactor page
 const sheetId = computed(() => {
@@ -27,13 +31,9 @@ watch(isReactorCreated, (newValue) => {
     collapsed.value = false
   }
 })
-const companyLogo = ref('/ots.jpeg')
 
-onMounted(() => {
-  const storedLogo = localStorage.getItem('companyLogo')
-  if (storedLogo) {
-    companyLogo.value = storedLogo
-  }
+onMounted(async () => {
+  await companyStore.fetchCompanyDetails()
 })
 
 const links = [

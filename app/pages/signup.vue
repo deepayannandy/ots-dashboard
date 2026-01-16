@@ -10,7 +10,7 @@
       >
         <template #title>
           <div class="flex justify-center w-full">
-            <img src="/ots.jpeg" class="size-20 rounded-xl elevation-2">
+            <img :src="companyLogo" class="size-20 rounded-xl elevation-2">
           </div>
           <h1 class="text-xl font-bold text-center">
             Create your account
@@ -24,6 +24,7 @@
 <script setup lang="ts">
 import * as z from 'zod'
 import type { FormSubmitEvent, AuthFormField } from '@nuxt/ui'
+import { useCompany } from '~/stores/company'
 import { useRouter } from '#app'
 
 const loading = ref(false)
@@ -33,6 +34,13 @@ definePageMeta({ layout: 'login' })
 const router = useRouter()
 const toast = useToast()
 const axios = useAxios()
+const companyStore = useCompany()
+
+const companyLogo = computed(() => companyStore.logoUrl)
+
+onMounted(async () => {
+  await companyStore.fetchCompanyDetails()
+})
 
 const fields: AuthFormField[] = [
   {

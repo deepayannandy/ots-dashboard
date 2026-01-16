@@ -10,7 +10,7 @@
       >
         <template #title>
           <div class="flex justify-center w-full">
-            <img src="/ots.jpeg" class="size-20 rounded-xl elevation-2">
+            <img :src="companyLogo" class="size-20 rounded-xl elevation-2">
           </div>
           <h1 class="text-xl font-bold text-center">
             Login to your account
@@ -25,6 +25,7 @@
 import * as z from 'zod'
 import type { FormSubmitEvent, AuthFormField } from '@nuxt/ui'
 import { useAuth } from '~/stores/auth'
+import { useCompany } from '~/stores/company'
 import { useRouter } from '#app'
 
 const loading = ref(false)
@@ -33,6 +34,9 @@ definePageMeta({ layout: 'login' })
 
 const router = useRouter()
 const auth = useAuth()
+const companyStore = useCompany()
+
+const companyLogo = computed(() => companyStore.logoUrl)
 
 const fields: AuthFormField[] = [
   {
@@ -67,8 +71,6 @@ async function checkCompanyExists() {
   } catch (error) {
     const err = error as { response?: { status?: number } }
     if (err?.response?.status === 404) {
-      alert('Please set up your company details before logging in.')
-
       return false
     }
     return true
@@ -79,6 +81,8 @@ onMounted(async () => {
   const companyExists = await checkCompanyExists()
   if (!companyExists) {
     router.push('/company-setup')
+  } else {
+    await companyStore.fetchCompanyDetails()
   }
 })
 
