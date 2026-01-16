@@ -96,11 +96,13 @@
     <template #body>
       <UPage class="flex gap-0" :ui="pageUi">
         <UPageBody
-          class="select-none bg-[linear-gradient(to_right,#e5e7eb_.5px,transparent_.5px),linear-gradient(to_bottom,#e5e7eb_.5px,transparent_.5px)] bg-size-[20px_20px] dark:bg-[linear-gradient(to_right,#2d2d2d_.5px,transparent_.5px),linear-gradient(to_bottom,#2d2d2d_.5px,transparent_.5px)] dark:bg-size-[20px_20px] dark:bg-neutral-950 bg-white  max-h-[calc(100dvh-var(--ui-header-height)-49px)] min-h-[calc(100dvh-var(--ui-header-height)-49px)] w-full flex justify-center items-center"
+          class="select-none bg-[linear-gradient(to_right,#e5e7eb_.5px,transparent_.5px),linear-gradient(to_bottom,#e5e7eb_.5px,transparent_.5px)] bg-size-[20px_20px] dark:bg-[linear-gradient(to_right,#2d2d2d_.5px,transparent_.5px),linear-gradient(to_bottom,#2d2d2d_.5px,transparent_.5px)] dark:bg-size-[20px_20px] dark:bg-neutral-950 bg-white  max-h-[calc(100dvh-var(--ui-header-height)-49px)] min-h-[calc(100dvh-var(--ui-header-height)-49px)] w-full flex justify-center items-center z-10"
           :class="bodyClass"
         >
           <!--  @click="deselectAll"
             @contextmenu.prevent -->
+          <div class="absolute top-0 size-full -z-10 left-0 opacity-20" style="background-image: url('/ots_background.png'); background-size: cover; background-position: center;" />
+
           <div class="h-full p-10 w-full flex justify-center items-center ">
             <!-- SVG Canvas -->
             <svg

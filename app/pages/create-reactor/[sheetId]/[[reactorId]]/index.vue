@@ -124,8 +124,9 @@
       <UPage class="flex min-h-fit">
         <UPageBody
           :class="bodyClass"
-          class="max-h-[calc(100dvh-var(--ui-header-height)-49px)] min-h-[calc(100dvh-var(--ui-header-height)-49px)] w-full flex justify-center items-center relative"
+          class="max-h-[calc(100dvh-var(--ui-header-height)-49px)] min-h-[calc(100dvh-var(--ui-header-height)-49px)] w-full flex justify-center items-center relative z-10"
         >
+          <div class="absolute top-0 size-full -z-10 left-0 opacity-20" style="background-image: url('/ots_background.png'); background-size: cover; background-position: center;" />
           <!--  @click="deselectAll"
             @contextmenu.prevent -->
           <div class="h-full w-full flex justify-center items-center">
