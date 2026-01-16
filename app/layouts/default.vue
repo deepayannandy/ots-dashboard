@@ -96,6 +96,7 @@ const groups = computed(() => [
       v-model:open="open"
       v-model:collapsed="collapsed"
       collapsible
+      resizable
       :collapsed-size="4"
       class="gradient-card elevation-3 border-r border-neutral-200/60 dark:border-neutral-800/40"
       :ui="{ footer: 'lg:border-t lg:border-neutral-200/60 dark:lg:border-neutral-800/40' }"
