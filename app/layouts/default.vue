@@ -27,6 +27,15 @@ watch(isReactorCreated, (newValue) => {
     collapsed.value = false
   }
 })
+const companyLogo = ref('/ots.jpeg')
+
+onMounted(() => {
+  const storedLogo = localStorage.getItem('companyLogo')
+  if (storedLogo) {
+    companyLogo.value = storedLogo
+  }
+})
+
 const links = [
   [
     {
@@ -102,7 +111,7 @@ const groups = computed(() => [
       :ui="{ footer: 'lg:border-t lg:border-neutral-200/60 dark:lg:border-neutral-800/40' }"
     >
       <template #header>
-        <img src="/ots.jpeg" class="size-12 rounded-lg elevation-1" :class="collapsed&&'size-8!'">
+        <img :src="companyLogo" class="size-12 rounded-lg elevation-1" :class="collapsed&&'size-8!'">
       </template>
 
       <template #default>

@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col items-center justify-center gap-4 p-4 h-dvh w-full bg-gradient-to-br from-neutral-100 via-neutral-50 to-neutral-100 dark:from-neutral-950 dark:via-neutral-900 dark:to-neutral-950">
+  <div class="flex flex-col items-center justify-center gap-4 p-4 h-dvh w-full bg-linear-to-br from-neutral-100 via-neutral-50 to-neutral-100 dark:from-neutral-950 dark:via-neutral-900 dark:to-neutral-950">
     <UPageCard class="w-full max-w-md elevation-4" spotlight-color="primary" spotlight>
       <UAuthForm
         :schema="schema"
@@ -59,6 +59,28 @@ const schema = z.object({
 })
 
 type Schema = z.output<typeof schema>
+
+async function checkCompanyExists() {
+  try {
+    await useAxios().$get('/api/v2/company/getCompanyDetails')
+    return true
+  } catch (error) {
+    const err = error as { response?: { status?: number } }
+    if (err?.response?.status === 404) {
+      alert('Please set up your company details before logging in.')
+
+      return false
+    }
+    return true
+  }
+}
+
+onMounted(async () => {
+  const companyExists = await checkCompanyExists()
+  if (!companyExists) {
+    router.push('/company-setup')
+  }
+})
 
 async function onSubmit({ data }: FormSubmitEvent<Schema>) {
   loading.value = true

@@ -3,7 +3,10 @@ import { useAuth } from '~/stores/auth'
 export default defineNuxtRouteMiddleware((to) => {
   const auth = useAuth()
 
-  if (!auth.isLoggedIn && to.path !== '/auth/login') {
+  const publicRoutes = ['/auth/login', '/company-setup', '/signup']
+  const isPublicRoute = publicRoutes.includes(to.path)
+
+  if (!auth.isLoggedIn && !isPublicRoute) {
     return navigateTo('/auth/login')
   }
 
