@@ -7,9 +7,13 @@ export default defineAppConfig({
     UInput: {
       root: 'w-full'
     },
-    UModal: {
+    modal: {
       overlay: 'bg-neutral-950/60 dark:bg-neutral-950/80 backdrop-blur-sm',
-      content: 'elevation-4 gradient-card'
+      content: 'elevation-4 gradient-card',
+      slots: {
+        header: 'bg-primary-500 text-white!',
+        description: 'text-neutral-700 dark:text-neutral-300'
+      }
     },
     UDropdownMenu: {
       content: 'elevation-3 gradient-card'
