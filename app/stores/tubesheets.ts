@@ -19,6 +19,19 @@ export const useTubeSheets = defineStore('tubesheets', {
       }
     },
 
+    async cloneTubeSheet(sheet: Partial<TubeSheet>) {
+      try {
+        const { id } = await useAxios().$post('/api/v2/tubeSheet/cloneTubeSheet', {
+          ...sheet,
+          tubeSheetId: sheet._id
+        })
+        await this.getAllSheet()
+        return this.list.find(sheet => sheet._id === id)
+      } catch (e) {
+        console.error(e)
+      }
+    },
+
     async getAllSheet() {
       try {
         const { data } = await useAxios().$get('/api/v2/tubeSheet/getAllTubeSheet')

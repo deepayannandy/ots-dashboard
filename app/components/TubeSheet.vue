@@ -28,7 +28,7 @@
           <div variant="outline" class="text-xl">
             Equipment Type
           </div>
-          <USelect v-model="localState.type" :items="tubeSheetTypeItems" />
+          <USelect v-model="localState.type" :items="tubeSheetTypeItems" :disabled="isCloneing" />
         </UFieldGroup>
         <UFieldGroup class="grid grid-cols-2  w-full">
           <div variant="outline" class="text-xl">
@@ -39,6 +39,7 @@
             :items="phaseItems"
             multiple
             :ui="{ content: 'min-w-fit' }"
+            :disabled="isCloneing"
             class="w-full"
           />
         </UFieldGroup>
@@ -58,13 +59,13 @@
           <div variant="outline" class="text-xl">
             Material
           </div>
-          <UInput v-model="localState.material" />
+          <UInput v-model="localState.material" :disabled="isCloneing" />
         </UFieldGroup>
         <UFieldGroup class="grid grid-cols-2  w-full">
           <div variant="outline" class="text-xl">
             Total No Of Tubes
           </div>
-          <UInput v-model.number="localState.totalNoOfTubes" />
+          <UInput v-model.number="localState.totalNoOfTubes" :disabled="isCloneing" />
         </UFieldGroup>
       </UForm>
     </template>
@@ -72,7 +73,7 @@
       <div class="flex justify-end gap-4 w-full">
         <UButton label="Reset" variant="outline" @click="handleReset" />
         <UButton
-          :label="isEditing ? 'Save' : 'Save'"
+          :label="isCloneing ? 'Clone' : isEditing ? 'Save' : 'Save'"
           color="primary"
           @click="handleSubmit"
         />
@@ -193,6 +194,15 @@
         icon="i-lucide-box"
         @click.stop="navigateTo(`/create-reactor/${localState._id}/${localState.reactorId??''}`)"
       />
+      <UButton
+        block
+        size="xs"
+        label="Clone"
+        color="neutral"
+        variant="soft"
+        icon="i-lucide-book-copy"
+        @click="clone"
+      />
     </div>
   </UPageCard>
 </template>
@@ -209,6 +219,7 @@ const props = defineProps<{ modelValue: Partial<TubeSheet>, addNew?: boolean }>(
 const emit = defineEmits(['update:modelValue', 'saved', 'update:openConfigCamera'])
 const open = ref(false)
 const currentSheet = ref<Partial<TubeSheet>>({})
+const isCloneing = ref(false)
 
 const store = useTubeSheets()
 
@@ -251,28 +262,16 @@ const stateFlow = {
   }
 }
 
+function clone() {
+  open.value = true
+  isCloneing.value = true
+}
+
 const localState = reactive<Partial<TubeSheet>>({
   ...props.modelValue,
   date: props.modelValue.date || new Date()
 })
 watch(() => props.modelValue, v => Object.assign(localState, v), { deep: true })
-
-// Date handling for input fields
-const dateDisplay = computed({
-  get: () => {
-    if (!localState.date) return ''
-    const d = new Date(localState.date)
-    const year = d.getFullYear()
-    const month = String(d.getMonth() + 1).padStart(2, '0')
-    const day = String(d.getDate()).padStart(2, '0')
-    return `${year}-${month}-${day}`
-  },
-  set: (value: string) => {
-    if (value) {
-      localState.date = new Date(value)
-    }
-  }
-})
 
 const projectStartDateDisplay = computed({
   get: () => {
@@ -334,7 +333,9 @@ const handleSubmit = () => {
       : new Date().toISOString()
   }
 
-  if (isEditing.value) {
+  if (isCloneing.value) {
+    store.cloneTubeSheet(payload)
+  } else if (isEditing.value) {
     store.updateTubeSheet(payload)
   } else {
     store.addTubeSheet(payload)
@@ -358,6 +359,13 @@ const primaryActionLabel = (status?: string) => {
 }
 
 const handleReset = () => {
+  if (isCloneing.value) {
+    localState.equipmentId = ''
+    localState.clientName = ''
+    localState.clientAddress = ''
+    localState.projectStartDate = undefined
+    return
+  }
   localState.equipmentId = ''
   localState.type = ''
   localState.typeOfPhases = []
@@ -382,14 +390,6 @@ const statusColor = (status?: string) => {
     case 'IDLE': return 'error'
     default: return 'neutral'
   }
-}
-
-/* ✅ Dynamic label per status */
-const getLabel = (status?: string) => {
-  if (status && stateFlow[status as keyof typeof stateFlow]) {
-    return stateFlow[status as keyof typeof stateFlow].description
-  }
-  return 'Open'
 }
 
 /* ✅ Get action label for button */

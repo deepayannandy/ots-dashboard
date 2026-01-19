@@ -4,12 +4,9 @@
       <UDashboardNavbar :ui="{ right: 'gap-3' }">
         <template #title>
           <div class="flex flex-col">
-            <span class="font-semibold text-sm">
+            <span class="font-semibold text-xl text-primary-500">
               {{ tubeSheetDetails?.equipmentId }}
               {{ currentSurvey ? `- ${currentSurvey}` : "" }}
-            </span>
-            <span class="text-xs text-neutral-600 dark:text-neutral-400">
-              {{ currentSurveyTime ? `Last Update: ${currentSurveyTime}` : "" }}
             </span>
           </div>
         </template>
@@ -471,6 +468,24 @@
                       {{ repeatCount }}
                     </div>
                   </div>
+                  <div
+                    class="flex justify-center text-center text-sm text-neutral-700 dark:text-neutral-200"
+                  >
+                    <div>
+                      Start Time
+                      <br>
+                      {{ currentSurveyTime }}
+                    </div>
+                  </div>
+                  <div
+                    class="flex justify-center text-center text-sm text-neutral-700 dark:text-neutral-200"
+                  >
+                    <div>
+                      Last Time
+                      <br>
+                      {{ lastSurveyTime }}
+                    </div>
+                  </div>
                 </div>
               </div>
             </UPageCard>
@@ -799,6 +814,8 @@ const tubeSheetDetails = ref<any>(null)
 const selectedPhase = ref<string>('')
 const currentSurvey = ref('')
 const currentSurveyTime = ref('')
+const lastSurveyTime = ref('')
+
 const showDetails = ref(false)
 const items = ref(['Front View', 'Back View'])
 const viewDisplay = ref('Front View')
@@ -1462,7 +1479,9 @@ async function fetchUpdatedTubeColors(surveyId: string) {
     currentSurvey.value
       = (allTypeOfPhasesItems.find(phase => phase.value === surveyType)
         ?.label as string) || ''
-    currentSurveyTime.value = new Date(createdAt).toLocaleString()
+    currentSurveyTime.value = new Date(createdAt).toLocaleTimeString()
+    lastSurveyTime.value = new Date(updatedAt).toLocaleTimeString()
+
     selectedPhase.value = surveyType || ''
     data.forEach(
       (element: { tubeId: string | number, color: string, face?: string }) => {
