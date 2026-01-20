@@ -13,16 +13,16 @@ export interface Reactor {
 }
 
 export const useReactorsStore = defineStore('reactors', () => {
-  async function saveReactor(reactor: Reactor) {
+  async function saveReactor(reactor: Reactor, navigate: boolean = true) {
     const api = useAxios()
     try {
       if (reactor.reactorId) {
         await api.$patch(`api/v2/reactor/patchReactor/${reactor.reactorId}`, reactor)
-        navigateTo('/')
+        if (navigate) navigateTo('/')
       } else {
         const { id } = await api.$post(`/api/v2/reactor/createReactor`, reactor)
         useTubeSheets().updateTubeSheet({ _id: reactor.sheetId, status: 'REACTOR_CREATED', reactorId: id })
-        navigateTo('/')
+        if (navigate) navigateTo('/')
       }
     } catch (e) {
       console.error('Failed to save reactor:', e)

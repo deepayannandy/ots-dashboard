@@ -1001,6 +1001,16 @@ function resetView() {
 /* ----------------------------
    REACTOR SAVE & FETCH FUNCTIONALITY
 ----------------------------- */
+function debounce(func: () => void, delay: number) {
+  let timeoutId: ReturnType<typeof setTimeout>
+  return () => {
+    clearTimeout(timeoutId)
+    timeoutId = setTimeout(func, delay)
+  }
+}
+
+const debouncedSave = debounce(() => saveReactorData(true), 2000)
+
 function saveReactorData(autoUPdate = false) {
   // Save reactor data to store
   reactorsStore.saveReactor({
@@ -1016,7 +1026,7 @@ function saveReactorData(autoUPdate = false) {
       }
     },
     tubes: currentTubes.value
-  })
+  }, !autoUPdate)
   saveChangesModal.value = false
   if (!autoUPdate)
     useToast().add({
@@ -1035,7 +1045,10 @@ onMounted(async () => {
 
   watch(
     () => [scale.value, tx.value, ty.value, rotation.value],
-    persistViewportState,
+    () => {
+      persistViewportState()
+      debouncedSave()
+    },
     { deep: false }
   )
 })
