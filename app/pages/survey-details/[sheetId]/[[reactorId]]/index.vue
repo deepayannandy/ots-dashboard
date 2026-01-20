@@ -415,9 +415,13 @@
               spotlight
               spotlight-color="primary"
               class="h-fit"
-              title="Survey Progress"
-              :ui="{ container: 'sm:p-2 gap-2!' }"
+              :ui="{ root: 'overflow-hidden shadow-md', container: 'sm:p-0 gap-2!', header: 'w-full p-3 bg-primary' }"
             >
+              <template #header>
+                <div class="bg-primary w-full">
+                  Survey Progress
+                </div>
+              </template>
               <div class="grid grid-cols-2">
                 <div>
                   <Pie
@@ -491,24 +495,20 @@
             </UPageCard>
 
             <!-- Progress Line Chart Card -->
-            <div class="flex gap-3">
+            <div class="grid grid-cols-3 gap-3">
               <UPageCard
                 v-if="progressData.length > 0"
                 spotlight
                 spotlight-color="success"
-                class="h-fit"
-                :ui="{ container: 'sm:p-2 gap-2!' }"
+                class="h-fit col-span-2"
+                :ui="{ root: 'overflow-hidden shadow-md', container: 'sm:p-0 gap-2!', header: 'w-full p-3 bg-primary' }"
               >
-                <div class="flex items-center justify-between">
-                  <div class="flex items-center gap-2">
-                    <span
-                      class="text-sm font-medium text-neutral-700 dark:text-neutral-200"
-                    >Time Since Last Update</span>
+                <template #header>
+                  <div class="bg-primary w-full flex items-center justify-between">
+                    <span>Time Since Last Update</span>
+                    <span class="text-lg font-bold text-amber-600 dark:text-amber-400 font-mono">{{ elapsedTime }}</span>
                   </div>
-                  <span
-                    class="text-lg font-bold text-amber-600 dark:text-amber-400 font-mono"
-                  >{{ elapsedTime }}</span>
-                </div>
+                </template>
                 <div class="h-40">
                   <Bar
                     :data="progressChartData"
@@ -516,19 +516,22 @@
                   />
                 </div>
               </UPageCard>
-
               <UPageCard
                 spotlight
                 spotlight-color="secondary"
                 class="p-0 w-full"
-                :ui="{ container: 'sm:p-2 gap-0! h-full' }"
-                title="Special Tubes"
+                :ui="{ root: 'overflow-hidden shadow-md', container: 'sm:p-0 gap-0! h-full', header: 'w-full p-3 bg-primary mb-0' }"
               >
+                <template #header>
+                  <div class="bg-primary w-full">
+                    Special Tubes
+                  </div>
+                </template>
                 <div class="grid grid-cols-2 gap-1 p-0 h-full">
                   <div
                     v-for="item in propertyLegend"
                     :key="item.value"
-                    class="flex items-center justify-between p-2 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
+                    class="flex items-center justify-between p-1 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
                   >
                     <div class="flex items-center gap-1">
                       <div
@@ -570,11 +573,15 @@
                 class="h-fit"
                 :ui="{ container: 'sm:p-3 gap-3!' }"
               >
-                <div
-                  class="text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-2"
-                >
-                  Add comment for tube: {{ [...selectedIds].join(", ") }}
-                </div>
+                <template #header>
+                  <div class="bg-primary w-full">
+                    <div
+                      class="text-sm font-medium text-neutral-700 dark:text-neutral-200"
+                    >
+                      Add comment for tube: {{ [...selectedIds].join(", ") }}
+                    </div>
+                  </div>
+                </template>
                 <UTextarea
                   v-model="commentText"
                   placeholder="Enter your comment..."
@@ -1509,14 +1516,12 @@ async function fetchUpdatedTubeColors(surveyId: string) {
           activity: string
           timeStamp: string
           isDuplicate: boolean
-          comment?: string
         }) => {
           return {
             tube: item.tubeIdAsperLayout,
             Activity: item.activity,
             time: new Date(item.timeStamp).toLocaleString(),
-            Action: 'Locate',
-            comment: item.comment
+            Action: 'Locate'
           }
         }
       )
@@ -1529,14 +1534,14 @@ async function fetchUpdatedTubeColors(surveyId: string) {
           activity: string
           timeStamp: string
           isDuplicate: boolean
-          comment?: string
+
         }) => {
           return {
             tube: item.tubeIdAsperLayout,
             Activity: item.activity,
             time: new Date(item.timeStamp).toLocaleString(),
-            Action: 'Locate',
-            comment: item.comment
+            Action: 'Locate'
+
           }
         }
       )
@@ -1549,14 +1554,12 @@ async function fetchUpdatedTubeColors(surveyId: string) {
           activity: string
           timeStamp: string
           isDuplicate: boolean
-          comment?: string
         }) => {
           return {
             tube: item.tubeIdAsperLayout,
             Activity: item.activity,
             time: new Date(item.timeStamp).toLocaleString(),
-            Action: 'Locate',
-            comment: item.comment
+            Action: 'Locate'
           }
         }
       )
@@ -1569,14 +1572,12 @@ async function fetchUpdatedTubeColors(surveyId: string) {
           activity: string
           timeStamp: string
           isDuplicate: boolean
-          comment?: string
         }) => {
           return {
             tube: item.tubeIdAsperLayout,
             Activity: item.activity,
             time: new Date(item.timeStamp).toLocaleString(),
-            Action: 'Locate',
-            comment: item.comment
+            Action: 'Locate'
           }
         }
       )
