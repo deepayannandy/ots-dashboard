@@ -1345,8 +1345,7 @@ async function stopSurvey() {
 const { openReportForPrint } = usePdfReport()
 
 async function downloadReport() {
-  alert(activeSurveyId.value)
-  if (!activeSurveyId.value) {
+  if (!useRoute().query?.surveyId) {
     useToast().add({ title: 'No survey ID available', color: 'error' })
     return
   }
@@ -1354,7 +1353,7 @@ async function downloadReport() {
   openReportForPrint({
     sheetId,
     reactorId,
-    surveyId: activeSurveyId.value
+    surveyId: useRoute().query?.surveyId as string
   })
 }
 
