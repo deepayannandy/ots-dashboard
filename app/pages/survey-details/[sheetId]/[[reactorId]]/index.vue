@@ -1342,8 +1342,20 @@ async function stopSurvey() {
   }
 }
 
-function downloadReport() {
-  // do nothing for now
+const { openReportForPrint } = usePdfReport()
+
+async function downloadReport() {
+  alert(activeSurveyId.value)
+  if (!activeSurveyId.value) {
+    useToast().add({ title: 'No survey ID available', color: 'error' })
+    return
+  }
+
+  openReportForPrint({
+    sheetId,
+    reactorId,
+    surveyId: activeSurveyId.value
+  })
 }
 
 function goHome() {
@@ -1423,8 +1435,9 @@ onMounted(async () => {
     } catch (err) {
       console.error('Failed to fetch tubesheet details:', err)
     }
-    const querySurveyId = useRoute().query.surveyId as string | undefined
+    const querySurveyId = (useRoute().query.surveyId || useSurveyStore().currentSurveyId) as string | undefined
     const resumedJourney = useRoute().query.resumedJourney
+    // alert(querySurveyId)
     if (querySurveyId) {
       activeSurveyId.value = querySurveyId
       if (resumedJourney) {

@@ -29,6 +29,7 @@ import { typeOfPhases as allTypeOfPhasesItems } from '@/utils/tubesheetOptions'
 const axios = useAxios()
 const toast = useToast()
 const router = useRouter()
+const { openReportForPrint } = usePdfReport()
 
 interface SurveyHistoryItem {
   _id: string
@@ -83,14 +84,24 @@ const columns: TableColumn<SurveyHistoryItem>[] = [
   },
   {
     id: 'actions',
-    header: '',
-    cell: ({ row }) => h(resolveComponent('UButton'), {
-      label: 'View',
-      size: 'xs',
-      color: 'primary',
-      variant: 'outline',
-      onClick: () => handleView(row.original)
-    })
+    header: 'Actions',
+    cell: ({ row }) => h('div', { class: 'flex gap-2' }, [
+      h(resolveComponent('UButton'), {
+        label: 'View',
+        size: 'xs',
+        color: 'primary',
+        variant: 'outline',
+        onClick: () => handleView(row.original)
+      }),
+      h(resolveComponent('UButton'), {
+        label: 'Download',
+        size: 'xs',
+        color: 'neutral',
+        variant: 'outline',
+        icon: 'i-lucide-download',
+        onClick: () => handleDownload(row.original)
+      })
+    ])
   }
 ]
 
@@ -124,6 +135,22 @@ function handleView(item: SurveyHistoryItem) {
   router.push({
     path: buildSurveyDetailsPath(item),
     query: { surveyId: item._id }
+  })
+}
+
+function handleDownload(item: SurveyHistoryItem) {
+  const sheetId = item.tubeSheet?._id
+  const reactorId = item.reactorId
+
+  if (!sheetId) {
+    toast.add({ title: 'Missing sheet information', color: 'error' })
+    return
+  }
+
+  openReportForPrint({
+    sheetId,
+    reactorId,
+    surveyId: item._id
   })
 }
 

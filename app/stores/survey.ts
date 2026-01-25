@@ -35,6 +35,11 @@ export const useSurveyStore = defineStore('survey', () => {
     const api = useAxios()
     try {
       const data = await api.$post(`api/v2/survey/stopSurvey/${surveyId || currentSurveyId.value}`)
+      useRouter().push({
+        query: {
+          surveyId: currentSurveyId.value
+        }
+      })
       currentSurveyId.value = ''
       return data
     } catch (e) {

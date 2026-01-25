@@ -40,6 +40,8 @@ export interface Tube {
   propertyColor?: string | null
   comment?: string | null
   _backendUpdated?: boolean
+  _backendUpdatedBack?: boolean
+  backColor?: string
 }
 
 export interface Survey {
@@ -82,3 +84,70 @@ export interface AxiosConfigInterface {
   axios: CreateAxiosDefaults
   RoutesWithoutLoader: string[]
 }
+
+/* -------------------------------------------------- */
+/* PAGE TYPES */
+/* -------------------------------------------------- */
+
+export type PageSize = 'A4' | 'A5'
+export type Orientation = 'portrait' | 'landscape'
+
+/* -------------------------------------------------- */
+/* PADDING TYPES */
+/* -------------------------------------------------- */
+
+export interface PaddingBox {
+  top: number
+  right: number
+  bottom: number
+  left: number
+}
+
+export type PaddingValue = number | Partial<PaddingBox>
+export type PaddingConfig = PaddingValue | Record<number | 'default', PaddingValue>
+
+/* -------------------------------------------------- */
+/* PAGE CONTENT */
+/* -------------------------------------------------- */
+
+export interface Page {
+  content: string[]
+  noHeader?: boolean
+  noFooter?: boolean
+  fullPage?: boolean
+}
+
+/* -------------------------------------------------- */
+/* SLOT PROPS */
+/* -------------------------------------------------- */
+
+export interface HeaderFooterSlotProps {
+  page: number
+  total: number
+}
+
+/* -------------------------------------------------- */
+/* COMPONENT PROPS */
+/* -------------------------------------------------- */
+
+export interface PageDocumentProps {
+  /**
+   * Page size format
+   * @default 'A4'
+   */
+  size?: PageSize
+  /**
+   * Page orientation
+   * @default 'portrait'
+   */
+  orientation?: Orientation
+  /**
+   * Page padding configuration
+   * Can be a single number for all sides, an object with individual sides,
+   * or an object with page-specific padding (using page numbers as keys)
+   * @default 40
+   */
+  padding?: PaddingConfig
+}
+
+export type DocumentViewerProps = PageDocumentProps
