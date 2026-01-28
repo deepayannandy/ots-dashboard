@@ -240,7 +240,7 @@
         </svg>
       </div>
       <p class="text-xs text-gray-500 mt-2">
-        Front view of reactor tube layout
+        Front view
       </p>
     </div>
 
@@ -268,7 +268,7 @@
         </svg>
       </div>
       <p class="text-xs text-gray-500 mt-2">
-        Back view of reactor tube layout (mirrored)
+        Back view
       </p>
     </div>
 
