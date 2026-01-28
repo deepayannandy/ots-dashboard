@@ -22,9 +22,11 @@
 </template>
 
 <script setup lang="ts">
-import { h, resolveComponent } from 'vue'
+import { h } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 import { typeOfPhases as allTypeOfPhasesItems } from '@/utils/tubesheetOptions'
+
+const UButton = resolveComponent('UButton')
 
 const axios = useAxios()
 const toast = useToast()
@@ -86,14 +88,14 @@ const columns: TableColumn<SurveyHistoryItem>[] = [
     id: 'actions',
     header: 'Actions',
     cell: ({ row }) => h('div', { class: 'flex gap-2' }, [
-      h(resolveComponent('UButton'), {
+      h(UButton, {
         label: 'View',
         size: 'xs',
         color: 'primary',
         variant: 'outline',
         onClick: () => handleView(row.original)
       }),
-      h(resolveComponent('UButton'), {
+      h(UButton, {
         label: 'Download',
         size: 'xs',
         color: 'neutral',

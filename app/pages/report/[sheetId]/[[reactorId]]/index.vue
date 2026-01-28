@@ -41,6 +41,7 @@
         :tube-sheet-details="tubeSheetDetails"
         :survey-data="surveyData"
         :reactor-data="reactorData"
+        :progress-data="progressData"
       />
     </div>
   </div>
@@ -102,6 +103,11 @@ interface ReactorData {
   tubes: Tube[]
 }
 
+interface ProgressDataItem {
+  time: string
+  tubes: number
+}
+
 const route = useRoute()
 const router = useRouter()
 const axios = useAxios()
@@ -113,6 +119,7 @@ const reportRef = ref()
 const tubeSheetDetails = ref<TubeSheetData | null>(null)
 const surveyData = ref<SurveyInfo | null>(null)
 const reactorData = ref<ReactorData | null>(null)
+const progressData = ref<ProgressDataItem[]>([])
 
 async function fetchReportData() {
   loading.value = true
@@ -129,7 +136,13 @@ async function fetchReportData() {
 
     // Fetch survey data - response is { success, data: { ...surveyInfo } }
     const surveyResponse = await axios.$get(`/api/v2/survey/getSurveyData/${surveyId}`)
-    surveyData.value = surveyResponse.data || surveyResponse
+    const surveyResponseData = surveyResponse.data || surveyResponse
+    surveyData.value = surveyResponseData
+
+    // Extract progress data from survey response
+    if (surveyResponseData?.progress && Array.isArray(surveyResponseData.progress)) {
+      progressData.value = surveyResponseData.progress
+    }
 
     // Fetch tubesheet details
     if (sheetId) {

@@ -16,7 +16,7 @@
           >
           <div>
             <h1 class="text-lg font-bold text-primary-600">
-              {{ equipmentId }} - Reactor Technical Report
+              {{ equipmentId }} - {{ getEquipmentTypeLabel(tubeSheetDetails?.type) }}  Report
             </h1>
             <p class="text-xs text-gray-500">
               {{ surveyTypeLabel }}
@@ -33,7 +33,7 @@
     <!-- Cover Section -->
     <div class="mb-6">
       <h2 class="text-xl font-bold text-gray-800 mb-4 border-b-2 border-primary-500 pb-2">
-        Reactor Details
+        Project Details
       </h2>
       <table class="w-full text-sm border-collapse">
         <tbody>
@@ -142,7 +142,82 @@
       </table>
     </div>
 
-    <!-- Reactor Layout - Front View -->
+    <!-- Survey Statistics Section -->
+    <div class="mb-6 mt-12" data-no-break>
+      <h2 class="text-xl font-bold text-gray-800 mb-4 border-b-2 border-primary-500 pb-2">
+        Survey Statistics
+      </h2>
+      <div class="grid grid-cols-2 gap-6">
+        <!-- Pie Chart -->
+        <div class="border border-gray-200 rounded-lg p-4">
+          <h3 class="text-sm font-semibold text-gray-700 mb-3 text-center">
+            Detection Progress
+          </h3>
+          <div style="width: 280px; height: 160px; margin: 0 auto;">
+            <img
+              v-if="pieChartImage"
+              :src="pieChartImage"
+              alt="Detection Progress Chart"
+              style="width: 100%; height: 100%; object-fit: contain;"
+            >
+            <div v-else class="h-full flex items-center justify-center text-gray-400 text-sm italic">
+              No data available
+            </div>
+          </div>
+          <div class="mt-3 grid grid-cols-2 gap-2 text-xs text-gray-600">
+            <div class="text-center">
+              <span class="font-medium">Total Tubes:</span> {{ totalTubes }}
+            </div>
+            <div class="text-center">
+              <span class="font-medium">Special Tubes:</span> {{ specialTubesCount }}
+            </div>
+            <div class="text-center">
+              <span class="font-medium">Front Detected:</span> {{ frontDetectedCount }}
+            </div>
+            <div class="text-center">
+              <span class="font-medium">Back Detected:</span> {{ backDetectedCount }}
+            </div>
+          </div>
+        </div>
+
+        <!-- Hourly Efficiency Chart -->
+        <div class="border border-gray-200 rounded-lg p-4">
+          <div style="width: 100%; height: 160px;">
+            <img
+              v-if="barChartImage"
+              :src="barChartImage"
+              alt="Hourly Efficiency Chart"
+              style="width: 100%; height: 100%; object-fit: contain;"
+            >
+            <div v-else class="h-full flex items-center justify-center text-gray-400 text-sm italic">
+              No hourly efficiency data available
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hidden chart rendering containers -->
+    <div style="position: absolute; left: -9999px; top: -9999px;">
+      <div ref="pieChartContainer" style="width: 280px; height: 160px;">
+        <Pie
+          v-if="totalTubes > 0"
+          ref="pieChartRef"
+          :data="chartData"
+          :options="pieChartOptions"
+        />
+      </div>
+      <div ref="barChartContainer" style="width: 300px; height: 160px;">
+        <Bar
+          v-if="progressData && progressData.length > 0"
+          ref="barChartRef"
+          :data="progressChartData"
+          :options="progressChartOptions"
+        />
+      </div>
+    </div>
+
+    <!-- Reactor  Front View -->
     <div data-page-break class="page-break" />
     <div
       data-full-page
@@ -151,7 +226,7 @@
       class="flex flex-col items-center justify-center h-full p-4"
     >
       <h2 class="text-xl font-bold text-gray-800 mb-4 text-center">
-        Reactor Layout - Front View
+        {{ getEquipmentTypeLabel(tubeSheetDetails?.type) }}  Front View
       </h2>
       <div class="flex-1 flex items-center justify-center w-full overflow-hidden">
         <svg
@@ -178,7 +253,7 @@
       class="flex flex-col items-center justify-center h-full p-4"
     >
       <h2 class="text-xl font-bold text-gray-800 mb-4 text-center">
-        Reactor Layout - Back View
+        {{ getEquipmentTypeLabel(tubeSheetDetails?.type) }}  Back View
       </h2>
       <div class="flex-1 flex items-center justify-center w-full overflow-hidden">
         <svg
@@ -389,6 +464,27 @@ import type { Tube, ReactorConfig } from '@/types'
 import { tubeSheetTypeItems, typeOfPhases } from '@/utils/tubesheetOptions'
 import { drawBoundary } from '@/utils/svgHelpers'
 import { ensureLayers } from '@/utils/index'
+import { Pie, Bar } from 'vue-chartjs'
+import {
+  Chart as ChartJS,
+  ArcElement,
+  Tooltip,
+  Legend,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title
+} from 'chart.js'
+
+ChartJS.register(
+  ArcElement,
+  Tooltip,
+  Legend,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title
+)
 
 interface SurveyDataItem {
   tubeId: number
@@ -438,15 +534,27 @@ interface ReactorData {
   tubes: Tube[]
 }
 
+interface ProgressDataItem {
+  time: string
+  tubes: number
+}
+
 const props = defineProps<{
   tubeSheetDetails: TubeSheetData | null
   surveyData: SurveyInfo | null
   reactorData: ReactorData | null
+  progressData?: ProgressDataItem[]
 }>()
 
 const pageDocRef = ref()
 const frontSvgRef = ref<SVGSVGElement | null>(null)
 const backSvgRef = ref<SVGSVGElement | null>(null)
+
+// Chart refs and images
+const pieChartRef = ref()
+const barChartRef = ref()
+const pieChartImage = ref<string | null>(null)
+const barChartImage = ref<string | null>(null)
 
 // PDF page content area (A4 with padding, accounting for header space)
 const pdfContentWidth = 714 // A4 width (794) - 2 * padding (40)
@@ -495,6 +603,113 @@ const specialTubeData = computed(() => {
       }
     })
 })
+
+// Statistics for charts
+const totalTubes = computed(() => props.tubeSheetDetails?.totalNoOfTubes || props.reactorData?.tubes?.filter(t => !t.deleted).length || 0)
+
+const specialTubesCount = computed(() => {
+  if (!props.reactorData?.tubes) return 0
+  return props.reactorData.tubes.filter(t => t.property && !t.deleted).length
+})
+
+const frontDetectedCount = computed(() => {
+  if (!props.surveyData?.data) return 0
+  return props.surveyData.data.filter(d => d.face !== 'back' && !d.isDuplicate).length
+})
+
+const backDetectedCount = computed(() => {
+  if (!props.surveyData?.data) return 0
+  return props.surveyData.data.filter(d => d.face === 'back' && !d.isDuplicate).length
+})
+
+const effectiveTotal = computed(() => Math.max(0, totalTubes.value - specialTubesCount.value))
+const completedCount = computed(() => frontDetectedCount.value + backDetectedCount.value)
+const remainingCount = computed(() => Math.max(0, effectiveTotal.value - completedCount.value))
+
+// Pie Chart Data
+const chartData = computed(() => ({
+  labels: ['Front Detected', 'Back Detected', 'Remaining', 'Special Tubes'],
+  datasets: [
+    {
+      data: [frontDetectedCount.value, backDetectedCount.value, remainingCount.value, specialTubesCount.value],
+      backgroundColor: ['#4CAF50', '#2196F3', '#FFC107', '#9C27B0'],
+      borderWidth: 1
+    }
+  ]
+}))
+
+// Pie chart options for image rendering
+const pieChartOptions = {
+  responsive: false,
+  maintainAspectRatio: false,
+  animation: false as const,
+  plugins: {
+    legend: {
+      position: 'right' as const,
+      align: 'center' as const,
+      labels: { boxWidth: 12, font: { size: 10 } }
+    },
+    tooltip: { enabled: false }
+  }
+}
+
+// Progress Bar Chart Data (Hourly Efficiency)
+const progressChartData = computed(() => ({
+  labels: (props.progressData || []).map((p) => {
+    const date = new Date(p.time)
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  }),
+  datasets: [
+    {
+      label: 'Tubes Completed',
+      data: (props.progressData || []).map(p => p.tubes),
+      backgroundColor: '#4CAF50',
+      borderColor: '#388E3C',
+      borderWidth: 1,
+      borderRadius: 4
+    }
+  ]
+}))
+
+const progressChartOptions = {
+  responsive: false,
+  maintainAspectRatio: false,
+  animation: false as const,
+  plugins: {
+    legend: {
+      display: false
+    },
+    title: {
+      display: true,
+      text: 'Hourly Efficiency',
+      font: { size: 12 }
+    }
+  },
+  scales: {
+    x: {
+      display: true,
+      title: {
+        display: false
+      },
+      ticks: {
+        maxRotation: 45,
+        font: { size: 8 }
+      }
+    },
+    y: {
+      display: true,
+      beginAtZero: true,
+      title: {
+        display: true,
+        text: 'Tubes',
+        font: { size: 10 }
+      },
+      ticks: {
+        font: { size: 9 }
+      }
+    }
+  }
+}
 
 function getEquipmentTypeLabel(value?: string) {
   if (!value) return 'N/A'
@@ -663,12 +878,44 @@ function renderReactorSvg(svgEl: SVGSVGElement | null, isBackView: boolean = fal
   }
 }
 
+// Function to generate chart images from canvas
+async function generateChartImages() {
+  await nextTick()
+
+  // Wait a bit for charts to fully render
+  await new Promise(resolve => setTimeout(resolve, 100))
+  // Get pie chart image
+  if (pieChartRef.value?.chart) {
+    const canvas = pieChartRef.value.chart.canvas as HTMLCanvasElement
+    if (canvas && canvas.width > 0 && canvas.height > 0) {
+      pieChartImage.value = canvas.toDataURL('image/png')
+    }
+  }
+
+  // Get bar chart image
+  if (barChartRef.value?.chart) {
+    const canvas = barChartRef.value.chart.canvas as HTMLCanvasElement
+    if (canvas && canvas.width > 0 && canvas.height > 0) {
+      barChartImage.value = canvas.toDataURL('image/png')
+    }
+  }
+
+  // Trigger repagination after images are ready
+  await nextTick()
+  if (pageDocRef.value?.repaginate) {
+    pageDocRef.value.repaginate()
+  }
+}
+
 onMounted(async () => {
   await nextTick()
 
   // Render both front and back SVGs
   renderReactorSvg(frontSvgRef.value, false)
   renderReactorSvg(backSvgRef.value, true)
+
+  // Generate chart images
+  await generateChartImages()
 
   // Trigger repagination after SVGs are rendered
   await nextTick()
@@ -702,6 +949,19 @@ watch(
       await nextTick()
       renderReactorSvg(frontSvgRef.value, false)
       renderReactorSvg(backSvgRef.value, true)
+      // Regenerate chart images when survey data changes
+      await generateChartImages()
+    }
+  },
+  { deep: true }
+)
+
+// Watch for progressData changes to regenerate chart images
+watch(
+  () => props.progressData,
+  async (newData) => {
+    if (newData && newData.length > 0) {
+      await generateChartImages()
     }
   },
   { deep: true }
