@@ -495,65 +495,64 @@
             </UPageCard>
 
             <!-- Progress Line Chart Card -->
-            <div class="grid grid-cols-3 gap-3">
-              <UPageCard
-                v-if="progressData.length > 0"
-                spotlight
-                spotlight-color="success"
-                class="h-fit col-span-2"
-                :ui="{ root: 'overflow-hidden shadow-md', container: 'sm:p-0 gap-2!', header: 'w-full p-3 bg-primary' }"
-              >
-                <template #header>
-                  <div class="bg-primary w-full flex items-center justify-between">
-                    <span>Time Since Last Update</span>
-                    <span class="text-lg font-bold text-amber-600 dark:text-amber-400 font-mono">{{ elapsedTime }}</span>
-                  </div>
-                </template>
-                <div class="h-40">
-                  <Bar
-                    :data="progressChartData"
-                    :options="progressChartOptions"
-                  />
+
+            <UPageCard
+              v-if="progressData.length > 0"
+              spotlight
+              spotlight-color="success"
+              class="h-fit col-span-2"
+              :ui="{ root: 'overflow-hidden shadow-md', container: 'sm:p-0 gap-2!', header: 'w-full p-3 bg-primary' }"
+            >
+              <template #header>
+                <div class="bg-primary w-full flex items-center justify-between">
+                  <span>Time Since Last Update</span>
+                  <span class="text-lg font-bold text-amber-600 dark:text-amber-400 font-mono">{{ elapsedTime }}</span>
                 </div>
-              </UPageCard>
-              <UPageCard
-                spotlight
-                spotlight-color="secondary"
-                class="p-0 w-full"
-                :ui="{ root: 'overflow-hidden shadow-md', container: 'sm:p-0 gap-0! h-full', header: 'w-full p-3 bg-primary mb-0' }"
-              >
-                <template #header>
-                  <div class="bg-primary w-full">
-                    Special Tubes
-                  </div>
-                </template>
-                <div class="grid grid-cols-2 gap-1 p-0 h-full">
-                  <div
-                    v-for="item in propertyLegend"
-                    :key="item.value"
-                    class="flex items-center justify-between p-1 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
-                  >
-                    <div class="flex items-center gap-1">
-                      <div
-                        class="size-2 rounded border border-neutral-300 dark:border-neutral-600"
-                        :style="{ backgroundColor: item.color }"
-                      />
-                      <span
-                        class="text-[12px] font-medium text-neutral-700 dark:text-neutral-200"
-                      >
-                        {{ item.label }}
-                      </span>
-                    </div>
+              </template>
+              <div class="h-40">
+                <Bar
+                  :data="progressChartData"
+                  :options="progressChartOptions"
+                />
+              </div>
+            </UPageCard>
+
+            <UPageCard
+              spotlight
+              spotlight-color="secondary"
+              class="p-0 w-full"
+              :ui="{ root: 'overflow-hidden shadow-md', container: 'sm:p-0 gap-0! h-full', header: 'w-full p-3 bg-primary mb-0' }"
+            >
+              <template #header>
+                <div class="bg-primary w-full">
+                  Special Tubes
+                </div>
+              </template>
+              <div class="grid grid-cols-6  p-0 h-full">
+                <div
+                  v-for="item in propertyLegend"
+                  :key="item.value"
+                  class="flex flex-col items-center justify-between p-1 border border-gray-300 transition-colors"
+                >
+                  <div class="flex items-center gap-1">
+                    <div
+                      class="size-2 rounded border border-neutral-300 dark:border-neutral-600"
+                      :style="{ backgroundColor: item.color }"
+                    />
                     <span
-                      class="text-[12px] font-bold text-neutral-900 dark:text-neutral-100 p-1 bg-neutral-100 dark:bg-neutral-800 rounded ml-2"
+                      class="text-[12px] font-medium text-neutral-700 dark:text-neutral-200"
                     >
-                      {{ item.count }}
+                      {{ item.label }}
                     </span>
                   </div>
+                  <span
+                    class="text-[12px] font-bold text-neutral-900 dark:text-neutral-100  dark:bg-neutral-800  mt-3"
+                  >
+                    {{ item.count }}
+                  </span>
                 </div>
-              </UPageCard>
-            </div>
-
+              </div>
+            </UPageCard>
             <!-- Add Comment Section -->
             <div v-if="selectedIds.size > 0" class="space-y-2">
               <div v-if="!showCommentInput" class="flex justify-end">
@@ -632,6 +631,11 @@
                     :rows="10"
                     sticky="header"
                   >
+                    <template #Activity-cell="{ row }">
+                      <span class="block max-w-[120px] whitespace-normal break-words text-xs">
+                        {{ row.original?.Activity }}
+                      </span>
+                    </template>
                     <template #Action-cell="{ row }">
                       <UFieldGroup>
                         <UButton

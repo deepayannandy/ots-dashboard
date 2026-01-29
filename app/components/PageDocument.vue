@@ -658,6 +658,8 @@ defineExpose({
 @media print {
   .page-document {
     display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
 
   .page-document .page {
@@ -667,6 +669,10 @@ defineExpose({
     box-shadow: none !important;
     border: none !important;
     margin: 0 !important;
+    padding-left: 40px !important;
+    padding-right: 40px !important;
+    padding-top: 40px !important;
+    padding-bottom: 40px !important;
   }
 
   .page-document .page:last-child {

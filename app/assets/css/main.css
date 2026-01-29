@@ -265,3 +265,36 @@
     -moz-appearance: textfield;
   }
 }
+
+/* Hide tooltips, popovers, and other overlays in print mode */
+@media print {
+  @page {
+    size: A4;
+    margin: 0 !important;
+  }
+
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+  }
+
+  /* Reset all container margins/padding */
+  .container {
+    margin: 0 !important;
+    padding: 0 !important;
+    max-width: none !important;
+    width: 100% !important;
+  }
+
+  [data-radix-popper-content-wrapper],
+  [role="tooltip"],
+  [data-state="open"][data-side],
+  [data-radix-menu-content],
+  [data-radix-select-content],
+  [data-radix-dropdown-menu-content] {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+  }
+}

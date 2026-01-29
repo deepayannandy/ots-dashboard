@@ -14,7 +14,7 @@
           :data="surveyHistory"
           :columns="columns"
           :loading="isLoading"
-          class="flex-1 elevation-1 rounded-lg overflow-hidden"
+          class="flex-1 elevation-1 rounded-lg overflow-hidden bg-white"
         />
       </div>
     </template>

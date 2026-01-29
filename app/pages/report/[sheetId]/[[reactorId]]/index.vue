@@ -17,8 +17,8 @@
     </div>
   </div>
 
-  <div v-else class="bg-gray-100 min-h-screen py-8 print:py-0 print:bg-white">
-    <div class="container mx-auto px-4 print:px-0">
+  <div v-else class="bg-gray-100 min-h-screen py-8 print:py-0 print:bg-white print:min-h-0">
+    <div class="container mx-auto px-4 print:px-0 print:mx-0 print:max-w-none">
       <!-- Print Controls (hidden in print) -->
       <div class="mb-4 flex gap-4 print:hidden">
         <button
@@ -186,12 +186,14 @@ onMounted(() => {
 @media print {
   @page {
     size: A4;
-    margin: 0;
+    margin: 0 !important;
   }
 
   body {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
 }
 </style>
