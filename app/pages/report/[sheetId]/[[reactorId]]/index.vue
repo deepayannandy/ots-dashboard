@@ -170,7 +170,20 @@ async function fetchReportData() {
 }
 
 function handlePrint() {
+  // Set document title to use as PDF filename
+  const equipmentId = tubeSheetDetails.value?.equipmentId || 'Report'
+  const date = surveyData.value?.createdAt ? new Date(surveyData.value.createdAt) : new Date()
+  const surveyDateTime = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}_${String(date.getHours()).padStart(2, '0')}-${String(date.getMinutes()).padStart(2, '0')}-${String(date.getSeconds()).padStart(2, '0')}`
+
+  const originalTitle = document.title
+  document.title = `${equipmentId}_${surveyDateTime}`
+
   window.print()
+
+  // Restore original title after print dialog
+  setTimeout(() => {
+    document.title = originalTitle
+  }, 100)
 }
 
 function goBack() {
