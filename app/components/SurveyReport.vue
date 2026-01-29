@@ -859,6 +859,70 @@ function renderReactorSvg(svgEl: SVGSVGElement | null, isBackView: boolean = fal
     tubesLayer.appendChild(circle)
   }
 
+  // Group tubes by row and add row labels with tube counts
+  const rowData = new Map<number, { count: number, maxX: number, avgY: number, tubes: typeof tubes }>()
+
+  for (const t of tubes) {
+    if (t.deleted) continue
+
+    // Extract row number from tube ID (e.g., "R1C2" -> 1)
+    const match = t.id.match(/^R(\d+)C/)
+    if (!match) continue
+
+    const rowNum = parseInt(match[1], 10)
+    const tubeX = centerX + t.x * fitScale
+    const tubeY = centerY + t.y * fitScale
+
+    if (!rowData.has(rowNum)) {
+      rowData.set(rowNum, { count: 0, maxX: tubeX, avgY: tubeY, tubes: [] })
+    }
+
+    const row = rowData.get(rowNum)!
+    row.count++
+    row.maxX = Math.max(row.maxX, tubeX + t.r * fitScale)
+    // Calculate running average Y position
+    row.avgY = ((row.avgY * (row.count - 1)) + tubeY) / row.count
+  }
+
+  // Create a labels layer for row info
+  let labelsLayer = vp.querySelector('#row-labels') as SVGGElement
+  if (!labelsLayer) {
+    labelsLayer = document.createElementNS('http://www.w3.org/2000/svg', 'g')
+    labelsLayer.setAttribute('id', 'row-labels')
+    vp.appendChild(labelsLayer)
+  }
+
+  // Sort rows by row number and add labels
+  const sortedRows = Array.from(rowData.entries()).sort((a, b) => a[0] - b[0])
+  const labelOffset = 20 // Offset from the rightmost tube
+
+  for (const [rowNum, data] of sortedRows) {
+    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text')
+    // Position label to the right of the rightmost tube in the row
+    // For back view, we need to position on the left side (which appears on right after flip)
+    const xPos = isBackView
+      ? centerX - (data.maxX - centerX) - labelOffset
+      : data.maxX + labelOffset
+    text.setAttribute('x', String(xPos))
+    text.setAttribute('y', String(data.avgY))
+    text.setAttribute('font-size', '9')
+    text.setAttribute('font-family', 'Arial, sans-serif')
+    text.setAttribute('font-weight', 'bold')
+    text.setAttribute('fill', '#374151')
+    text.setAttribute('dominant-baseline', 'middle')
+
+    // For back view, flip the text horizontally so it's readable after the SVG scaleX(-1)
+    if (isBackView) {
+      text.setAttribute('transform', `scale(-1, 1) translate(${-2 * xPos}, 0)`)
+      text.setAttribute('text-anchor', 'start')
+    } else {
+      text.setAttribute('text-anchor', 'start')
+    }
+    text.textContent = `R${rowNum}: ${data.count}`
+
+    labelsLayer.appendChild(text)
+  }
+
   // Add invert filter definition for back view if needed
   if (isBackView) {
     let defs = svgEl.querySelector('defs')
