@@ -65,9 +65,6 @@
                 <UIcon name="i-lucide-move-vertical" class="size-4 text-primary" />
                 <span class="text-lg font-bold text-primary">Y: {{ angleY }}°</span>
               </div>
-              <span v-if="saving" class="ml-1 flex items-center gap-1 text-xs text-neutral-500">
-                <UIcon name="i-lucide-loader-2" class="size-3 animate-spin" />
-              </span>
             </div>
 
             <!-- Help Popover for Keyboard Shortcuts -->
@@ -86,19 +83,19 @@
                   <div class="grid grid-cols-2 gap-2 text-xs">
                     <div class="flex items-center gap-2">
                       <UKbd>↑</UKbd>
-                      <span class="text-neutral-500">Y +5°</span>
+                      <span class="text-neutral-500">Y +1°</span>
                     </div>
                     <div class="flex items-center gap-2">
                       <UKbd>↓</UKbd>
-                      <span class="text-neutral-500">Y -5°</span>
+                      <span class="text-neutral-500">Y -1°</span>
                     </div>
                     <div class="flex items-center gap-2">
                       <UKbd>←</UKbd>
-                      <span class="text-neutral-500">X -5°</span>
+                      <span class="text-neutral-500">X -1°</span>
                     </div>
                     <div class="flex items-center gap-2">
                       <UKbd>→</UKbd>
-                      <span class="text-neutral-500">X +5°</span>
+                      <span class="text-neutral-500">X +1°</span>
                     </div>
                     <div class="flex items-center gap-2 col-span-2">
                       <UKbd>Space</UKbd>
@@ -122,30 +119,29 @@
             />
 
             <!-- TV Static Effect when no stream -->
+
             <div
               v-if="!streamActive"
               class="absolute inset-0 tv-static"
             >
+              <!-- Glitter sparkle overlay -->
+              <div class="glitter-layer" />
+
               <div class="absolute inset-0 flex flex-col items-center justify-center z-10">
-                <div class="bg-black/60 backdrop-blur-sm rounded-xl px-6 py-4 flex flex-col items-center">
-                  <UIcon name="i-lucide-tv" class="size-12 mb-2 text-neutral-300" />
-                  <p class="text-lg font-bold text-white">
-                    No Signal
+                <div class="bg-black/70 backdrop-blur-sm rounded-xl px-8 py-6 flex flex-col items-center border border-white/10 shadow-2xl">
+                  <div class="relative">
+                    <UIcon name="i-lucide-tv" class="size-16 mb-3 text-neutral-300 animate-pulse" />
+                    <div class="absolute -top-1 -right-1 size-3 bg-red-500 rounded-full animate-ping" />
+                  </div>
+                  <p class="text-2xl font-bold text-white tracking-wider">
+                    NO SIGNAL
                   </p>
-                  <p class="text-xs mt-1 text-neutral-400 text-center max-w-xs">
+                  <p class="text-sm mt-2 text-neutral-400 text-center max-w-xs">
                     {{ streamError || (camera.rtspUrl ? 'Connecting to stream...' : 'RTSP URL not configured') }}
                   </p>
-                  <p v-if="camera.rtspUrl" class="text-[10px] mt-2 text-neutral-500 text-center max-w-xs break-all">
+                  <p v-if="camera.rtspUrl" class="text-[10px] mt-3 text-neutral-500 text-center max-w-xs break-all font-mono bg-black/30 px-3 py-1 rounded">
                     {{ camera.rtspUrl }}
                   </p>
-                  <UButton
-                    v-if="camera.rtspUrl"
-                    class="mt-3"
-                    size="sm"
-                    label="Retry Connection"
-                    icon="i-lucide-refresh-cw"
-                    @click="initializeStream"
-                  />
                 </div>
               </div>
             </div>
@@ -186,50 +182,60 @@
 
             <div class="flex flex-col items-center gap-2">
               <UButton
+                ref="btnUp"
                 icon="i-lucide-chevron-up"
                 color="neutral"
                 variant="outline"
                 size="xl"
-
+                :class="{ 'scale-90 brightness-75': pressedKey === 'up' }"
+                class="transition-all duration-75"
                 :disabled="angleY >= 180"
-                @click="adjustAngle('y', 5)"
+                @click="adjustAngle('y', 1)"
               />
               <div class="flex gap-2">
                 <UButton
+                  ref="btnLeft"
                   icon="i-lucide-chevron-left"
                   color="neutral"
                   variant="outline"
                   size="xl"
-
+                  :class="{ 'scale-90 brightness-75': pressedKey === 'left' }"
+                  class="transition-all duration-75"
                   :disabled="angleX <= 0"
-                  @click="adjustAngle('x', -5)"
+                  @click="adjustAngle('x', -1)"
                 />
                 <UButton
+                  ref="btnCenter"
                   label="Reset"
                   color="primary"
                   variant="soft"
                   size="xl"
-                  class="text-xs"
+                  :class="{ 'scale-90 brightness-75': pressedKey === 'center' }"
+                  class="text-xs transition-all duration-75"
                   @click="resetToCenter"
                 />
                 <UButton
+                  ref="btnRight"
                   icon="i-lucide-chevron-right"
                   color="neutral"
                   variant="outline"
                   size="xl"
-
+                  :class="{ 'scale-90 brightness-75': pressedKey === 'right' }"
+                  class="transition-all duration-75"
                   :disabled="angleX >= 180"
-                  @click="adjustAngle('x', 5)"
+                  @click="adjustAngle('x', 1)"
                 />
               </div>
               <UButton
+                ref="btnDown"
                 icon="i-lucide-chevron-down"
                 color="neutral"
                 variant="outline"
                 size="xl"
-
+                :class="{ 'scale-90 brightness-75': pressedKey === 'down' }"
+                class="transition-all duration-75"
                 :disabled="angleY <= 0"
-                @click="adjustAngle('y', -5)"
+                @click="adjustAngle('y', -1)"
               />
             </div>
 
@@ -304,6 +310,7 @@ import Hls from 'hls.js'
 
 const route = useRoute()
 const cameraStore = useCamera()
+const toast = useToast()
 
 const cameraId = computed(() => route.params.cameraId as string)
 
@@ -313,6 +320,7 @@ const error = ref<string | null>(null)
 const saving = ref(false)
 const streamActive = ref(false)
 const videoElement = ref<HTMLVideoElement | null>(null)
+const staticCanvas = ref<HTMLCanvasElement | null>(null)
 const hlsInstance = ref<Hls | null>(null)
 const streamError = ref<string | null>(null)
 
@@ -320,15 +328,66 @@ const streamError = ref<string | null>(null)
 const angleX = ref(90)
 const angleY = ref(90)
 
+// Pressed key state for button animation
+const pressedKey = ref<'up' | 'down' | 'left' | 'right' | 'center' | null>(null)
+
+// Helper to trigger press animation
+function triggerPress(key: 'up' | 'down' | 'left' | 'right' | 'center') {
+  pressedKey.value = key
+  setTimeout(() => {
+    pressedKey.value = null
+  }, 100)
+}
+
+// Define keyboard shortcuts using Nuxt
+defineShortcuts({
+  'arrowup': {
+    handler: () => {
+      if (angleY.value < 180) {
+        triggerPress('up')
+        adjustAngle('y', 1)
+      }
+    }
+  },
+  'arrowdown': {
+    handler: () => {
+      if (angleY.value > 0) {
+        triggerPress('down')
+        adjustAngle('y', -1)
+      }
+    }
+  },
+  'arrowleft': {
+    handler: () => {
+      if (angleX.value > 0) {
+        triggerPress('left')
+        adjustAngle('x', -1)
+      }
+    }
+  },
+  'arrowright': {
+    handler: () => {
+      if (angleX.value < 180) {
+        triggerPress('right')
+        adjustAngle('x', 1)
+      }
+    }
+  },
+  ' ': {
+    handler: () => {
+      triggerPress('center')
+      resetToCenter()
+    }
+  }
+})
+
 // Fetch camera details on mount
 onMounted(async () => {
   await fetchCameraDetails()
   initializeStream()
-  setupKeyboardControls()
 })
 
 onUnmounted(() => {
-  removeKeyboardControls()
   destroyHls()
   cameraStore.clearCamera()
 })
@@ -339,6 +398,60 @@ function destroyHls() {
     hlsInstance.value = null
   }
 }
+
+// TV Static noise animation
+let staticAnimationId: number | null = null
+
+function startStaticNoise() {
+  const canvas = staticCanvas.value
+  if (!canvas) return
+
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return
+
+  // Set canvas size to match container
+  const updateCanvasSize = () => {
+    if (canvas.parentElement) {
+      canvas.width = canvas.parentElement.offsetWidth
+      canvas.height = canvas.parentElement.offsetHeight
+    }
+  }
+  updateCanvasSize()
+
+  const drawNoise = () => {
+    const imageData = ctx.createImageData(canvas.width, canvas.height)
+    const data = imageData.data
+
+    for (let i = 0; i < data.length; i += 4) {
+      const value = Math.random() * 255
+      data[i] = value // red
+      data[i + 1] = value // green
+      data[i + 2] = value // blue
+      data[i + 3] = 255 // alpha
+    }
+
+    ctx.putImageData(imageData, 0, 0)
+    staticAnimationId = requestAnimationFrame(drawNoise)
+  }
+
+  drawNoise()
+}
+
+function stopStaticNoise() {
+  if (staticAnimationId) {
+    cancelAnimationFrame(staticAnimationId)
+    staticAnimationId = null
+  }
+}
+
+// Watch streamActive to start/stop static noise
+watch(streamActive, (active) => {
+  if (!active) {
+    nextTick(() => startStaticNoise())
+  } else {
+    stopStaticNoise()
+  }
+}, { immediate: true })
 
 async function fetchCameraDetails() {
   loading.value = true
@@ -378,25 +491,32 @@ async function initializeStream() {
   // Destroy existing HLS instance
   destroyHls()
   streamError.value = null
+  streamActive.value = false
 
   try {
+    // Backend converts RTSP to HLS and serves it at this endpoint
     const hlsUrl = `/api/v2/camera/stream/${cameraId.value}/index.m3u8`
 
     if (typeof window !== 'undefined') {
+      // Check if HLS is supported natively (Safari)
       if (videoElement.value.canPlayType('application/vnd.apple.mpegurl')) {
+        // Remove old listeners first
+        const newVideo = videoElement.value.cloneNode(false) as HTMLVideoElement
+        videoElement.value.parentNode?.replaceChild(newVideo, videoElement.value)
+        videoElement.value = newVideo
+
         videoElement.value.src = hlsUrl
 
         videoElement.value.addEventListener('loadedmetadata', () => {
           streamActive.value = true
           streamError.value = null
           videoElement.value?.play().catch(console.error)
-        })
+        }, { once: true })
 
-        videoElement.value.addEventListener('error', (e) => {
-          console.error('Native HLS error:', e)
+        videoElement.value.addEventListener('error', () => {
           streamActive.value = false
-          streamError.value = 'Failed to load stream'
-        })
+          streamError.value = 'Stream not available'
+        }, { once: true })
       }
       // Use HLS.js for other browsers
       else if (Hls.isSupported()) {
@@ -454,7 +574,7 @@ async function initializeStream() {
 // Debounced function to set camera angle
 const debouncedSetAngle = useDebounceFn(async () => {
   await saveAngle()
-}, 500)
+}, 300)
 
 async function saveAngle() {
   if (!cameraId.value) return
@@ -463,13 +583,13 @@ async function saveAngle() {
   try {
     const success = await cameraStore.setCameraAngle(cameraId.value, angleX.value, angleY.value)
     if (success) {
-      useToast().add({
+      toast.add({
         title: 'Camera angle updated',
         color: 'success',
         icon: 'i-lucide-check'
       })
     } else {
-      useToast().add({
+      toast.add({
         title: 'Failed to update camera angle',
         color: 'error',
         icon: 'i-lucide-x'
@@ -494,100 +614,8 @@ function resetToCenter() {
   angleY.value = 90
   debouncedSetAngle()
 }
-
-// Keyboard controls
-function handleKeydown(event: KeyboardEvent) {
-  // Don't trigger if user is typing in an input
-  if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
-    return
-  }
-
-  switch (event.key) {
-    case 'ArrowUp':
-      event.preventDefault()
-      adjustAngle('y', 5)
-      break
-    case 'ArrowDown':
-      event.preventDefault()
-      adjustAngle('y', -5)
-      break
-    case 'ArrowLeft':
-      event.preventDefault()
-      adjustAngle('x', -5)
-      break
-    case 'ArrowRight':
-      event.preventDefault()
-      adjustAngle('x', 5)
-      break
-    case ' ':
-      event.preventDefault()
-      resetToCenter()
-      break
-  }
-}
-
-function setupKeyboardControls() {
-  if (typeof window !== 'undefined') {
-    window.addEventListener('keydown', handleKeydown)
-  }
-}
-
-function removeKeyboardControls() {
-  if (typeof window !== 'undefined') {
-    window.removeEventListener('keydown', handleKeydown)
-  }
-}
 </script>
 
 <style scoped>
-/* TV Static Effect - CSS-based noise */
-.tv-static {
-  background-color: #1a1a1a;
-  position: relative;
-  overflow: hidden;
-}
-
-.tv-static::before {
-  content: '';
-  position: absolute;
-  inset: -50%;
-  width: 200%;
-  height: 200%;
-  background-image:
-    repeating-radial-gradient(circle at 17% 32%, #fff 0px, transparent 1px),
-    repeating-radial-gradient(circle at 83% 67%, #fff 0px, transparent 1px),
-    repeating-radial-gradient(circle at 52% 15%, #fff 0px, transparent 1px),
-    repeating-radial-gradient(circle at 31% 78%, #fff 0px, transparent 1px),
-    repeating-radial-gradient(circle at 68% 43%, #fff 0px, transparent 1px);
-  background-size: 3px 3px, 5px 5px, 4px 4px, 6px 6px, 3px 3px;
-  opacity: 0.3;
-  animation: staticMove 0.15s steps(8) infinite;
-  pointer-events: none;
-}
-
-.tv-static::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: repeating-linear-gradient(
-    0deg,
-    transparent,
-    transparent 2px,
-    rgba(0, 0, 0, 0.15) 2px,
-    rgba(0, 0, 0, 0.15) 4px
-  );
-  pointer-events: none;
-}
-
-@keyframes staticMove {
-  0% { transform: translate(0, 0); }
-  12.5% { transform: translate(-2%, -3%); }
-  25% { transform: translate(-4%, 2%); }
-  37.5% { transform: translate(3%, -1%); }
-  50% { transform: translate(-1%, 4%); }
-  62.5% { transform: translate(2%, -2%); }
-  75% { transform: translate(-3%, 1%); }
-  87.5% { transform: translate(1%, 3%); }
-  100% { transform: translate(0, 0); }
-}
+/* No additional styles needed - using canvas for TV static */
 </style>
