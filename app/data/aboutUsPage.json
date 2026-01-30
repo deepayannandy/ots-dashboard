@@ -1,0 +1,370 @@
+{
+  "page": {
+    "id": "about-us",
+    "title": "About Us",
+    "background": "#110626"
+  },
+  "hero": {
+    "headline": "We are driving larger India's march towards democratisation of Credit products",
+    "background": {
+      "type": "radial-gradient",
+      "colors": ["#f6d453", "#e2bd6b", "#e1a54c", "#e08d2d", "#ac6b2b", "#794a2a", "#5f3929", "#452828", "#2b1727", "#110626"],
+      "opacity": 0.8
+    }
+  },
+  "introduction": {
+    "text": "novio aims to help 40 crore Indians get access to credit card products & benefits and in turn build a strong credit score to avail cheaper loans and other credit products"
+  },
+  "mission": {
+    "title": "Mission",
+    "titleGradient": {
+      "from": "#ffbd72",
+      "to": "#e08d2e"
+    },
+    "description": "We ignite opportunity by making personal finance accessible to every household in india.",
+    "card": {
+      "image": "https://www.figma.com/api/mcp/asset/4b20de6f-4075-4684-9c47-961795f45015",
+      "headline": "Personal Finance",
+      "subheadline": "Made simple by us"
+    }
+  },
+  "vision": {
+    "title": "Vision",
+    "titleGradient": {
+      "from": "#ffbd72",
+      "to": "#e08d2e"
+    },
+    "description": "Enabling consumers to get easy and instant access to most suitable personal finanace products by providing comprehensive options at their doorsteps",
+    "cardBanner": "https://www.figma.com/api/mcp/asset/3d54f250-e769-4cd4-b86c-12ec4b1cd9f1"
+  },
+  "founders": {
+    "sectionTitle": "Our Founders",
+    "titleGradient": {
+      "from": "#ffbd72",
+      "to": "#e08d2e"
+    },
+    "members": [
+      {
+        "id": "aditya",
+        "name": "Aditya Gupta",
+        "role": "Founder & CEO",
+        "image": "https://www.figma.com/api/mcp/asset/f0d3317f-c6f3-4e86-af9a-a584b07da321",
+        "shortBio": "Before Credilio, Aditya built TranServ – a digital payments enterprise – in partnership with banks, NBFCs and e-commerce companies....",
+        "fullBio": "Before Credilio, Aditya built TranServ – a digital payments enterprise – in partnership with banks, NBFCs and e-commerce companies. He has over 20 years of experience in the fintech and banking industry.",
+        "knowMoreLink": "/team/aditya"
+      },
+      {
+        "id": "sandeep",
+        "name": "Sandeep Ghule",
+        "role": "Co – Founder",
+        "image": "https://www.figma.com/api/mcp/asset/02b42ffb-dda0-41b3-b8d6-345b9badd224",
+        "shortBio": "Sandeep is a product & marketing professional for over 20 Years. He has built & marketed Technology enabled cards, wallets and digital...",
+        "fullBio": "Sandeep is a product & marketing professional for over 20 Years. He has built & marketed Technology enabled cards, wallets and digital payment solutions.",
+        "knowMoreLink": "/team/sandeep"
+      },
+      {
+        "id": "anand",
+        "name": "Anand Kapadia",
+        "role": "Co – Founder",
+        "image": "https://www.figma.com/api/mcp/asset/f2d1bbf4-60f0-4339-80c5-9a0aab1f8f17",
+        "shortBio": "Anand has over a decade's experience in managing mortgages and business loan sales. Before becoming a part of Credilio, he built the.....",
+        "fullBio": "Anand has over a decade's experience in managing mortgages and business loan sales. Before becoming a part of Credilio, he built the business loan vertical at major banks.",
+        "knowMoreLink": "/team/anand"
+      },
+      {
+        "id": "manish",
+        "name": "Manish Sinha",
+        "role": "Co – Founder",
+        "image": "https://www.figma.com/api/mcp/asset/cde7c61d-38d4-47f2-a580-cc584aad3195",
+        "shortBio": "Manish brings over 30 years of leadership experience across consulting, banking, and financial services. He has held senior roles at Arthur Andersen.....",
+        "fullBio": "Manish brings over 30 years of leadership experience across consulting, banking, and financial services. He has held senior roles at Arthur Andersen and other major consulting firms.",
+        "knowMoreLink": "/team/manish"
+      }
+    ]
+  },
+  "leaders": {
+    "sectionTitle": "Our Leaders",
+    "titleGradient": {
+      "from": "#ffbd72",
+      "to": "#e08d2e"
+    },
+    "members": [
+      {
+        "id": "munjal",
+        "name": "Munjal Dhamecha",
+        "role": "Chief Technology Officer",
+        "image": "https://www.figma.com/api/mcp/asset/786ab06a-50a4-41bf-beed-c2ce13195218"
+      },
+      {
+        "id": "kartik",
+        "name": "Kartik Shanker",
+        "role": "Chief Growth Officer & Business Head",
+        "image": "https://www.figma.com/api/mcp/asset/effafd92-60dd-43b5-8f42-19ab7fe71d3c"
+      },
+      {
+        "id": "rolvy",
+        "name": "Rolvy Fernandes",
+        "role": "Senior Vice President - Project Management & QA",
+        "image": "https://www.figma.com/api/mcp/asset/6f0f3c6b-c62f-4f69-8968-6ef8f34bb46e"
+      },
+      {
+        "id": "neelam",
+        "name": "Neelam Sanguri",
+        "role": "Chief People Officer & Chief Customer Officer",
+        "image": "https://www.figma.com/api/mcp/asset/67c71e70-3d19-4c15-99b4-aa8537310fb9"
+      },
+      {
+        "id": "gaurav",
+        "name": "Gaurav Aggarwal",
+        "role": "Vice President – Sales (Credit Cards)",
+        "image": "https://www.figma.com/api/mcp/asset/75a7527b-e2fd-4c88-aaf9-a71305f8556c"
+      }
+    ]
+  },
+  "productCards": [
+    {
+      "id": "sbm-novio",
+      "name": "SBM novio RuPay Credit Card",
+      "image": "https://www.figma.com/api/mcp/asset/97685816-84f6-48d0-ac98-71b647fae377",
+      "rotation": 0
+    },
+    {
+      "id": "dcb-purple",
+      "name": "DCB Bank novio Credit Card (Purple)",
+      "image": "https://www.figma.com/api/mcp/asset/97d5e6b6-db3d-4b24-9d2a-88dd55445bb4",
+      "rotation": -18
+    },
+    {
+      "id": "dcb-black",
+      "name": "DCB Bank novio Credit Card (Black)",
+      "image": "https://www.figma.com/api/mcp/asset/7b0ed7fc-7aa5-49fc-8b1c-62cd89d42c0f",
+      "rotation": 9.71
+    },
+    {
+      "id": "ybl-ace",
+      "name": "YES Bank ACE Credit Card",
+      "image": "https://www.figma.com/api/mcp/asset/c21bde4c-cfff-4c40-9409-ed79ec8879b0",
+      "rotation": 18
+    }
+  ],
+  "footer": {
+    "company": {
+      "logo": {
+        "primary": "https://www.figma.com/api/mcp/asset/990ad32f-62cb-4b93-bd95-2d40027012a7",
+        "primaryGroup": "https://www.figma.com/api/mcp/asset/680cee30-5713-4b2e-95ea-1a38f8169261"
+      },
+      "tagline": "Powered by Credilio"
+    },
+    "socialLinks": {
+      "title": "Catch Us On",
+      "links": [
+        {
+          "platform": "facebook",
+          "icon": "https://www.figma.com/api/mcp/asset/66a0eda6-4ecf-4dcc-9337-dc443c7756d8",
+          "url": "https://facebook.com/novio"
+        },
+        {
+          "platform": "twitter",
+          "icon": "https://www.figma.com/api/mcp/asset/b9724c2f-c2e0-4007-a0fb-c7edf17627cd",
+          "url": "https://twitter.com/novio"
+        },
+        {
+          "platform": "linkedin",
+          "icon": "https://www.figma.com/api/mcp/asset/23bffb9e-fee4-44e8-8786-9d22caaa90c5",
+          "url": "https://linkedin.com/company/novio"
+        }
+      ]
+    },
+    "appDownload": {
+      "title": "Download the novio mobile app",
+      "googlePlay": {
+        "text": "GET IT ON",
+        "store": "Google Play",
+        "icon": "https://www.figma.com/api/mcp/asset/7c0c9bad-2fd4-4283-b081-a996580ffbf1",
+        "url": "https://play.google.com/store/apps/details?id=novio.app"
+      },
+      "appStore": {
+        "text": "DOWNLOAD ON THE",
+        "store": "App Store",
+        "icon": "https://www.figma.com/api/mcp/asset/c3330cd1-2420-441b-94fe-a9df6e113208",
+        "url": "https://apps.apple.com/app/novio"
+      }
+    },
+    "navigation": {
+      "products": {
+        "title": "Products",
+        "items": [
+          { "label": "YES Bank ACE Credit Card", "url": "/products/yes-bank-ace" },
+          { "label": "SBM novio RuPay Credit Card", "url": "/products/sbm-novio" },
+          { "label": "DCB Bank novio Credit Card", "url": "/products/dcb-novio" },
+          { "label": "Credilio Pro App", "url": "/products/credilio-pro" },
+          { "label": "Credilio Play", "url": "/products/credilio-play" }
+        ]
+      },
+      "company": {
+        "title": "Company",
+        "items": [
+          { "label": "About Us", "url": "/about" },
+          { "label": "Contact Us", "url": "/contact" },
+          { "label": "Careers", "url": "/careers" }
+        ]
+      },
+      "resources": {
+        "title": "Resources",
+        "items": [
+          { "label": "Blogs", "url": "/blogs" }
+        ]
+      },
+      "importantLinks": {
+        "title": "Important Links",
+        "items": [
+          { "label": "Promotional Offers T&C", "url": "/terms/promotions" },
+          { "label": "Account Deletion", "url": "/account-deletion" },
+          { "label": "Terms & Conditions", "url": "/terms" },
+          { "label": "novio App - User Terms", "url": "/terms/app-user" },
+          { "label": "Privacy Policy", "url": "/privacy" },
+          { "label": "Credilio Advisor User Terms", "url": "/terms/advisor" },
+          { "label": "Marketing Promotion Terms", "url": "/terms/marketing" },
+          { "label": "novio Card Terms", "url": "/terms/card" },
+          { "label": "All Product Listing", "url": "/products" }
+        ]
+      },
+      "help": {
+        "title": "Help",
+        "items": [
+          { "label": "care@novio.in", "url": "mailto:care@novio.in", "type": "email" },
+          { "label": "Helpline: 8655900119", "url": "tel:8655900119", "type": "phone" }
+        ]
+      }
+    },
+    "partners": {
+      "title": "Banking & Payment Partners",
+      "logos": [
+        {
+          "name": "SBM Bank",
+          "image": "https://www.figma.com/api/mcp/asset/67bbb115-bd88-4274-b860-ab5fa1cccc90"
+        },
+        {
+          "name": "DCB Bank",
+          "image": "https://www.figma.com/api/mcp/asset/455e8443-c725-4ce3-8bd9-4e0c2afc4ad0"
+        }
+      ]
+    },
+    "certifications": [
+      {
+        "id": "pci-dss",
+        "title": "PCI DSS",
+        "subtitle": "Compliant",
+        "icon": "https://www.figma.com/api/mcp/asset/88b66a9d-16e2-4848-8d57-78ae14ebb5cf"
+      },
+      {
+        "id": "iso-27001",
+        "title": "ISO 27001",
+        "subtitle": "Certified",
+        "icon": "https://www.figma.com/api/mcp/asset/505d449d-eb35-4bd5-8749-f9bbc796ec52"
+      }
+    ],
+    "copyright": {
+      "poweredBy": "Credilio",
+      "text": "Copyright ©2025. Credilio Financial Technologies Private Limited. All rights reserved. (CIN No. U72900MH2020PTC342791) Credilio is an authorized distributor of 25+ Banks and NBFCs for the distribution of Credit Cards and Personal Loans."
+    }
+  },
+  "styling": {
+    "colors": {
+      "primary": "#6f43c0",
+      "base": {
+        "700": "#110626",
+        "600": "#260d54",
+        "150": "#c3b7db"
+      },
+      "accent": {
+        "800": "#f5dcbe"
+      },
+      "tertiary": {
+        "100": "#ffffff",
+        "200": "#fbfbfb",
+        "300": "#efefef",
+        "400": "#e0e0e0",
+        "500": "#d2d2d2"
+      },
+      "highlight": {
+        "gradient": {
+          "from": "#ffbd72",
+          "to": "#e08d2e"
+        }
+      },
+      "success": {
+        "400": "#08c270"
+      }
+    },
+    "typography": {
+      "fontFamily": "Manrope",
+      "sizes": {
+        "xxs": { "size": 10, "lineHeight": 14 },
+        "xs": { "size": 12, "lineHeight": 16 },
+        "sm": { "size": 14, "lineHeight": 20 },
+        "base": { "size": 16, "lineHeight": 24 },
+        "lg": { "size": 18, "lineHeight": 28 },
+        "xl": { "size": 20, "lineHeight": 28 }
+      },
+      "weights": {
+        "regular": 400,
+        "medium": 500,
+        "semibold": 600,
+        "bold": 700,
+        "extrabold": 800
+      }
+    },
+    "borderRadius": {
+      "sm": "4px",
+      "md": "8px",
+      "lg": "13.385px",
+      "full": "100px"
+    },
+    "shadows": {
+      "card": "-2px -2px 6px 0px rgba(96, 96, 96, 0.2), 2px 2px 6px 0px rgba(96, 96, 96, 0.2)",
+      "leaderCard": "-2px -2px 6px 0px rgba(255, 255, 255, 0.1), 2px 2px 6px 0px rgba(255, 255, 255, 0.1)"
+    },
+    "gradients": {
+      "founderCard": {
+        "type": "linear",
+        "direction": "to-b",
+        "from": "#13072b",
+        "fromPercent": "19.811%",
+        "to": "#260d55",
+        "toPercent": "77.987%"
+      },
+      "highlightText": {
+        "type": "linear",
+        "direction": "to-b",
+        "from": "#ffbd72",
+        "fromPercent": "6.289%",
+        "to": "#e08d2e",
+        "toPercent": "46.226%"
+      }
+    }
+  },
+  "components": {
+    "founderCard": {
+      "width": 343,
+      "imageHeight": 200,
+      "borderColor": "#260d54",
+      "borderRadius": "13.385px"
+    },
+    "leaderCard": {
+      "width": 163.5,
+      "height": 233,
+      "avatarSize": 124,
+      "borderColor": "#6f482f",
+      "borderRadius": "8px"
+    },
+    "button": {
+      "primary": {
+        "background": "#6f43c0",
+        "textColor": "#fafafa",
+        "borderRadius": "8px",
+        "height": 44
+      }
+    }
+  }
+}

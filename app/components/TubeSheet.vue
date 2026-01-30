@@ -161,15 +161,15 @@
       @click.stop="handleNextStep(localState.status, localState._id, localState.reactorId)"
     />
     <UButton
-      v-if="localState.status==='REACTOR_CREATED'"
+      v-if="localState.status==='REACTOR_CREATED' && hasCamerasConfigured"
       block
       size="xs"
       label="Calibrate Camera"
       color="neutral"
       variant="outline"
       class="mt-auto"
-      :disabled="true"
-      @click.stop="handleNextStep(localState.status, localState._id, localState.reactorId)"
+      :disabled="false"
+      @click.stop="handleCalibrateCamera"
     />
 
     <!-- Edit Buttons -->
@@ -222,6 +222,19 @@ const currentSheet = ref<Partial<TubeSheet>>({})
 const isCloneing = ref(false)
 
 const store = useTubeSheets()
+
+// Check if cameras are configured for this tubesheet
+const hasCamerasConfigured = computed(() => {
+  return localState.cameras && localState.cameras.length > 0
+})
+
+// Handle calibrate camera click - navigate to first camera
+const handleCalibrateCamera = () => {
+  if (localState.cameras && localState.cameras.length > 0) {
+    const firstCameraId = localState.cameras[0]
+    navigateTo(`/camera-calibrate/${firstCameraId}`)
+  }
+}
 
 const stateFlow = {
   TUBE_SHEET_CREATED: {
