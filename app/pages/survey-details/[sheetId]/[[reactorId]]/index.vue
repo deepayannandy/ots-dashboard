@@ -414,6 +414,29 @@
             />
 
             <!-- Survey Progress Card with Pie Chart and Stats -->
+
+            <!-- Progress Line Chart Card -->
+
+            <UPageCard
+              v-if="progressData.length > 0"
+              spotlight
+              spotlight-color="success"
+              class="h-fit col-span-2"
+              :ui="{ root: 'overflow-hidden shadow-md', container: 'sm:p-0 gap-2!', header: 'w-full p-3 bg-primary mb-0' }"
+            >
+              <template #header>
+                <div class="bg-primary w-full flex items-center justify-between">
+                  <span>Total Survey Time</span>
+                  <span class="text-lg font-bold text-amber-600 dark:text-amber-400 font-mono">{{ totalSurveyTime }}</span>
+                </div>
+              </template>
+              <div class="h-40">
+                <Bar
+                  :data="progressChartData"
+                  :options="progressChartOptions"
+                />
+              </div>
+            </UPageCard>
             <UPageCard
               spotlight
               spotlight-color="primary"
@@ -497,28 +520,6 @@
               </div>
             </UPageCard>
 
-            <!-- Progress Line Chart Card -->
-
-            <UPageCard
-              v-if="progressData.length > 0"
-              spotlight
-              spotlight-color="success"
-              class="h-fit col-span-2"
-              :ui="{ root: 'overflow-hidden shadow-md', container: 'sm:p-0 gap-2!', header: 'w-full p-3 bg-primary mb-0' }"
-            >
-              <template #header>
-                <div class="bg-primary w-full flex items-center justify-between">
-                  <span>Total Survey Time</span>
-                  <span class="text-lg font-bold text-amber-600 dark:text-amber-400 font-mono">{{ totalSurveyTime }}</span>
-                </div>
-              </template>
-              <div class="h-40">
-                <Bar
-                  :data="progressChartData"
-                  :options="progressChartOptions"
-                />
-              </div>
-            </UPageCard>
             <UPageCard
               v-if="selectedIds.size"
               spotlight
