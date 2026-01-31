@@ -90,6 +90,18 @@
     >
       Center
     </button>
+    <button
+      :class="[
+        'px-2.5 py-1.5 rounded-md text-sm font-medium transition-all duration-150 border',
+        activeButton === 'fitToScreen'
+          ? 'bg-neutral-200 dark:bg-neutral-700 border-neutral-300 dark:border-neutral-600 scale-95'
+          : 'bg-neutral-100 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 hover:bg-neutral-150 dark:hover:bg-neutral-750'
+      ]"
+      title="Fit to Screen"
+      @click="handleFitToScreen"
+    >
+      ⛶
+    </button>
   </div>
 </template>
 
@@ -100,7 +112,7 @@ defineProps<{
   hideRotation?: boolean
 }>()
 
-const emit = defineEmits(['zoomIn', 'zoomOut', 'pan', 'reset', 'rotateLeft', 'rotateRight'])
+const emit = defineEmits(['zoomIn', 'zoomOut', 'pan', 'reset', 'rotateLeft', 'rotateRight', 'fitToScreen'])
 const activeButton = ref<string | null>(null)
 
 function triggerActive(key: string) {
@@ -131,6 +143,10 @@ function handleRotateRight() {
 function handleReset() {
   emit('reset')
   triggerActive('reset')
+}
+function handleFitToScreen() {
+  emit('fitToScreen')
+  triggerActive('fitToScreen')
 }
 
 defineShortcuts({

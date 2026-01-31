@@ -110,15 +110,17 @@
             label="Multiselect"
             size="xs"
           />
-          <URadioGroup
-            v-model="viewDisplay"
-            indicator="hidden"
-            variant="card"
-            size="xs"
-            orientation="horizontal"
-            default-value=""
-            :items="items"
-          />
+          <div @keydown.stop.prevent>
+            <URadioGroup
+              v-model="viewDisplay"
+              indicator="hidden"
+              variant="card"
+              size="xs"
+              orientation="horizontal"
+              default-value=""
+              :items="items"
+            />
+          </div>
           <ZoomControls
             @zoom-in="zoomIn"
             @zoom-out="zoomOut"
@@ -126,6 +128,7 @@
             @rotate-left="rotateLeft"
             @rotate-right="rotateRight"
             @reset="resetView"
+            @fit-to-screen="fitToScreenHandler"
           />
         </template>
       </UDashboardToolbar>
@@ -146,13 +149,13 @@
           />
           <!--  @click="deselectAll"
             @contextmenu.prevent -->
-          <div class="h-full w-full flex justify-center items-center">
+          <div ref="containerRef" class="h-full w-full flex justify-center items-center">
             <!-- SVG Canvas -->
             <svg
               ref="svgRef"
               :viewBox="`0 0 ${svgWidth} ${svgHeight}`"
               xmlns="http://www.w3.org/2000/svg"
-              preserveAspectRatio="xMinYMin meet"
+              preserveAspectRatio="xMidYMid meet"
               :style="{
                 width: '100%',
                 height: '100%',
@@ -556,7 +559,8 @@ const {
   zoom,
   pan,
   rotate,
-  reset,
+  resetWithoutRotation,
+  fitToScreen,
   setZoom,
   setPan,
   setRotation
@@ -981,13 +985,19 @@ function zoomOut() {
   zoom(1 / 1.15)
 }
 function panXY(dx: number, dy: number) {
-  pan(dx, dy)
+  // Invert X direction when in Back View (mirrored) mode
+  const adjustedDx = viewDisplay.value === 'Back View' ? -dx : dx
+  pan(adjustedDx, dy)
 }
 function rotateLeft() {
-  rotate(-15)
+  // Invert rotation direction when in Back View (mirrored) mode
+  const direction = viewDisplay.value === 'Back View' ? 15 : -15
+  rotate(direction)
 }
 function rotateRight() {
-  rotate(15)
+  // Invert rotation direction when in Back View (mirrored) mode
+  const direction = viewDisplay.value === 'Back View' ? -15 : 15
+  rotate(direction)
 }
 function handleWheel(event: WheelEvent) {
   // Slower zoom factor (1.03 instead of 1.1) for smoother control
@@ -995,7 +1005,40 @@ function handleWheel(event: WheelEvent) {
   zoom(factor)
 }
 function resetView() {
-  reset()
+  resetWithoutRotation()
+}
+
+// Reference to the container div for fit-to-screen calculation
+const containerRef = ref<HTMLDivElement | null>(null)
+
+function fitToScreenHandler() {
+  // Get container dimensions
+  const container = containerRef.value
+  if (!container) return
+
+  const containerWidth = container.clientWidth || 800
+  const containerHeight = container.clientHeight || 600
+
+  // Calculate actual reactor content size based on config
+  const outerDim = config.value.outerDimension || 100
+  const width = config.value.width || outerDim
+  const height = config.value.height || outerDim
+
+  // Content dimensions in SVG units (with scalePx factor) + some padding for compass
+  let contentWidth: number
+  let contentHeight: number
+
+  if (config.value.shape === 'RECTANGLE') {
+    contentWidth = width * scalePx * 2 + 150
+    contentHeight = height * scalePx * 2 + 150
+  } else {
+    // Circle, Donut, Hexagon - use outerDimension
+    contentWidth = outerDim * scalePx * 2 + 150
+    contentHeight = outerDim * scalePx * 2 + 150
+  }
+
+  // Use fitToScreen from composable with svgCenter = 600 (center of 1200x1200 viewBox)
+  fitToScreen(contentWidth, contentHeight, containerWidth, containerHeight, 20, centerX)
 }
 
 /* ----------------------------
@@ -1009,7 +1052,7 @@ function debounce(func: () => void, delay: number) {
   }
 }
 
-const debouncedSave = debounce(() => saveReactorData(true), 2000)
+// const debouncedSave = debounce(() => saveReactorData(true), 2000)
 
 function saveReactorData(autoUPdate = false) {
   // Save reactor data to store
@@ -1047,7 +1090,7 @@ onMounted(async () => {
     () => [scale.value, tx.value, ty.value, rotation.value],
     () => {
       persistViewportState()
-      debouncedSave()
+      // debouncedSave()
     },
     { deep: false }
   )

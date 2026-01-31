@@ -34,8 +34,8 @@
       <UModal
         v-model:open="isModalOpen"
         :ui="{ content: 'max-w-xl' }"
-        title="Add Camera"
-        description="Add a new camera to the system."
+        :title="isEditing ? 'Edit Camera' : 'Add Camera'"
+        :description="isEditing ? 'Update camera configuration.' : 'Add a new camera to the system.'"
       >
         <template #body>
           <UForm
@@ -80,6 +80,34 @@
                 </UFieldGroup>
               </div>
             </div>
+
+            <div class="space-y-3">
+              <p class="text-xs font-semibold uppercase tracking-[0.3em] text-muted">
+                Stream Configuration
+              </p>
+
+              <div class="grid gap-3">
+                <UFieldGroup class="grid grid-cols-2 w-full">
+                  <div variant="outline" class="text-xl">
+                    Controller IP
+                  </div>
+                  <UInput
+                    v-model="formState.controllerIp"
+                    placeholder="e.g., 192.168.0.22"
+                  />
+                </UFieldGroup>
+
+                <UFieldGroup class="grid grid-cols-2 w-full">
+                  <div variant="outline" class="text-xl">
+                    RTSP URL
+                  </div>
+                  <UInput
+                    v-model="formState.rtspUrl"
+                    placeholder="rtsp://user:pass@ip:554/cam/..."
+                  />
+                </UFieldGroup>
+              </div>
+            </div>
           </UForm>
         </template>
 
@@ -100,7 +128,7 @@
               :loading="isSaving"
               :disabled="!isFormValid"
             >
-              Add Camera
+              {{ isEditing ? 'Update Camera' : 'Add Camera' }}
             </UButton>
           </div>
         </template>
@@ -110,7 +138,7 @@
 </template>
 
 <script setup lang="ts">
-import { h } from 'vue'
+import { h, resolveComponent } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 
 type Camera = {
@@ -123,6 +151,8 @@ type Camera = {
   createdAt?: string
   updatedAt?: string
   isOccupied?: boolean
+  controllerIp?: string
+  rtspUrl?: string
   __v?: number
 }
 
@@ -140,14 +170,21 @@ const isSaving = ref(false)
 const isModalOpen = ref(false)
 
 const formState = reactive<{
+  _id?: string
   name: string
   macId: string
   ipAddress: string
+  controllerIp: string
+  rtspUrl: string
 }>({
   name: '',
   macId: '',
-  ipAddress: ''
+  ipAddress: '',
+  controllerIp: '',
+  rtspUrl: ''
 })
+
+const isEditing = computed(() => !!formState._id)
 
 const isFormValid = computed(() => {
   return formState.name.trim() && formState.macId.trim() && formState.ipAddress.trim()
@@ -156,7 +193,20 @@ const isFormValid = computed(() => {
 const columns: TableColumn<Camera>[] = [
   {
     accessorKey: 'name',
-    header: 'Name'
+    header: 'Name',
+    cell: ({ row }) => {
+      const hasRtspUrl = !!row.original.rtspUrl
+      if (hasRtspUrl) {
+        return h('div', { class: 'flex items-center gap-2' }, [
+          h(resolveComponent('UIcon'), {
+            name: 'i-lucide-video',
+            class: 'size-4 text-primary'
+          }),
+          h('span', row.getValue('name'))
+        ])
+      }
+      return row.getValue('name')
+    }
   },
   {
     accessorKey: '_id',
@@ -172,6 +222,11 @@ const columns: TableColumn<Camera>[] = [
     header: 'MAC ID'
   },
   {
+    accessorKey: 'controllerIp',
+    header: 'Controller IP',
+    cell: ({ row }) => row.getValue('controllerIp') || 'N/A'
+  },
+  {
     accessorKey: 'reactorId',
     header: 'Reactor ID'
   },
@@ -184,17 +239,61 @@ const columns: TableColumn<Camera>[] = [
         class: `inline-block w-3 h-3 rounded-full ${status ? 'bg-green-500 blink' : 'bg-gray-500'}`
       })
     }
+  },
+  {
+    accessorKey: 'actions',
+    header: 'Actions',
+    cell: ({ row }) => {
+      const hasRtspUrl = !!row.original.rtspUrl
+      const buttons = [
+        h(resolveComponent('UButton'), {
+          icon: 'i-lucide-pencil',
+          size: 'xs',
+          variant: 'ghost',
+          color: 'neutral',
+          onClick: () => openEditModal(row.original)
+        })
+      ]
+
+      // Only show calibrate camera button if RTSP URL is configured
+      if (hasRtspUrl) {
+        buttons.push(
+          h(resolveComponent('UButton'), {
+            icon: 'i-lucide-video',
+            size: 'xs',
+            variant: 'ghost',
+            color: 'primary',
+            onClick: () => navigateTo(`/camera-calibrate/${row.original._id}`)
+          })
+        )
+      }
+
+      return h('div', { class: 'flex gap-2' }, buttons)
+    }
   }
 ]
 
 function resetForm() {
+  formState._id = undefined
   formState.name = ''
   formState.macId = ''
   formState.ipAddress = ''
+  formState.controllerIp = ''
+  formState.rtspUrl = ''
 }
 
 function openCreateModal() {
   resetForm()
+  isModalOpen.value = true
+}
+
+function openEditModal(camera: Camera) {
+  formState._id = camera._id
+  formState.name = camera.name
+  formState.macId = camera.macId
+  formState.ipAddress = camera.ipAddress
+  formState.controllerIp = camera.controllerIp || ''
+  formState.rtspUrl = camera.rtspUrl || ''
   isModalOpen.value = true
 }
 
@@ -226,16 +325,25 @@ async function handleSaveCamera() {
 
   isSaving.value = true
   try {
-    await axios.$post('/api/v2/camera/createCamera', {
+    const payload = {
       name: formState.name,
       macId: formState.macId,
-      ipAddress: formState.ipAddress
-    })
-    toast.add({ title: 'Camera added successfully', color: 'success' })
+      ipAddress: formState.ipAddress,
+      controllerIp: formState.controllerIp || undefined,
+      rtspUrl: formState.rtspUrl || undefined
+    }
+
+    if (isEditing.value) {
+      await axios.$patch(`/api/v2/camera/updateCamera/${formState._id}`, payload)
+      toast.add({ title: 'Camera updated successfully', color: 'success' })
+    } else {
+      await axios.$post('/api/v2/camera/createCamera', payload)
+      toast.add({ title: 'Camera added successfully', color: 'success' })
+    }
     closeModal()
     await fetchCameras()
   } catch {
-    toast.add({ title: 'Failed to add camera', color: 'error' })
+    toast.add({ title: isEditing.value ? 'Failed to update camera' : 'Failed to add camera', color: 'error' })
   } finally {
     isSaving.value = false
   }
