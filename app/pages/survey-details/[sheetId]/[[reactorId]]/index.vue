@@ -119,7 +119,7 @@
           <!--  @click="deselectAll"
             @contextmenu.prevent -->
           <div
-            class="absolute top-0 size-full -z-10 left-0 opacity-20"
+            class="absolute top-0 size-full -z-10 left-0 opacity-20 "
             style="
               background-image: url(&quot;/ots_background.png&quot;);
               background-size: cover;
@@ -1545,33 +1545,34 @@ function resetView() {
 const containerRef = ref<HTMLDivElement | null>(null)
 
 function fitToScreenHandler() {
-  // Get container dimensions
-  const container = containerRef.value
-  if (!container) return
-
-  const containerWidth = container.clientWidth || 800
-  const containerHeight = container.clientHeight || 600
-
-  // Calculate actual reactor content size based on config
+  // Calculate actual reactor dimensions from config
   const outerDim = config.value.outerDimension || 100
   const width = config.value.width || outerDim
   const height = config.value.height || outerDim
 
-  // Content dimensions in SVG units (with scalePx factor) + some padding for compass
-  let contentWidth: number
-  let contentHeight: number
+  // The reactor content is rendered with scalePx = 2, so total dimensions are:
+  // width * scalePx * 2, height * scalePx * 2
+  const renderedWidth = width * scalePx * 2
+  const renderedHeight = height * scalePx * 2
 
-  if (config.value.shape === 'RECTANGLE') {
-    contentWidth = width * scalePx * 2 + 150
-    contentHeight = height * scalePx * 2 + 150
-  } else {
-    // Circle, Donut, Hexagon - use outerDimension
-    contentWidth = outerDim * scalePx * 2 + 150
-    contentHeight = outerDim * scalePx * 2 + 150
-  }
+  // SVG viewBox is 1200x1200 - use full viewBox for fitting
+  const viewBoxSize = 1200
 
-  // Use fitToScreen from composable with svgCenter = 600 (center of 1200x1200 viewBox)
-  fitToScreen(contentWidth, contentHeight, containerWidth, containerHeight, 20, centerX)
+  // Calculate scale to fit reactor within the full viewBox
+  const scaleX = viewBoxSize / renderedWidth
+  const scaleY = viewBoxSize / renderedHeight
+  const fitScale = Math.min(scaleX, scaleY)
+
+  // Clamp scale between reasonable bounds (0.1 to 3.0)
+  const finalScale = Math.max(0.1, Math.min(fitScale, 3.0))
+
+  // Set scale
+  setZoom(finalScale)
+
+  // Center the reactor: translate to keep center at svgCenter after scaling
+  const newTx = centerX * (1 - finalScale)
+  const newTy = centerY * (1 - finalScale)
+  setPan(newTx, newTy)
 }
 
 /* ----------------------------

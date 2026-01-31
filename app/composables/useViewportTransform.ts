@@ -55,21 +55,25 @@ export function useViewportTransform(defaults: ViewportOptions = { scale: 1, tx:
 
   function fitToScreen(contentWidth: number, contentHeight: number, containerWidth: number, containerHeight: number, padding = 40, svgCenter = 600) {
     // Calculate scale to fit content within container with padding
+    // The goal is to scale the reactor content to fill as much of the container as possible
     const availableWidth = containerWidth - padding * 2
     const availableHeight = containerHeight - padding * 2
-    
+
+    // Calculate scale based on content dimensions
+    // contentWidth/Height represent the actual reactor size in SVG units
     const scaleX = availableWidth / contentWidth
     const scaleY = availableHeight / contentHeight
-    const fitScale = Math.min(scaleX, scaleY, 2) // Cap at 2x to avoid too much zoom
-    
-    // Set scale
-    const newScale = Math.max(0.1, fitScale) // Minimum 0.1 scale
+
+    // Use the smaller scale to ensure content fits, but allow larger scaling
+    // Cap at 3x to avoid excessive zoom, minimum 0.5 to keep it visible
+    const fitScale = Math.min(scaleX, scaleY, 3)
+    const newScale = Math.max(0.5, fitScale)
     scale.value = newScale
-    
+
     // Center the content properly
-    // Since scaling happens around origin (0,0), we need to offset to keep center at svgCenter
-    // After scaling by s, point (svgCenter, svgCenter) becomes (svgCenter*s, svgCenter*s)
-    // To bring it back to center, we need: tx = svgCenter * (1 - s)
+    // The transform is: translate(tx, ty) scale(s) rotate(r, cx, cy)
+    // After scaling around origin, point (svgCenter, svgCenter) moves to (svgCenter*s, svgCenter*s)
+    // To keep the reactor centered in the viewBox, we need: tx = svgCenter * (1 - s)
     tx.value = svgCenter * (1 - newScale)
     ty.value = svgCenter * (1 - newScale)
     // Keep rotation unchanged
