@@ -46,6 +46,13 @@ export function useViewportTransform(defaults: ViewportOptions = { scale: 1, tx:
     rotation.value = defaults.rotation ?? 0
   }
 
+  function resetWithoutRotation() {
+    scale.value = defaults.scale ?? 1
+    tx.value = defaults.tx ?? 0
+    ty.value = defaults.ty ?? 0
+    // Keep rotation unchanged
+  }
+
   return {
     scale,
     tx,
@@ -57,6 +64,7 @@ export function useViewportTransform(defaults: ViewportOptions = { scale: 1, tx:
     setZoom,
     setPan,
     setRotation,
-    reset
+    reset,
+    resetWithoutRotation
   }
 }

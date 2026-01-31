@@ -88,15 +88,17 @@
             label="Info"
             @click="showDetails = !showDetails"
           />
-          <URadioGroup
-            v-model="viewDisplay"
-            indicator="hidden"
-            variant="card"
-            size="xs"
-            orientation="horizontal"
-            default-value=""
-            :items="items"
-          />
+          <div @keydown.stop.prevent>
+            <URadioGroup
+              v-model="viewDisplay"
+              indicator="hidden"
+              variant="card"
+              size="xs"
+              orientation="horizontal"
+              default-value=""
+              :items="items"
+            />
+          </div>
           <ZoomControls
             hide-rotation
             @zoom-in="zoomIn"
@@ -478,16 +480,16 @@
                     <div>
                       Start Time
                       <br>
-                      {{ currentSurveyTime }}
+                      {{ surveyStartTime }}
                     </div>
                   </div>
                   <div
                     class="flex justify-center text-center text-sm text-neutral-700 dark:text-neutral-200"
                   >
                     <div>
-                      Last Time
+                      {{ surveyEndTimeStamp ? 'Survey End Time' : 'Last Updated Time' }}
                       <br>
-                      {{ lastSurveyTime }}
+                      {{ surveyEndTimeStamp ? surveyEndTime : lastUpdateTime }}
                     </div>
                   </div>
                 </div>
@@ -505,8 +507,8 @@
             >
               <template #header>
                 <div class="bg-primary w-full flex items-center justify-between">
-                  <span>Time Since Last Update</span>
-                  <span class="text-lg font-bold text-amber-600 dark:text-amber-400 font-mono">{{ elapsedTime }}</span>
+                  <span>Total Survey Time</span>
+                  <span class="text-lg font-bold text-amber-600 dark:text-amber-400 font-mono">{{ totalSurveyTime }}</span>
                 </div>
               </template>
               <div class="h-40">
@@ -788,6 +790,7 @@ import {
   Title
 } from 'chart.js'
 import type { TooltipItem } from 'chart.js'
+import { SURVEY_POLLING_INTERVAL } from '@/types/constants'
 
 type TubeDataTable = {
   tube: string
@@ -824,8 +827,6 @@ const backRepeatTableData = ref<TubeDataTable[]>([])
 const tubeSheetDetails = ref<any>(null)
 const selectedPhase = ref<string>('')
 const currentSurvey = ref('')
-const currentSurveyTime = ref('')
-const lastSurveyTime = ref('')
 
 const showDetails = ref(false)
 const items = ref(['Front View', 'Back View'])
@@ -836,8 +837,32 @@ const activeSurveyId = ref<string | undefined>(undefined)
 
 // Progress data from API and timer
 const progressData = ref<{ time: string, tubes: number }[]>([])
-const lastUpdatedAt = ref<string | null>(null)
-const elapsedTime = ref('0:00')
+const surveyCreatedAt = ref<string | null>(null)
+const surveyEndTimeStamp = ref<string | null>(null)
+const apiCallTime = ref<Date | null>(null)
+const totalSurveyTime = ref('0 min')
+
+// Computed for display times
+const surveyStartTime = computed(() => {
+  if (surveyCreatedAt.value) {
+    return new Date(surveyCreatedAt.value).toLocaleTimeString()
+  }
+  return 'N/A'
+})
+
+const surveyEndTime = computed(() => {
+  if (surveyEndTimeStamp.value) {
+    return new Date(surveyEndTimeStamp.value).toLocaleTimeString()
+  }
+  return 'N/A'
+})
+
+const lastUpdateTime = computed(() => {
+  if (apiCallTime.value) {
+    return apiCallTime.value.toLocaleTimeString()
+  }
+  return 'N/A'
+})
 
 // Comment functionality
 const showCommentInput = ref(false)
@@ -852,16 +877,33 @@ const tubeComments = ref<
   }[]
 >([])
 
-// Update elapsed time when API is called
-function updateElapsedTime() {
-  if (lastUpdatedAt.value) {
-    const now = Date.now()
-    const updated = new Date(lastUpdatedAt.value).getTime()
-    const diffMs = now - updated
-    const diffMins = Math.floor(diffMs / 60000)
-    elapsedTime.value = `${diffMins} min`
+// Update total survey time when API is called
+function updateTotalSurveyTime() {
+  if (!surveyCreatedAt.value) {
+    totalSurveyTime.value = '0 min'
+    return
+  }
+
+  const startTime = new Date(surveyCreatedAt.value).getTime()
+  let endTime: number
+
+  if (surveyEndTimeStamp.value) {
+    // Survey has ended - use end timestamp
+    endTime = new Date(surveyEndTimeStamp.value).getTime()
   } else {
-    elapsedTime.value = '0 min'
+    // Survey still running - use API call time
+    endTime = apiCallTime.value ? apiCallTime.value.getTime() : Date.now()
+  }
+
+  const diffMs = endTime - startTime
+  const diffMins = Math.floor(diffMs / 60000)
+  const hours = Math.floor(diffMins / 60)
+  const mins = diffMins % 60
+
+  if (hours > 0) {
+    totalSurveyTime.value = `${hours}h ${mins}m`
+  } else {
+    totalSurveyTime.value = `${mins} min`
   }
 }
 
@@ -953,7 +995,7 @@ const {
   rotation,
   zoom,
   pan,
-  reset,
+  resetWithoutRotation,
   setZoom,
   setPan,
   setRotation
@@ -1315,10 +1357,10 @@ async function stratSurvey() {
     })
     // Call fetchUpdatedTubeColors immediately
     await fetchUpdatedTubeColors(data.id || (activeSurveyId.value as string))
-    // Then set interval for 1 minute (60000ms)
+    // Then set interval for polling
     interval = setInterval(
       () => fetchUpdatedTubeColors(data.id || (activeSurveyId.value as string)),
-      60000
+      SURVEY_POLLING_INTERVAL
     )
     if (data.Success) {
       useToast().add({ title: 'Survey Started', color: 'success' })
@@ -1383,7 +1425,7 @@ function handleWheel(event: WheelEvent) {
   zoom(factor)
 }
 function resetView() {
-  reset()
+  resetWithoutRotation()
 }
 
 /* ----------------------------
@@ -1448,7 +1490,7 @@ onMounted(async () => {
         await fetchUpdatedTubeColors(activeSurveyId.value)
         interval = setInterval(
           () => fetchUpdatedTubeColors(activeSurveyId.value as string),
-          60000
+          SURVEY_POLLING_INTERVAL
         )
       } else {
         fetchUpdatedTubeColors(activeSurveyId.value)
@@ -1478,12 +1520,15 @@ async function fetchUpdatedTubeColors(surveyId: string) {
       createdAt,
       repeat,
       progress,
-      updatedAt,
+      endTimeStamp,
       comments
     } = idToUse
       ? await useSurveyStore().getSurveyUpdates(idToUse)
       : await useSurveyStore().getSurveyUpdates()
     repeatCount.value = repeat || 0
+
+    // Record API call time
+    apiCallTime.value = new Date()
 
     // Update comments from API
     if (comments && Array.isArray(comments)) {
@@ -1494,16 +1539,15 @@ async function fetchUpdatedTubeColors(surveyId: string) {
     if (progress && Array.isArray(progress)) {
       progressData.value = progress
     }
-    if (updatedAt) {
-      lastUpdatedAt.value = updatedAt
-    }
-    updateElapsedTime()
+
+    // Store timing data
+    surveyCreatedAt.value = createdAt || null
+    surveyEndTimeStamp.value = endTimeStamp || null
+    updateTotalSurveyTime()
 
     currentSurvey.value
       = (allTypeOfPhasesItems.find(phase => phase.value === surveyType)
         ?.label as string) || ''
-    currentSurveyTime.value = new Date(createdAt).toLocaleTimeString()
-    lastSurveyTime.value = new Date(updatedAt).toLocaleTimeString()
 
     selectedPhase.value = surveyType || ''
     data.forEach(

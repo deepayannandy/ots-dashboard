@@ -193,7 +193,20 @@ const isFormValid = computed(() => {
 const columns: TableColumn<Camera>[] = [
   {
     accessorKey: 'name',
-    header: 'Name'
+    header: 'Name',
+    cell: ({ row }) => {
+      const hasRtspUrl = !!row.original.rtspUrl
+      if (hasRtspUrl) {
+        return h('div', { class: 'flex items-center gap-2' }, [
+          h(resolveComponent('UIcon'), {
+            name: 'i-lucide-video',
+            class: 'size-4 text-primary'
+          }),
+          h('span', row.getValue('name'))
+        ])
+      }
+      return row.getValue('name')
+    }
   },
   {
     accessorKey: '_id',
@@ -231,22 +244,31 @@ const columns: TableColumn<Camera>[] = [
     accessorKey: 'actions',
     header: 'Actions',
     cell: ({ row }) => {
-      return h('div', { class: 'flex gap-2' }, [
+      const hasRtspUrl = !!row.original.rtspUrl
+      const buttons = [
         h(resolveComponent('UButton'), {
           icon: 'i-lucide-pencil',
           size: 'xs',
           variant: 'ghost',
           color: 'neutral',
           onClick: () => openEditModal(row.original)
-        }),
-        h(resolveComponent('UButton'), {
-          icon: 'i-lucide-video',
-          size: 'xs',
-          variant: 'ghost',
-          color: 'primary',
-          onClick: () => navigateTo(`/camera-calibrate/${row.original._id}`)
         })
-      ])
+      ]
+
+      // Only show calibrate camera button if RTSP URL is configured
+      if (hasRtspUrl) {
+        buttons.push(
+          h(resolveComponent('UButton'), {
+            icon: 'i-lucide-video',
+            size: 'xs',
+            variant: 'ghost',
+            color: 'primary',
+            onClick: () => navigateTo(`/camera-calibrate/${row.original._id}`)
+          })
+        )
+      }
+
+      return h('div', { class: 'flex gap-2' }, buttons)
     }
   }
 ]

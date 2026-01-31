@@ -110,15 +110,17 @@
             label="Multiselect"
             size="xs"
           />
-          <URadioGroup
-            v-model="viewDisplay"
-            indicator="hidden"
-            variant="card"
-            size="xs"
-            orientation="horizontal"
-            default-value=""
-            :items="items"
-          />
+          <div @keydown.stop.prevent>
+            <URadioGroup
+              v-model="viewDisplay"
+              indicator="hidden"
+              variant="card"
+              size="xs"
+              orientation="horizontal"
+              default-value=""
+              :items="items"
+            />
+          </div>
           <ZoomControls
             @zoom-in="zoomIn"
             @zoom-out="zoomOut"
@@ -556,7 +558,7 @@ const {
   zoom,
   pan,
   rotate,
-  reset,
+  resetWithoutRotation,
   setZoom,
   setPan,
   setRotation
@@ -995,7 +997,7 @@ function handleWheel(event: WheelEvent) {
   zoom(factor)
 }
 function resetView() {
-  reset()
+  resetWithoutRotation()
 }
 
 /* ----------------------------
