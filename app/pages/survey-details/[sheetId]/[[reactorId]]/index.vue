@@ -425,7 +425,7 @@
                   Survey Progress
                 </div>
               </template>
-              <div class="grid grid-cols-2">
+              <div class="grid grid-cols-2 p-2">
                 <div>
                   <Pie
                     :data="chartData"
@@ -488,7 +488,7 @@
                     class="flex justify-center text-center text-sm text-neutral-700 dark:text-neutral-200"
                   >
                     <div>
-                      {{ surveyEndTimeStamp ? 'Survey End Time' : 'Last Updated Time' }}
+                      {{ surveyEndTimeStamp ? 'Survey End' : 'Last Updated' }}
                       <br>
                       {{ surveyEndTimeStamp ? surveyEndTime : lastUpdateTime }}
                     </div>
@@ -504,7 +504,7 @@
               spotlight
               spotlight-color="success"
               class="h-fit col-span-2"
-              :ui="{ root: 'overflow-hidden shadow-md', container: 'sm:p-0 gap-2!', header: 'w-full p-3 bg-primary' }"
+              :ui="{ root: 'overflow-hidden shadow-md', container: 'sm:p-0 gap-2!', header: 'w-full p-3 bg-primary mb-0' }"
             >
               <template #header>
                 <div class="bg-primary w-full flex items-center justify-between">
@@ -667,7 +667,7 @@
                 spotlight
                 spotlight-color="info"
                 class="h-fit"
-                :ui="{ container: 'sm:p-3 gap-3!' }"
+                :ui="{ root: 'overflow-hidden shadow-md', container: 'sm:p-0 gap-0! h-full', header: 'w-full p-3 bg-primary mb-0' }"
               >
                 <template #header>
                   <div class="bg-primary w-full">
@@ -678,31 +678,33 @@
                     </div>
                   </div>
                 </template>
-                <UTextarea
-                  v-model="commentText"
-                  placeholder="Enter your comment..."
-                  :rows="3"
-                  class="w-full"
-                />
-                <div class="flex justify-end gap-2 mt-2">
-                  <UButton
-                    label="Cancel"
-                    color="neutral"
-                    variant="outline"
-                    size="sm"
-                    @click="
-                      showCommentInput = false;
-                      commentText = '';
-                    "
+                <div class="p-4">
+                  <UTextarea
+                    v-model="commentText"
+                    placeholder="Enter your comment..."
+                    :rows="3"
+                    class="w-full"
                   />
-                  <UButton
-                    label="Add Comment"
-                    color="primary"
-                    size="sm"
-                    :loading="addingComment"
-                    :disabled="!commentText.trim()"
-                    @click="submitComment"
-                  />
+                  <div class="flex justify-end gap-2 mt-2">
+                    <UButton
+                      label="Cancel"
+                      color="neutral"
+                      variant="outline"
+                      size="sm"
+                      @click="
+                        showCommentInput = false;
+                        commentText = '';
+                      "
+                    />
+                    <UButton
+                      label="Add Comment"
+                      color="primary"
+                      size="sm"
+                      :loading="addingComment"
+                      :disabled="!commentText.trim()"
+                      @click="submitComment"
+                    />
+                  </div>
                 </div>
               </UPageCard>
             </div>
@@ -1948,29 +1950,43 @@ const chartOptions = {
 }
 
 // Progress Bar Chart Data
-const progressChartData = computed(() => ({
-  labels: progressData.value.map((p) => {
-    const date = new Date(p.time)
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-  }),
-  datasets: [
-    {
-      label: 'Tubes Completed',
-      data: progressData.value.map(p => p.tubes),
-      backgroundColor: progressData.value.map(p => p.isDay ? '#4CAF50' : '#9E9E9E'),
-      borderColor: progressData.value.map(p => p.isDay ? '#388E3C' : '#757575'),
-      borderWidth: 1,
-      borderRadius: 4
-    }
-  ]
-}))
+const progressChartData = computed(() => {
+  return {
+    labels: progressData.value.map((p) => {
+      const date = new Date(p.time)
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    }),
+    datasets: [
+      {
+        label: 'Day',
+        data: progressData.value.map(p => p.isDay ? p.tubes : null),
+        backgroundColor: '#4CAF50',
+        borderColor: '#388E3C',
+        borderWidth: 1,
+        borderRadius: 4
+      },
+      {
+        label: 'Night',
+        data: progressData.value.map(p => !p.isDay ? p.tubes : null),
+        backgroundColor: '#9E9E9E',
+        borderColor: '#757575',
+        borderWidth: 1,
+        borderRadius: 4
+      }
+    ]
+  }
+})
 
 const progressChartOptions = {
   responsive: true,
   maintainAspectRatio: false,
   plugins: {
     legend: {
-      display: false
+      display: true,
+      position: 'bottom' as const,
+      labels: {
+        font: { size: 10 }
+      }
     },
     title: {
       display: true,

@@ -1045,13 +1045,13 @@ function fitToScreenHandler() {
 /* ----------------------------
    REACTOR SAVE & FETCH FUNCTIONALITY
 ----------------------------- */
-function debounce(func: () => void, delay: number) {
-  let timeoutId: ReturnType<typeof setTimeout>
-  return () => {
-    clearTimeout(timeoutId)
-    timeoutId = setTimeout(func, delay)
-  }
-}
+// function debounce(func: () => void, delay: number) {
+//   let timeoutId: ReturnType<typeof setTimeout>
+//   return () => {
+//     clearTimeout(timeoutId)
+//     timeoutId = setTimeout(func, delay)
+//   }
+// }
 
 // const debouncedSave = debounce(() => saveReactorData(true), 2000)
 
