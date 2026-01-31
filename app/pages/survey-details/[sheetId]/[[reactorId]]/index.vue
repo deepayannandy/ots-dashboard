@@ -519,7 +519,62 @@
                 />
               </div>
             </UPageCard>
-
+            <UPageCard
+              v-if="selectedIds.size"
+              spotlight
+              spotlight-color="secondary"
+              class="h-fit p-0"
+              :title="`Tube History: ${[...selectedIds].join(', ')}`"
+              :ui="{ container: 'sm:p-2 gap-y-2' }"
+            >
+              <div v-for="id in [...selectedIds]" :key="id">
+                <div
+                  v-if="
+                    (viewDisplay === 'Back View'
+                      ? backTableData
+                      : tableData
+                    ).find((t) => t.tube === id)
+                  "
+                  class="text-sm text-neutral-700 dark:text-neutral-200"
+                >
+                  Activity:
+                  {{
+                    (viewDisplay === "Back View"
+                      ? backTableData
+                      : tableData
+                    ).find((t) => t.tube === id)!.Activity
+                  }}
+                  <br>
+                  Time:
+                  {{
+                    (viewDisplay === "Back View"
+                      ? backTableData
+                      : tableData
+                    ).find((t) => t.tube === id)!.time
+                  }}
+                  <br>
+                </div>
+                <div
+                  v-else
+                  class="text-sm text-neutral-700 dark:text-neutral-200"
+                >
+                  Tube not detected yet.
+                </div>
+                <div
+                  v-if="
+                    tubeComments.find((c) => c.tubeIdAsperLayout === id)
+                      ?.comment
+                  "
+                  class="text-amber-600 dark:text-amber-400 mt-1"
+                >
+                  <span class="font-medium">Comment:</span>
+                  {{
+                    tubeComments.find((c) => c.tubeIdAsperLayout === id)
+                      ?.comment
+                  }}
+                </div>
+              </div>
+            </UPageCard>
             <UPageCard
               spotlight
               spotlight-color="secondary"
@@ -669,62 +724,6 @@
                   </UTable>
                 </template>
               </UTabs>
-            </UPageCard>
-            <UPageCard
-              v-if="selectedIds.size"
-              spotlight
-              spotlight-color="secondary"
-              class="h-fit p-0"
-              :title="`Tube History: ${[...selectedIds].join(', ')}`"
-              :ui="{ container: 'sm:p-2 gap-y-2' }"
-            >
-              <div v-for="id in [...selectedIds]" :key="id">
-                <div
-                  v-if="
-                    (viewDisplay === 'Back View'
-                      ? backTableData
-                      : tableData
-                    ).find((t) => t.tube === id)
-                  "
-                  class="text-sm text-neutral-700 dark:text-neutral-200"
-                >
-                  Activity:
-                  {{
-                    (viewDisplay === "Back View"
-                      ? backTableData
-                      : tableData
-                    ).find((t) => t.tube === id)!.Activity
-                  }}
-                  <br>
-                  Time:
-                  {{
-                    (viewDisplay === "Back View"
-                      ? backTableData
-                      : tableData
-                    ).find((t) => t.tube === id)!.time
-                  }}
-                  <br>
-                </div>
-                <div
-                  v-else
-                  class="text-sm text-neutral-700 dark:text-neutral-200"
-                >
-                  Tube not detected yet.
-                </div>
-                <div
-                  v-if="
-                    tubeComments.find((c) => c.tubeIdAsperLayout === id)
-                      ?.comment
-                  "
-                  class="text-amber-600 dark:text-amber-400 mt-1"
-                >
-                  <span class="font-medium">Comment:</span>
-                  {{
-                    tubeComments.find((c) => c.tubeIdAsperLayout === id)
-                      ?.comment
-                  }}
-                </div>
-              </div>
             </UPageCard>
           </div>
         </template>
@@ -1342,6 +1341,75 @@ function renderAll() {
 
     updateCircleVisual(t)
   }
+
+  // Render row labels with tube counts
+  renderRowLabels(vp, activeTubes, isBackView)
+}
+
+function renderRowLabels(vp: SVGGElement, activeTubes: Tube[], isBackView: boolean) {
+  // Remove existing row labels
+  let labelsLayer = vp.querySelector('#row-labels') as SVGGElement
+  if (labelsLayer) {
+    labelsLayer.innerHTML = ''
+  } else {
+    labelsLayer = document.createElementNS('http://www.w3.org/2000/svg', 'g')
+    labelsLayer.setAttribute('id', 'row-labels')
+    vp.appendChild(labelsLayer)
+  }
+
+  // Group tubes by row
+  const rowData = new Map<number, { count: number, maxX: number, avgY: number }>()
+
+  for (const t of activeTubes) {
+    // Extract row number from tube ID (e.g., "R1C2" -> 1)
+    const match = t.id.match(/^R(\d+)C/)
+    if (!match || !match[1]) continue
+
+    const rowNum = parseInt(match[1], 10)
+    const tubeX = centerX + t.x * scalePx
+    const tubeY = centerY + t.y * scalePx
+
+    if (!rowData.has(rowNum)) {
+      rowData.set(rowNum, { count: 0, maxX: tubeX, avgY: tubeY })
+    }
+
+    const row = rowData.get(rowNum)!
+    row.count++
+    row.maxX = Math.max(row.maxX, tubeX + t.r * scalePx)
+    // Calculate running average Y position
+    row.avgY = ((row.avgY * (row.count - 1)) + tubeY) / row.count
+  }
+
+  // Sort rows by row number and add labels
+  const sortedRows = Array.from(rowData.entries()).sort((a, b) => a[0] - b[0])
+  const labelOffset = 25 // Offset from the rightmost tube
+
+  for (const [rowNum, data] of sortedRows) {
+    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text')
+    // Position label to the right of the rightmost tube in the row
+    // For back view, we need to position on the left side (which appears on right after flip)
+    const xPos = isBackView
+      ? centerX - (data.maxX - centerX) - labelOffset
+      : data.maxX + labelOffset
+    text.setAttribute('x', String(xPos))
+    text.setAttribute('y', String(data.avgY))
+    text.setAttribute('font-size', '12')
+    text.setAttribute('font-family', 'Arial, sans-serif')
+    text.setAttribute('font-weight', 'bold')
+    text.setAttribute('fill', '#374151')
+    text.setAttribute('dominant-baseline', 'middle')
+
+    // For back view, flip the text horizontally so it's readable after the SVG scaleX(-1)
+    if (isBackView) {
+      text.setAttribute('transform', `scale(-1, 1) translate(${-2 * xPos}, 0)`)
+      text.setAttribute('text-anchor', 'start')
+    } else {
+      text.setAttribute('text-anchor', 'start')
+    }
+    text.textContent = `R${rowNum}: ${data.count}`
+
+    labelsLayer.appendChild(text)
+  }
 }
 let interval: ReturnType<typeof setInterval> | null = null
 async function stratSurvey() {
@@ -1542,10 +1610,9 @@ onMounted(async () => {
 ----------------------------- */
 
 watch(viewDisplay, () => {
-  // Update all tube visuals when switching between front and back view
-  currentTubes.value.forEach((tube) => {
-    updateCircleVisual(tube)
-  })
+  // Re-render everything when switching between front and back view
+  // This will update tube visuals and row labels
+  renderAll()
 })
 
 async function fetchUpdatedTubeColors(surveyId: string) {

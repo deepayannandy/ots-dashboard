@@ -760,15 +760,19 @@ function renderReactorSvg(svgEl: SVGSVGElement | null, isBackView: boolean = fal
     reactorHeight = config.outerDimension + config.padding * 2
   }
 
-  // Calculate scale to fit reactor within PDF content area
-  const scaleX = pdfContentWidth / reactorWidth
+  // Add extra space for row labels on the right side
+  const rowLabelSpace = 80 // Space for "R1: 123" style labels
+  const totalWidth = reactorWidth + rowLabelSpace
+
+  // Calculate scale to fit reactor within PDF content area (accounting for label space)
+  const scaleX = pdfContentWidth / totalWidth
   const scaleY = pdfContentHeight / reactorHeight
   const fitScale = Math.min(scaleX, scaleY, 1.5) // Cap at 1.5 to prevent over-scaling small reactors
 
-  // Calculate SVG dimensions
-  const svgWidth = reactorWidth * fitScale
+  // Calculate SVG dimensions (include label space)
+  const svgWidth = totalWidth * fitScale
   const svgHeight = reactorHeight * fitScale
-  const centerX = svgWidth / 2
+  const centerX = (reactorWidth * fitScale) / 2 // Center only the reactor area
   const centerY = svgHeight / 2
 
   // Update SVG viewBox and dimensions
@@ -867,7 +871,7 @@ function renderReactorSvg(svgEl: SVGSVGElement | null, isBackView: boolean = fal
 
     // Extract row number from tube ID (e.g., "R1C2" -> 1)
     const match = t.id.match(/^R(\d+)C/)
-    if (!match) continue
+    if (!match || !match[1]) continue
 
     const rowNum = parseInt(match[1], 10)
     const tubeX = centerX + t.x * fitScale
