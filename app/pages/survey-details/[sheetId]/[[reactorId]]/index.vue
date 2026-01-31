@@ -837,7 +837,7 @@ const viewMode = ref(false)
 const activeSurveyId = ref<string | undefined>(undefined)
 
 // Progress data from API and timer
-const progressData = ref<{ time: string, tubes: number }[]>([])
+const progressData = ref<{ time: string, tubes: number, isDay?: boolean }[]>([])
 const surveyCreatedAt = ref<string | null>(null)
 const surveyEndTimeStamp = ref<string | null>(null)
 const apiCallTime = ref<Date | null>(null)
@@ -1439,19 +1439,19 @@ function fitToScreenHandler() {
   // Get container dimensions
   const container = containerRef.value
   if (!container) return
-  
+
   const containerWidth = container.clientWidth || 800
   const containerHeight = container.clientHeight || 600
-  
+
   // Calculate actual reactor content size based on config
   const outerDim = config.value.outerDimension || 100
   const width = config.value.width || outerDim
   const height = config.value.height || outerDim
-  
+
   // Content dimensions in SVG units (with scalePx factor) + some padding for compass
   let contentWidth: number
   let contentHeight: number
-  
+
   if (config.value.shape === 'RECTANGLE') {
     contentWidth = width * scalePx * 2 + 150
     contentHeight = height * scalePx * 2 + 150
@@ -1460,7 +1460,7 @@ function fitToScreenHandler() {
     contentWidth = outerDim * scalePx * 2 + 150
     contentHeight = outerDim * scalePx * 2 + 150
   }
-  
+
   // Use fitToScreen from composable with svgCenter = 600 (center of 1200x1200 viewBox)
   fitToScreen(contentWidth, contentHeight, containerWidth, containerHeight, 20, centerX)
 }
@@ -1788,8 +1788,8 @@ const progressChartData = computed(() => ({
     {
       label: 'Tubes Completed',
       data: progressData.value.map(p => p.tubes),
-      backgroundColor: '#4CAF50',
-      borderColor: '#388E3C',
+      backgroundColor: progressData.value.map(p => p.isDay ? '#4CAF50' : '#9E9E9E'),
+      borderColor: progressData.value.map(p => p.isDay ? '#388E3C' : '#757575'),
       borderWidth: 1,
       borderRadius: 4
     }
@@ -1805,7 +1805,7 @@ const progressChartOptions = {
     },
     title: {
       display: true,
-      text: 'Hourly Efficiency',
+      text: 'Efficiency',
       font: { size: 12 }
     }
   },
