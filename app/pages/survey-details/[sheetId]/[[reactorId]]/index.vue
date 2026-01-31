@@ -611,6 +611,45 @@
                 </div>
               </div>
             </UPageCard>
+
+            <!-- Color Cap Tracking Grid - Only visible for COLOR_CAP_TRACKING phase -->
+            <UPageCard
+              v-if="selectedPhase === 'COLOR_CAP_TRACKING' && colorCapLegend.length > 0"
+              spotlight
+              spotlight-color="info"
+              class="p-0 w-full"
+              :ui="{ root: 'overflow-hidden shadow-md', container: 'sm:p-0 gap-0! h-full', header: 'w-full p-3 bg-primary mb-0' }"
+            >
+              <template #header>
+                <div class="bg-primary w-full">
+                  Color Cap Tracking
+                </div>
+              </template>
+              <div class="grid grid-cols-5 p-0 h-full">
+                <div
+                  v-for="item in colorCapLegend"
+                  :key="item.key"
+                  class="flex flex-col items-center justify-between p-1 border border-gray-300 transition-colors"
+                >
+                  <div class="flex items-center gap-1">
+                    <div
+                      class="size-3 rounded border border-neutral-300 dark:border-neutral-600"
+                      :style="{ backgroundColor: item.color }"
+                    />
+                    <span
+                      class="text-[10px] font-medium text-neutral-700 dark:text-neutral-200 text-center"
+                    >
+                      {{ item.abbreviation }}
+                    </span>
+                  </div>
+                  <span
+                    class="text-[12px] font-bold text-neutral-900 dark:text-neutral-100 dark:bg-neutral-800 mt-2"
+                  >
+                    {{ item.count }}
+                  </span>
+                </div>
+              </div>
+            </UPageCard>
             <!-- Add Comment Section -->
             <div v-if="selectedIds.size > 0" class="space-y-2">
               <div v-if="!showCommentInput" class="flex justify-end">
@@ -825,6 +864,8 @@ const backRepeatTableData = ref<TubeDataTable[]>([])
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const tubeSheetDetails = ref<any>(null)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const phasesData = ref<any[]>([])
 const selectedPhase = ref<string>('')
 const currentSurvey = ref('')
 
@@ -1578,10 +1619,11 @@ onMounted(async () => {
 
   if (sheetId) {
     try {
-      const { data } = await useAxios().$get(
+      const response = await useAxios().$get(
         `/api/v2/tubeSheet/getSpecificTubeSheet/${sheetId}`
       )
-      tubeSheetDetails.value = data
+      tubeSheetDetails.value = response.data
+      phasesData.value = response.phasesData || []
     } catch (err) {
       console.error('Failed to fetch tubesheet details:', err)
     }
@@ -1799,6 +1841,65 @@ const propertyLegend = computed(() => {
 const specialTubes = computed(() =>
   propertyLegend.value.reduce((sum, item) => sum + item.count, 0)
 )
+
+// Color Cap Tracking Legend - counts tubes by color for COLOR_CAP_TRACKING phase
+const colorCapLegend = computed(() => {
+  // Only compute for COLOR_CAP_TRACKING phase
+  if (selectedPhase.value !== 'COLOR_CAP_TRACKING') return []
+
+  // Find the COLOR_CAP_TRACKING phase config
+  const colorCapPhase = phasesData.value.find(
+    (p: { phaseName: string }) => p.phaseName === 'COLOR_CAP_TRACKING'
+  )
+  if (!colorCapPhase?.configs) return []
+
+  const configs = colorCapPhase.configs
+  const isBackView = viewDisplay.value === 'Back View'
+
+  // Build color name to config mapping
+  const colorConfigMap = new Map<string, { color: string, abbreviation: string, key: string }>()
+  for (const [key, value] of Object.entries(configs)) {
+    const config = value as { color: string, abbreviation: string }
+    if (config.color && config.abbreviation) {
+      // Normalize color name for matching (lowercase)
+      colorConfigMap.set(config.color.toLowerCase(), {
+        color: config.color,
+        abbreviation: config.abbreviation,
+        key
+      })
+    }
+  }
+
+  // Count tubes by their propertyColor (which contains color names from survey)
+  const counts = new Map<string, number>()
+  const activeTubes = currentTubes.value.filter(t => !t.deleted)
+
+  for (const tube of activeTubes) {
+    // Get the color based on view
+    const tubeColor = isBackView ? tube.backColor : tube.propertyColor
+    if (!tubeColor) continue
+
+    // Try to match the color
+    const normalizedColor = tubeColor.toLowerCase()
+    if (colorConfigMap.has(normalizedColor)) {
+      counts.set(normalizedColor, (counts.get(normalizedColor) || 0) + 1)
+    }
+  }
+
+  // Build legend items from configs
+  const legend: { key: string, color: string, abbreviation: string, count: number }[] = []
+  for (const [colorName, config] of colorConfigMap) {
+    legend.push({
+      key: config.key,
+      color: config.color,
+      abbreviation: config.abbreviation,
+      count: counts.get(colorName) || 0
+    })
+  }
+
+  return legend
+})
+
 const effectiveTotal = computed(() => totalCount.value - specialTubes.value)
 const completed = computed(() =>
   viewDisplay.value === 'Back View'
