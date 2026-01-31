@@ -414,29 +414,6 @@
             />
 
             <!-- Survey Progress Card with Pie Chart and Stats -->
-
-            <!-- Progress Line Chart Card -->
-
-            <UPageCard
-              v-if="progressData.length > 0"
-              spotlight
-              spotlight-color="success"
-              class="h-fit col-span-2"
-              :ui="{ root: 'overflow-hidden shadow-md', container: 'sm:p-0 gap-2!', header: 'w-full p-3 bg-primary mb-0' }"
-            >
-              <template #header>
-                <div class="bg-primary w-full flex items-center justify-between">
-                  <span>Total Survey Time</span>
-                  <span class="text-lg font-bold text-amber-600 dark:text-amber-400 font-mono">{{ totalSurveyTime }}</span>
-                </div>
-              </template>
-              <div class="h-40">
-                <Bar
-                  :data="progressChartData"
-                  :options="progressChartOptions"
-                />
-              </div>
-            </UPageCard>
             <UPageCard
               spotlight
               spotlight-color="primary"
@@ -520,6 +497,28 @@
               </div>
             </UPageCard>
 
+            <!-- Progress Line Chart Card -->
+
+            <UPageCard
+              v-if="progressData.length > 0"
+              spotlight
+              spotlight-color="success"
+              class="h-fit col-span-2"
+              :ui="{ root: 'overflow-hidden shadow-md', container: 'sm:p-0 gap-2!', header: 'w-full p-3 bg-primary mb-0' }"
+            >
+              <template #header>
+                <div class="bg-primary w-full flex items-center justify-between">
+                  <span>Total Survey Time</span>
+                  <span class="text-lg font-bold text-amber-600 dark:text-amber-400 font-mono">{{ totalSurveyTime }}</span>
+                </div>
+              </template>
+              <div class="h-40">
+                <Bar
+                  :data="progressChartData"
+                  :options="progressChartOptions"
+                />
+              </div>
+            </UPageCard>
             <UPageCard
               v-if="selectedIds.size"
               spotlight
@@ -576,44 +575,7 @@
                 </div>
               </div>
             </UPageCard>
-            <UPageCard
-              spotlight
-              spotlight-color="secondary"
-              class="p-0 w-full"
-              :ui="{ root: 'overflow-hidden shadow-md', container: 'sm:p-0 gap-0! h-full', header: 'w-full p-3 bg-primary mb-0' }"
-            >
-              <template #header>
-                <div class="bg-primary w-full">
-                  Special Tubes
-                </div>
-              </template>
-              <div class="grid grid-cols-6  p-0 h-full">
-                <div
-                  v-for="item in propertyLegend"
-                  :key="item.value"
-                  class="flex flex-col items-center justify-between p-1 border border-gray-300 transition-colors"
-                >
-                  <div class="flex items-center gap-1">
-                    <div
-                      class="size-2 rounded border border-neutral-300 dark:border-neutral-600"
-                      :style="{ backgroundColor: item.color }"
-                    />
-                    <span
-                      class="text-[12px] font-medium text-neutral-700 dark:text-neutral-200"
-                    >
-                      {{ item.label }}
-                    </span>
-                  </div>
-                  <span
-                    class="text-[12px] font-bold text-neutral-900 dark:text-neutral-100  dark:bg-neutral-800  mt-3"
-                  >
-                    {{ item.count }}
-                  </span>
-                </div>
-              </div>
-            </UPageCard>
-
-            <!-- Color Cap Tracking Grid - Only visible for COLOR_CAP_TRACKING phase -->
+             <!-- Color Cap Tracking Grid - Only visible for COLOR_CAP_TRACKING phase -->
             <UPageCard
               v-if="selectedPhase === 'COLOR_CAP_TRACKING' && colorCapLegend.length > 0"
               spotlight
@@ -651,6 +613,44 @@
                 </div>
               </div>
             </UPageCard>
+            <UPageCard
+              spotlight
+              spotlight-color="secondary"
+              class="p-0 w-full"
+              :ui="{ root: 'overflow-hidden shadow-md', container: 'sm:p-0 gap-0! h-full', header: 'w-full p-3 bg-primary mb-0' }"
+            >
+              <template #header>
+                <div class="bg-primary w-full">
+                  Special Tubes
+                </div>
+              </template>
+              <div class="grid grid-cols-6  p-0 h-full">
+                <div
+                  v-for="item in propertyLegend"
+                  :key="item.value"
+                  class="flex flex-col items-center justify-between p-1 border border-gray-300 transition-colors"
+                >
+                  <div class="flex items-center gap-1">
+                    <div
+                      class="size-2 rounded border border-neutral-300 dark:border-neutral-600"
+                      :style="{ backgroundColor: item.color }"
+                    />
+                    <span
+                      class="text-[12px] font-medium text-neutral-700 dark:text-neutral-200"
+                    >
+                      {{ item.label }}
+                    </span>
+                  </div>
+                  <span
+                    class="text-[12px] font-bold text-neutral-900 dark:text-neutral-100  dark:bg-neutral-800  mt-3"
+                  >
+                    {{ item.count }}
+                  </span>
+                </div>
+              </div>
+            </UPageCard>
+
+           
             <!-- Add Comment Section -->
             <div v-if="selectedIds.size > 0" class="space-y-2">
               <div v-if="!showCommentInput" class="flex justify-end">
