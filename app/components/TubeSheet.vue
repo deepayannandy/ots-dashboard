@@ -168,7 +168,7 @@
       color="neutral"
       variant="outline"
       class="mt-auto"
-      :disabled="false"
+      :disabled="!hasCamerasWithRtsp"
       @click.stop="handleCalibrateCamera"
     />
 
@@ -210,6 +210,7 @@
 <script setup lang="ts">
 import { ref, reactive, watch, computed } from 'vue'
 import { useTubeSheets } from '@/stores/tubesheets'
+import { useCamera } from '@/stores/camera'
 import type { TubeSheet } from '@/types'
 import { tubeSheetTypeItems, typeOfPhases } from '@/utils/tubesheetOptions'
 import { USelect } from '#components'
@@ -222,10 +223,33 @@ const currentSheet = ref<Partial<TubeSheet>>({})
 const isCloneing = ref(false)
 
 const store = useTubeSheets()
+const cameraStore = useCamera()
+const allCameras = ref<any[]>([])
+
+// Fetch all cameras on mount to check RTSP URLs
+onMounted(async () => {
+  try {
+    const response = await useAxios().$get('/api/v2/camera/getAllCameras')
+    allCameras.value = Array.isArray(response) ? response : response.data || []
+  } catch (error) {
+    console.error('Failed to fetch cameras:', error)
+  }
+})
 
 // Check if cameras are configured for this tubesheet
 const hasCamerasConfigured = computed(() => {
   return localState.cameras && localState.cameras.length > 0
+})
+
+// Check if cameras have RTSP URLs configured
+const hasCamerasWithRtsp = computed(() => {
+  if (!localState.cameras || localState.cameras.length === 0) return false
+
+  // Check if any of the configured cameras have RTSP URLs
+  return localState.cameras.some((cameraId) => {
+    const camera = allCameras.value.find(cam => cam._id === cameraId || cam.name === cameraId)
+    return camera && camera.rtspUrl && camera.rtspUrl.trim() !== ''
+  })
 })
 
 // Handle calibrate camera click - navigate to first camera
