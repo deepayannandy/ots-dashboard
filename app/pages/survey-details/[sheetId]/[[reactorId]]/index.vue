@@ -575,7 +575,7 @@
                 </div>
               </div>
             </UPageCard>
-             <!-- Color Cap Tracking Grid - Only visible for COLOR_CAP_TRACKING phase -->
+            <!-- Color Cap Tracking Grid - Only visible for COLOR_CAP_TRACKING phase -->
             <UPageCard
               v-if="selectedPhase === 'COLOR_CAP_TRACKING' && colorCapLegend.length > 0"
               spotlight
@@ -650,7 +650,6 @@
               </div>
             </UPageCard>
 
-           
             <!-- Add Comment Section -->
             <div v-if="selectedIds.size > 0" class="space-y-2">
               <div v-if="!showCommentInput" class="flex justify-end">
@@ -1358,9 +1357,7 @@ function renderAll() {
   drawBoundary(boundary, config.value, centerX, centerY, scalePx)
 
   const isBackView = viewDisplay.value === 'Back View'
-  const activeTubes = currentTubes.value.filter(
-    t => !t.deleted && (!isBackView || t._backendUpdatedBack)
-  )
+  const activeTubes = currentTubes.value.filter(t => !t.deleted)
   const presentIds = new Set(activeTubes.map(t => t.id))
 
   // Remove stale circles
@@ -1444,9 +1441,13 @@ function renderRowLabels(vp: SVGGElement, activeTubes: Tube[], isBackView: boole
     text.setAttribute('dominant-baseline', 'middle')
 
     // For back view, flip the text horizontally so it's readable after the SVG scaleX(-1)
+    // Also apply filter invert to counteract the SVG-level invert and keep text visible
     if (isBackView) {
       text.setAttribute('transform', `scale(-1, 1) translate(${-2 * xPos}, 0)`)
       text.setAttribute('text-anchor', 'start')
+      text.setAttribute('fill', '#22c55e') // Green color for back view
+      text.setAttribute('font-weight', '900') // Extra bold
+      text.setAttribute('filter', 'invert(1)')
     } else {
       text.setAttribute('text-anchor', 'start')
     }
