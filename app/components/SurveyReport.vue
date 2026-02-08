@@ -746,56 +746,75 @@ function renderReactorSvg(svgEl: SVGSVGElement | null, isBackView: boolean = fal
 
   const config = props.reactorData.config
   const tubes = props.reactorData.tubes
+  const activeTubes = tubes.filter(t => !t.deleted)
 
-  // Calculate reactor dimensions based on config
-  let reactorWidth: number
-  let reactorHeight: number
+  if (activeTubes.length === 0) return
 
-  if (config.shape === 'RECTANGLE') {
-    reactorWidth = (config.width || config.outerDimension) + config.padding * 2
-    reactorHeight = (config.height || config.outerDimension) + config.padding * 2
-  } else {
-    // CIRCLE, HEXAGONE, DONUT - use outerDimension as diameter
-    reactorWidth = config.outerDimension + config.padding * 2
-    reactorHeight = config.outerDimension + config.padding * 2
+  // Use a fixed internal scale for positioning (same as the editor's scalePx)
+  const scalePx = 2
+
+  // Compute actual bounding box from tube positions in scaled coordinates
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity
+  for (const t of activeTubes) {
+    const cx = t.x * scalePx
+    const cy = t.y * scalePx
+    const r = t.r * scalePx
+    minX = Math.min(minX, cx - r)
+    maxX = Math.max(maxX, cx + r)
+    minY = Math.min(minY, cy - r)
+    maxY = Math.max(maxY, cy + r)
   }
 
-  // Add extra space for row labels on the right side
-  const rowLabelSpace = 80 // Space for "R1: 123" style labels
-  const totalWidth = reactorWidth + rowLabelSpace
+  // Also account for boundary shape
+  const outerDim = config.outerDimension || 100
+  const halfW = ((config.shape === 'RECTANGLE' ? (config.width || outerDim) : outerDim) / 2) * scalePx
+  const halfH = ((config.shape === 'RECTANGLE' ? (config.height || outerDim) : outerDim) / 2) * scalePx
+  const pad = config.padding * scalePx
+  minX = Math.min(minX, -halfW - pad)
+  maxX = Math.max(maxX, halfW + pad)
+  minY = Math.min(minY, -halfH - pad)
+  maxY = Math.max(maxY, halfH + pad)
 
-  // Calculate scale to fit reactor within PDF content area (accounting for label space)
-  const scaleX = pdfContentWidth / totalWidth
-  const scaleY = pdfContentHeight / reactorHeight
-  const fitScale = Math.min(scaleX, scaleY, 1.5) // Cap at 1.5 to prevent over-scaling small reactors
+  const contentW = maxX - minX
+  const contentH = maxY - minY
 
-  // Calculate SVG dimensions (include label space)
-  const svgWidth = totalWidth * fitScale
-  const svgHeight = reactorHeight * fitScale
-  const centerX = (reactorWidth * fitScale) / 2 // Center only the reactor area
-  const centerY = svgHeight / 2
+  // Apply rotation from config and expand bounds to contain rotated content
+  const rotation = config.positions?.rotation || 0
+  const rad = (Math.abs(rotation) * Math.PI) / 180
+  const cos = Math.cos(rad)
+  const sin = Math.sin(rad)
+  const rotatedW = contentW * cos + contentH * sin
+  const rotatedH = contentW * sin + contentH * cos
 
-  // Update SVG viewBox and dimensions
-  svgEl.setAttribute('viewBox', `0 0 ${svgWidth} ${svgHeight}`)
-  svgEl.setAttribute('width', String(svgWidth))
-  svgEl.setAttribute('height', String(svgHeight))
+  // Add margin for row labels and breathing room
+  const rowLabelMargin = 60
+  const padding = 30
+  const vbW = rotatedW + rowLabelMargin + padding * 2
+  const vbH = rotatedH + padding * 2
+
+  // Center point in viewBox coordinates
+  const centerX = padding + rotatedW / 2
+  const centerY = padding + rotatedH / 2
+
+  // Set viewBox only — let CSS max-w-full / max-h-[650px] + preserveAspectRatio handle fitting
+  svgEl.setAttribute('viewBox', `0 0 ${vbW} ${vbH}`)
+  svgEl.removeAttribute('width')
+  svgEl.removeAttribute('height')
 
   const vpId = isBackView ? 'back-viewport' : 'front-viewport'
   const vp = svgEl.querySelector(`#${vpId}`) as SVGGElement
   if (!vp) return
 
-  // Clear existing content
   vp.innerHTML = ''
 
-  // Apply config.positions transformations if available
-  // Center the viewport and apply scale and rotation around the center
-  if (config.positions) {
-    const { scale, rotation } = config.positions
-    const transform = `translate(${centerX}, ${centerY}) rotate(${rotation}) scale(${scale}) translate(${-centerX}, ${-centerY})`
-    vp.setAttribute('transform', transform)
+  // Only apply rotation (NOT the user's interactive pan/zoom — that's for the editor)
+  if (rotation !== 0) {
+    vp.setAttribute('transform', `rotate(${rotation} ${centerX} ${centerY})`)
   } else {
     vp.removeAttribute('transform')
   }
+
+  const fitScale = scalePx
 
   // Create layers
   const { boundary, tubes: tubesLayer } = ensureLayers(vp)
