@@ -920,6 +920,13 @@ const tubeComments = ref<
   }[]
 >([])
 
+// Track repeat counts per tube and last detected tube
+const tubeRepeatCounts = ref<Map<string, number>>(new Map())
+const lastDetectedTubeId = ref<string>('')
+const lastDetectedFace = ref<string>('front')
+// Cache for icon overlay elements
+const iconElById = new Map<string, SVGGElement>()
+
 // Update total survey time when API is called
 function updateTotalSurveyTime() {
   if (!surveyCreatedAt.value) {
@@ -1187,25 +1194,156 @@ function updateCircleVisual(
   const c = elById.get(t.id)
   if (!c) return
   const isBackView = viewDisplay.value === 'Back View'
-  const propertyColor = isBackView
-    ? t.backColor
-    || propertiesOptions.find(p => p.value === t.property)?.color
-    || t.propertyColor
-    : propertiesOptions.find(p => p.value === t.property)?.color
-      || t.propertyColor
+  // Special property color (e.g. CATALYST_TC, COOLANT) always shows on both faces
+  const specialPropertyColor = propertiesOptions.find(p => p.value === t.property)?.color
+  // Detection color only shows on the face it was detected on
+  let propertyColor: string | null | undefined
+  if (specialPropertyColor) {
+    propertyColor = specialPropertyColor
+  } else if (isBackView) {
+    // In Back View, only show backColor (from back detection), not front propertyColor
+    propertyColor = t.backColor || undefined
+  } else {
+    // In Front View, only show propertyColor if it was set by front detection
+    propertyColor = t._backendUpdated ? t.propertyColor : undefined
+  }
   const isSelected = selectedIds.value.has(t.id)
-  const hasComment = !!t.comment
 
-  c.setAttribute('cx', String(centerX + t.x * scalePx))
-  c.setAttribute('cy', String(centerY + t.y * scalePx))
-  c.setAttribute('r', String(t.r * scalePx))
+  const cx = centerX + t.x * scalePx
+  const cy = centerY + t.y * scalePx
+  const r = t.r * scalePx
+
+  c.setAttribute('cx', String(cx))
+  c.setAttribute('cy', String(cy))
+  c.setAttribute('r', String(r))
   c.setAttribute('fill', newPropertyColor || propertyColor || '#fff')
   c.setAttribute(
     'stroke',
-    hasComment ? '#facc15' : isSelected ? '#FF0000' : '#0f172a'
+    isSelected ? '#FF0000' : '#0f172a'
   )
-  c.setAttribute('stroke-width', isSelected || hasComment ? '1.5' : '0.3')
+  c.setAttribute('stroke-width', isSelected ? '1.5' : '0.3')
   c.setAttribute('filter', isBackView ? 'invert(1)' : 'none')
+
+  // Update icon overlays
+  updateTubeIcons(t, cx, cy, r)
+}
+
+function updateTubeIcons(
+  t: Tube & { backColor?: string, _backendUpdatedBack?: boolean },
+  cx: number,
+  cy: number,
+  r: number
+) {
+  let iconGroup = iconElById.get(t.id)
+
+  // Check what icons are needed
+  const isBackView = viewDisplay.value === 'Back View'
+  const hasComment = !!(t.comment || tubeComments.value.find(c => c.tubeIdAsperLayout === t.id)?.comment)
+  const repeatCount = tubeRepeatCounts.value.get(t.id) || 0
+  // Only show arrow if the detection face matches the current view
+  const isLastDetected = lastDetectedTubeId.value === t.id
+    && ((isBackView && lastDetectedFace.value === 'back') || (!isBackView && lastDetectedFace.value !== 'back'))
+  const needsIcons = hasComment || repeatCount > 1 || isLastDetected
+
+  if (!needsIcons) {
+    // Remove icon group if present
+    if (iconGroup) {
+      iconGroup.remove()
+      iconElById.delete(t.id)
+    }
+    return
+  }
+
+  // Create or reuse icon group
+  if (!iconGroup) {
+    iconGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g')
+    iconGroup.setAttribute('class', 'tube-icons')
+    iconGroup.setAttribute('pointer-events', 'none')
+    iconElById.set(t.id, iconGroup)
+    // Append to the icons layer (will be created in renderAll)
+    const svg = svgRef.value
+    if (svg) {
+      const vp = svg.querySelector('#viewport') as SVGGElement
+      let iconsLayer = vp?.querySelector('#icons-layer') as SVGGElement
+      if (!iconsLayer) {
+        iconsLayer = document.createElementNS('http://www.w3.org/2000/svg', 'g')
+        iconsLayer.setAttribute('id', 'icons-layer')
+        vp?.appendChild(iconsLayer)
+      }
+      iconsLayer.appendChild(iconGroup)
+    }
+  }
+
+  // In Back View the SVG is flipped with scale(-1,1), so counter-flip icons
+  // to keep text/icons readable
+  if (isBackView) {
+    iconGroup.setAttribute('transform', `scale(-1, 1) translate(${-2 * cx}, 0)`)
+  } else {
+    iconGroup.removeAttribute('transform')
+  }
+
+  // Clear existing icons
+  iconGroup.innerHTML = ''
+
+  const iconSize = Math.max(r * 0.7, 3)
+
+  // INSIDE TUBE — Repeat count
+  if (repeatCount > 1) {
+    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text')
+    text.setAttribute('x', String(cx))
+    text.setAttribute('y', String(cy))
+    text.setAttribute('text-anchor', 'middle')
+    text.setAttribute('dominant-baseline', 'central')
+    text.setAttribute('fill', '#ef4444')
+    text.setAttribute('font-size', String(Math.max(r * 1.1, 4)))
+    text.setAttribute('font-weight', 'bold')
+    text.setAttribute('font-family', 'Arial, sans-serif')
+    text.textContent = String(repeatCount)
+    iconGroup.appendChild(text)
+  }
+
+  // TOP — Last detected arrow (pointing down at tube)
+  if (isLastDetected) {
+    const arrowGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g')
+    const arrowSize = Math.max(r * 1.2, 5)
+    const arrowX = cx
+    const arrowTipY = cy - r - 1
+    const arrowBaseY = arrowTipY - arrowSize
+
+    const arrow = document.createElementNS('http://www.w3.org/2000/svg', 'polygon')
+    arrow.setAttribute('points', `${arrowX},${arrowTipY} ${arrowX - arrowSize * 0.7},${arrowBaseY} ${arrowX + arrowSize * 0.7},${arrowBaseY}`)
+    arrow.setAttribute('fill', '#ef4444')
+    arrow.setAttribute('stroke', '#fff')
+    arrow.setAttribute('stroke-width', '1')
+    arrowGroup.appendChild(arrow)
+
+    const stem = document.createElementNS('http://www.w3.org/2000/svg', 'line')
+    stem.setAttribute('x1', String(arrowX))
+    stem.setAttribute('y1', String(arrowBaseY))
+    stem.setAttribute('x2', String(arrowX))
+    stem.setAttribute('y2', String(arrowBaseY - arrowSize * 0.6))
+    stem.setAttribute('stroke', '#ef4444')
+    stem.setAttribute('stroke-width', String(Math.max(arrowSize * 0.25, 1.5)))
+    stem.setAttribute('stroke-linecap', 'round')
+    arrowGroup.appendChild(stem)
+
+    iconGroup.appendChild(arrowGroup)
+  }
+
+  // RIGHT — Comment icon
+  if (hasComment) {
+    const commentIcon = document.createElementNS('http://www.w3.org/2000/svg', 'g')
+    const s = iconSize
+    commentIcon.setAttribute('transform', `translate(${cx + r + 1}, ${cy - s * 0.6})`)
+
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+    path.setAttribute('d', `M0,0 h${s * 1.2} q${s * 0.3},0 ${s * 0.3},${s * 0.3} v${s * 0.5} q0,${s * 0.3} -${s * 0.3},${s * 0.3} h-${s * 0.5} l-${s * 0.3},${s * 0.3} v-${s * 0.3} h-${s * 0.1} q-${s * 0.3},0 -${s * 0.3},-${s * 0.3} v-${s * 0.5} q0,-${s * 0.3} ${s * 0.3},-${s * 0.3} z`)
+    path.setAttribute('fill', '#3b82f6')
+    path.setAttribute('opacity', '0.9')
+    commentIcon.appendChild(path)
+
+    iconGroup.appendChild(commentIcon)
+  }
 }
 
 /* ----------------------------
@@ -1354,17 +1492,31 @@ function renderAll() {
     if ((child as Element).id !== 'tooltip') child.remove()
   })
 
+  // Ensure icons layer exists
+  let iconsLayer = vp.querySelector('#icons-layer') as SVGGElement
+  if (!iconsLayer) {
+    iconsLayer = document.createElementNS('http://www.w3.org/2000/svg', 'g')
+    iconsLayer.setAttribute('id', 'icons-layer')
+    vp.appendChild(iconsLayer)
+  }
+
   drawBoundary(boundary, config.value, centerX, centerY, scalePx)
 
   const isBackView = viewDisplay.value === 'Back View'
   const activeTubes = currentTubes.value.filter(t => !t.deleted)
   const presentIds = new Set(activeTubes.map(t => t.id))
 
-  // Remove stale circles
+  // Remove stale circles and icons
   for (const [id, el] of Array.from(elById.entries())) {
     if (!presentIds.has(id)) {
       el.remove()
       elById.delete(id)
+    }
+  }
+  for (const [id, el] of Array.from(iconElById.entries())) {
+    if (!presentIds.has(id)) {
+      el.remove()
+      iconElById.delete(id)
     }
   }
 
@@ -1701,10 +1853,34 @@ async function fetchUpdatedTubeColors(surveyId: string) {
         ?.label as string) || ''
 
     selectedPhase.value = surveyType || ''
+
+    // Track repeat counts per tube and last detected tube
+    const repeatCounts = new Map<string, number>()
+    let latestTubeId = ''
+    let latestTimestamp = 0
+    let latestFace = 'front'
+
     data.forEach(
-      (element: { tubeId: string | number, color: string, face?: string }) => {
+      (element: { tubeId: string | number, color: string, face?: string, tubeIdAsperLayout?: string, timeStamp?: string, isDuplicate?: boolean }) => {
         const tube = currentTubes.value[element.tubeId as number]
         if (!tube) return
+
+        // Track last detected tube by timestamp and face
+        if (element.timeStamp) {
+          const ts = new Date(element.timeStamp).getTime()
+          if (ts > latestTimestamp) {
+            latestTimestamp = ts
+            latestTubeId = tube.id
+            latestFace = element.face || 'front'
+          }
+        }
+
+        // Count repeats per tube (by layout ID)
+        const layoutId = element.tubeIdAsperLayout || tube.id
+        if (element.isDuplicate) {
+          repeatCounts.set(layoutId, (repeatCounts.get(layoutId) || 1) + 1)
+        }
+
         if (element.face === 'back') {
           tube.backColor = element.color
           tube._backendUpdatedBack = true
@@ -1715,6 +1891,20 @@ async function fetchUpdatedTubeColors(surveyId: string) {
         updateCircleVisual(tube)
       }
     )
+
+    // Update tracked state
+    tubeRepeatCounts.value = repeatCounts
+    lastDetectedTubeId.value = latestTubeId
+    lastDetectedFace.value = latestFace
+
+    // Refresh all tube icons after data update
+    const activeTubes = currentTubes.value.filter(t => !t.deleted)
+    for (const t of activeTubes) {
+      const cx = centerX + t.x * scalePx
+      const cy = centerY + t.y * scalePx
+      const r = t.r * scalePx
+      updateTubeIcons(t, cx, cy, r)
+    }
 
     const frontData = data?.filter((e: { face?: string }) => e.face !== 'back')
     const backData = data?.filter((e: { face?: string }) => e.face === 'back')

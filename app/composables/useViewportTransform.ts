@@ -23,7 +23,7 @@ export function useViewportTransform(defaults: ViewportOptions = { scale: 1, tx:
   }
 
   function rotate(degrees: number) {
-    rotation.value += degrees
+    rotation.value = Math.max(-360, Math.min(360, rotation.value + degrees))
   }
 
   function setZoom(value: number) {
@@ -36,7 +36,7 @@ export function useViewportTransform(defaults: ViewportOptions = { scale: 1, tx:
   }
 
   function setRotation(value: number) {
-    rotation.value = value
+    rotation.value = Math.max(-360, Math.min(360, value))
   }
 
   function reset() {

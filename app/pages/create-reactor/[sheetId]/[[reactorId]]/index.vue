@@ -766,6 +766,9 @@ function getMirroredIds(id: string): string[] {
   )
 }
 
+// Cache for icon overlay elements
+const iconElById = new Map<string, SVGGElement>()
+
 /* ----------------------------
    VISUAL UPDATE
 ----------------------------- */
@@ -778,18 +781,72 @@ function updateCircleVisual(t: Tube) {
   const isSelected = selectedIds.value.has(t.id)
   const hasComment = !!t.comment
 
-  c.setAttribute('cx', String(centerX + t.x * scalePx))
-  c.setAttribute('cy', String(centerY + t.y * scalePx))
-  c.setAttribute('r', String(t.r * scalePx))
+  const cx = centerX + t.x * scalePx
+  const cy = centerY + t.y * scalePx
+  const r = t.r * scalePx
+
+  c.setAttribute('cx', String(cx))
+  c.setAttribute('cy', String(cy))
+  c.setAttribute('r', String(r))
   c.setAttribute(
     'fill',
     propertyColor ? propertyColor : isSelected ? '#FFA500' : '#fff'
   )
   c.setAttribute(
     'stroke',
-    hasComment ? '#facc15' : isSelected ? '#FFA500' : '#0f172a'
+    isSelected ? '#FFA500' : '#0f172a'
   )
-  c.setAttribute('stroke-width', isSelected || hasComment ? '1.5' : '0.3')
+  c.setAttribute('stroke-width', isSelected ? '1.5' : '0.3')
+
+  // Update comment icon overlay
+  updateTubeIcons(t, cx, cy, r, hasComment)
+}
+
+function updateTubeIcons(t: Tube, cx: number, cy: number, r: number, hasComment: boolean) {
+  let iconGroup = iconElById.get(t.id)
+
+  if (!hasComment) {
+    if (iconGroup) {
+      iconGroup.remove()
+      iconElById.delete(t.id)
+    }
+    return
+  }
+
+  if (!iconGroup) {
+    iconGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g')
+    iconGroup.setAttribute('class', 'tube-icons')
+    iconGroup.setAttribute('pointer-events', 'none')
+    iconElById.set(t.id, iconGroup)
+    const svg = svgRef.value
+    if (svg) {
+      const vp = svg.querySelector('#viewport') as SVGGElement
+      let iconsLayer = vp?.querySelector('#icons-layer') as SVGGElement
+      if (!iconsLayer) {
+        iconsLayer = document.createElementNS('http://www.w3.org/2000/svg', 'g')
+        iconsLayer.setAttribute('id', 'icons-layer')
+        vp?.appendChild(iconsLayer)
+      }
+      iconsLayer.appendChild(iconGroup)
+    }
+  }
+
+  iconGroup.innerHTML = ''
+
+  const iconSize = Math.max(r * 0.7, 3)
+
+  // RIGHT — Comment icon
+  const commentIcon = document.createElementNS('http://www.w3.org/2000/svg', 'g')
+  const s = iconSize
+  commentIcon.setAttribute('transform', `translate(${cx + r + 1}, ${cy - s * 0.6})`)
+
+  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+  path.setAttribute('d', `M0,0 h${s * 1.2} q${s * 0.3},0 ${s * 0.3},${s * 0.3} v${s * 0.5} q0,${s * 0.3} -${s * 0.3},${s * 0.3} h-${s * 0.5} l-${s * 0.3},${s * 0.3} v-${s * 0.3} h-${s * 0.1} q-${s * 0.3},0 -${s * 0.3},-${s * 0.3} v-${s * 0.5} q0,-${s * 0.3} ${s * 0.3},-${s * 0.3} z`)
+  path.setAttribute('fill', '#3b82f6')
+  path.setAttribute('opacity', '0.9')
+  commentIcon.appendChild(path)
+
+  iconGroup.appendChild(commentIcon)
 }
 
 /* ----------------------------
@@ -886,16 +943,30 @@ function renderAll() {
     if ((child as Element).id !== 'tooltip') child.remove()
   })
 
+  // Ensure icons layer exists
+  let iconsLayer = vp.querySelector('#icons-layer') as SVGGElement
+  if (!iconsLayer) {
+    iconsLayer = document.createElementNS('http://www.w3.org/2000/svg', 'g')
+    iconsLayer.setAttribute('id', 'icons-layer')
+    vp.appendChild(iconsLayer)
+  }
+
   drawBoundary(boundary, config.value, centerX, centerY, scalePx)
 
   const activeTubes = currentTubes.value.filter(t => !t.deleted)
   const presentIds = new Set(activeTubes.map(t => t.id))
 
-  // Remove stale circles
+  // Remove stale circles and icons
   for (const [id, el] of Array.from(elById.entries())) {
     if (!presentIds.has(id)) {
       el.remove()
       elById.delete(id)
+    }
+  }
+  for (const [id, el] of Array.from(iconElById.entries())) {
+    if (!presentIds.has(id)) {
+      el.remove()
+      iconElById.delete(id)
     }
   }
 
