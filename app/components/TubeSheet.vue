@@ -67,6 +67,30 @@
           </div>
           <UInput v-model.number="localState.totalNoOfTubes" :disabled="isCloneing" />
         </UFieldGroup>
+        <UFieldGroup class="grid grid-cols-2  w-full">
+          <div variant="outline" class="text-xl">
+            Day Start Time
+          </div>
+          <UInput v-model="localState.dayStart" type="time" />
+        </UFieldGroup>
+        <UFieldGroup class="grid grid-cols-2  w-full">
+          <div variant="outline" class="text-xl">
+            Day End Time
+          </div>
+          <UInput v-model="localState.dayEnd" type="time" />
+        </UFieldGroup>
+        <UFieldGroup class="grid grid-cols-2  w-full">
+          <div variant="outline" class="text-xl">
+            Timezone
+          </div>
+          <USelectMenu
+            v-model="localState.timeZoneOffset"
+            :items="timezoneOptions"
+            value-key="value"
+            placeholder="Select Timezone"
+            class="w-full"
+          />
+        </UFieldGroup>
       </UForm>
     </template>
     <template #footer>
@@ -306,7 +330,10 @@ function clone() {
 
 const localState = reactive<Partial<TubeSheet>>({
   ...props.modelValue,
-  date: props.modelValue.date || new Date()
+  date: props.modelValue.date || new Date(),
+  dayStart: props.modelValue.dayStart || '08:00',
+  dayEnd: props.modelValue.dayEnd || '17:00',
+  timeZoneOffset: props.modelValue.timeZoneOffset ?? -360
 })
 watch(() => props.modelValue, v => Object.assign(localState, v), { deep: true })
 
@@ -367,7 +394,10 @@ const handleSubmit = () => {
       : undefined,
     date: localState.date && !isNaN(new Date(localState.date).getTime())
       ? new Date(localState.date).toISOString()
-      : new Date().toISOString()
+      : new Date().toISOString(),
+    dayStart: localState.dayStart || '08:00',
+    dayEnd: localState.dayEnd || '17:00',
+    timeZoneOffset: localState.timeZoneOffset ?? -360
   }
 
   if (isCloneing.value) {
@@ -412,6 +442,9 @@ const handleReset = () => {
   localState.totalNoOfTubes = 0
   localState.numberOfCameras = 0
   localState.cameras = []
+  localState.dayStart = '08:00'
+  localState.dayEnd = '17:00'
+  localState.timeZoneOffset = -360
   localState.projectStartDate = undefined
   localState.date = new Date()
 }
@@ -527,6 +560,41 @@ const handleNextStep = (status?: string, sheetId?: string, reactorId?: string) =
 }
 
 const phases = usePhases()
+
+const timezoneOptions = [
+  { label: '(UTC-12:00) Baker Island', value: -720 },
+  { label: '(UTC-11:00) Pago Pago', value: -660 },
+  { label: '(UTC-10:00) Honolulu (HST)', value: -600 },
+  { label: '(UTC-09:00) Anchorage (AKST)', value: -540 },
+  { label: '(UTC-08:00) Los Angeles (PST)', value: -480 },
+  { label: '(UTC-07:00) Denver (MST)', value: -420 },
+  { label: '(UTC-06:00) Houston / Chicago (CST)', value: -360 },
+  { label: '(UTC-05:00) New York (EST)', value: -300 },
+  { label: '(UTC-04:00) Santiago / Halifax', value: -240 },
+  { label: '(UTC-03:00) São Paulo / Buenos Aires', value: -180 },
+  { label: '(UTC-02:00) South Georgia', value: -120 },
+  { label: '(UTC-01:00) Azores', value: -60 },
+  { label: '(UTC+00:00) London (GMT)', value: 0 },
+  { label: '(UTC+01:00) Paris / Berlin (CET)', value: 60 },
+  { label: '(UTC+02:00) Cairo / Johannesburg', value: 120 },
+  { label: '(UTC+03:00) Moscow / Riyadh', value: 180 },
+  { label: '(UTC+03:30) Tehran', value: 210 },
+  { label: '(UTC+04:00) Dubai / Baku', value: 240 },
+  { label: '(UTC+04:30) Kabul', value: 270 },
+  { label: '(UTC+05:00) Karachi / Tashkent', value: 300 },
+  { label: '(UTC+05:30) Mumbai / Kolkata (IST)', value: 330 },
+  { label: '(UTC+05:45) Kathmandu', value: 345 },
+  { label: '(UTC+06:00) Dhaka / Almaty', value: 360 },
+  { label: '(UTC+06:30) Yangon', value: 390 },
+  { label: '(UTC+07:00) Bangkok / Jakarta', value: 420 },
+  { label: '(UTC+08:00) Singapore / Beijing', value: 480 },
+  { label: '(UTC+09:00) Tokyo / Seoul', value: 540 },
+  { label: '(UTC+09:30) Adelaide', value: 570 },
+  { label: '(UTC+10:00) Sydney (AEST)', value: 600 },
+  { label: '(UTC+11:00) Solomon Islands', value: 660 },
+  { label: '(UTC+12:00) Auckland (NZST)', value: 720 },
+  { label: '(UTC+13:00) Tonga', value: 780 }
+]
 
 interface Phase {
   phaseName: string

@@ -66,6 +66,9 @@ export interface TubeSheet {
   numberOfCameras: number
   cameras: string[]
   typeOfPhases: string[]
+  dayStart?: string
+  dayEnd?: string
+  timeZoneOffset?: number
 
 }
 
