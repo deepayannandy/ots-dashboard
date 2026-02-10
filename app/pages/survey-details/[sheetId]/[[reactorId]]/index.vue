@@ -1925,7 +1925,7 @@ async function fetchUpdatedTubeColors(surveyId: string) {
             Action: 'Locate'
           }
         }
-      )
+      ).sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
 
     repeatTableData.value = frontData
       ?.filter((e: { isDuplicate: boolean }) => e?.isDuplicate)
@@ -1945,7 +1945,7 @@ async function fetchUpdatedTubeColors(surveyId: string) {
 
           }
         }
-      )
+      ).sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
 
     backTableData.value = backData
       ?.filter((e: { isDuplicate: boolean }) => !e?.isDuplicate)
@@ -1963,7 +1963,7 @@ async function fetchUpdatedTubeColors(surveyId: string) {
             Action: 'Locate'
           }
         }
-      )
+      ).sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()) // Sort by time desc
 
     backRepeatTableData.value = backData
       ?.filter((e: { isDuplicate: boolean }) => e?.isDuplicate)
@@ -1981,7 +1981,7 @@ async function fetchUpdatedTubeColors(surveyId: string) {
             Action: 'Locate'
           }
         }
-      )
+      ).sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()) // Sort by time desc
   } catch (err) {
     console.error('Failed to fetch tube colors:', err)
   }
