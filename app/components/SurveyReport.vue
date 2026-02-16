@@ -233,7 +233,7 @@
           ref="frontSvgRef"
           xmlns="http://www.w3.org/2000/svg"
           preserveAspectRatio="xMidYMid meet"
-          class="w-full h-full"
+          class="w-full h-full ml-20"
           style="max-width: 100%; max-height: 100%; object-fit: contain;"
         >
           <g id="front-viewport" />
@@ -769,9 +769,19 @@ function renderReactorSvg(svgEl: SVGSVGElement | null, isBackView: boolean = fal
   }
 
   // Also account for boundary shape
+  // For circles/donuts/hexagons, outerDimension is the radius (not diameter)
+  // For rectangles, width/height are the full dimensions
   const outerDim = config.outerDimension || 100
-  const halfW = ((config.shape === 'RECTANGLE' ? (config.width || outerDim) : outerDim) / 2) * scalePx
-  const halfH = ((config.shape === 'RECTANGLE' ? (config.height || outerDim) : outerDim) / 2) * scalePx
+  const boundaryPadding = 10 // Extra padding to prevent boundary from getting cut
+  let halfW: number, halfH: number
+  if (config.shape === 'RECTANGLE') {
+    halfW = ((config.width || outerDim) / 2) * scalePx
+    halfH = ((config.height || outerDim) / 2) * scalePx
+  } else {
+    // For CIRCLE, DONUT, HEXAGONE - outerDimension is the radius
+    halfW = outerDim * scalePx + boundaryPadding
+    halfH = outerDim * scalePx + boundaryPadding
+  }
   const pad = config.padding * scalePx
   minX = Math.min(minX, -halfW - pad)
   maxX = Math.max(maxX, halfW + pad)
