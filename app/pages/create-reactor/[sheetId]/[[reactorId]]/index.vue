@@ -1158,11 +1158,14 @@ function saveReactorData(autoUPdate = false) {
     })
 }
 
-function saveAndExportReport() {
-  // Save reactor data first
-  reactorsStore.saveReactor({
+async function saveAndExportReport() {
+  // Determine the reactor ID to use: from route, from tubesheet, or will be created
+  const existingReactorId = reactorId || tubeSheetDetails.value?.reactorId as string | undefined
+
+  // Save reactor data first and wait for completion
+  const savedReactorId = await reactorsStore.saveReactor({
     sheetId: sheetId,
-    reactorId: reactorId,
+    reactorId: existingReactorId || '',
     config: {
       ...config.value,
       positions: {
@@ -1176,12 +1179,20 @@ function saveAndExportReport() {
   }, true)
   saveChangesModal.value = false
 
-  // Open condensed report (first 3 pages, no Survey Statistics)
-  let reportPath = `/report/${sheetId}`
-  if (reactorId) {
-    reportPath += `/${reactorId}`
+  // Use the returned ID, or fall back to existing reactor ID
+  const finalReactorId = savedReactorId || existingReactorId
+
+  if (!finalReactorId) {
+    useToast().add({
+      title: 'Export Failed',
+      description: 'Failed to save reactor. Please try again.',
+      color: 'error'
+    })
+    return
   }
-  reportPath += `?condensed=true`
+
+  // Open condensed report (first 3 pages, no Survey Statistics)
+  const reportPath = `/report/${sheetId}/${finalReactorId}?condensed=true`
 
   window.open(reportPath, '_blank')
 
