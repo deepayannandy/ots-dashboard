@@ -3,7 +3,7 @@
     ref="pageDocRef"
     size="A4"
     orientation="portrait"
-    :padding="40"
+    :padding="{ 2: 0, 3: 0, default: 40 }"
   >
     <template #header="{ page, total }">
       <div class="flex justify-between items-center border-b border-gray-200 pb-2">
@@ -142,8 +142,8 @@
       </table>
     </div>
 
-    <!-- Survey Statistics Section -->
-    <div class="mb-6 mt-12" data-no-break>
+    <!-- Survey Statistics Section (hidden in condensed mode) -->
+    <div v-if="!condensed" class="mb-6 mt-12" data-no-break>
       <h2 class="text-xl font-bold text-gray-800 mb-4 border-b-2 border-primary-500 pb-2">
         Survey Statistics
       </h2>
@@ -225,21 +225,21 @@
       data-no-footer
       class="flex flex-col items-center justify-center h-full p-4"
     >
-      <h2 class="text-xl font-bold text-gray-800 mb-4 text-center">
+      <h2 class="text-xl font-bold text-gray-800 mb-4 text-center shrink-0">
         {{ getEquipmentTypeLabel(tubeSheetDetails?.type) }}  Front View
       </h2>
-      <div class="flex-1 flex items-center justify-center w-full overflow-hidden">
+      <div class="flex-1 flex items-center justify-center w-full min-h-0">
         <svg
           ref="frontSvgRef"
-          viewBox="0 0 800 800"
           xmlns="http://www.w3.org/2000/svg"
           preserveAspectRatio="xMidYMid meet"
-          class="max-w-full max-h-[650px] w-auto h-auto"
+          class="w-full h-full"
+          style="max-width: 100%; max-height: 100%; object-fit: contain;"
         >
           <g id="front-viewport" />
         </svg>
       </div>
-      <p class="text-xs text-gray-500 mt-2">
+      <p class="text-xs text-gray-500 mt-2 shrink-0">
         Front view
       </p>
     </div>
@@ -252,202 +252,204 @@
       data-no-footer
       class="flex flex-col items-center justify-center h-full p-4"
     >
-      <h2 class="text-xl font-bold text-gray-800 mb-4 text-center">
+      <h2 class="text-xl font-bold text-gray-800 mb-4 text-center shrink-0">
         {{ getEquipmentTypeLabel(tubeSheetDetails?.type) }}  Back View
       </h2>
-      <div class="flex-1 flex items-center justify-center w-full overflow-hidden">
+      <div class="flex-1 flex items-center justify-center w-full min-h-0">
         <svg
           ref="backSvgRef"
-          viewBox="0 0 800 800"
           xmlns="http://www.w3.org/2000/svg"
           preserveAspectRatio="xMidYMid meet"
-          class="max-w-full max-h-[650px] w-auto h-auto"
-          style="transform: scaleX(-1);"
+          class="w-full h-full"
+          style="max-width: 100%; max-height: 100%; object-fit: contain; transform: scaleX(-1);"
         >
           <g id="back-viewport" />
         </svg>
       </div>
-      <p class="text-xs text-gray-500 mt-2">
+      <p class="text-xs text-gray-500 mt-2 shrink-0">
         Back view
       </p>
     </div>
 
-    <!-- Special Tube Details -->
-    <div data-page-break class="page-break" />
-    <div class="mb-6" data-no-break>
-      <h2 class="text-xl font-bold text-gray-800 mb-4 border-b-2 border-primary-500 pb-2">
-        Special Tube Details
-      </h2>
-      <table v-if="specialTubeData.length > 0" class="w-full text-sm border-collapse border border-gray-200">
-        <thead class="bg-gray-50">
-          <tr>
-            <th class="border border-gray-200 px-3 py-2 text-left font-medium text-gray-700">
-              Tube ID
-            </th>
-            <th class="border border-gray-200 px-3 py-2 text-left font-medium text-gray-700">
-              Property
-            </th>
-            <th class="border border-gray-200 px-3 py-2 text-left font-medium text-gray-700">
-              Comment
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="tube in specialTubeData" :key="tube.id" class="hover:bg-gray-50">
-            <td class="border border-gray-200 px-3 py-2">
-              {{ tube.id }}
-            </td>
-            <td class="border border-gray-200 px-3 py-2">
-              <span class="inline-flex items-center gap-1">
+    <!-- Sections below are hidden in condensed mode (only first 3 pages) -->
+    <template v-if="!condensed">
+      <!-- Special Tube Details -->
+      <div data-page-break class="page-break" />
+      <div class="mb-6" data-no-break>
+        <h2 class="text-xl font-bold text-gray-800 mb-4 border-b-2 border-primary-500 pb-2">
+          Special Tube Details
+        </h2>
+        <table v-if="specialTubeData.length > 0" class="w-full text-sm border-collapse border border-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="border border-gray-200 px-3 py-2 text-left font-medium text-gray-700">
+                Tube ID
+              </th>
+              <th class="border border-gray-200 px-3 py-2 text-left font-medium text-gray-700">
+                Property
+              </th>
+              <th class="border border-gray-200 px-3 py-2 text-left font-medium text-gray-700">
+                Comment
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="tube in specialTubeData" :key="tube.id" class="hover:bg-gray-50">
+              <td class="border border-gray-200 px-3 py-2">
+                {{ tube.id }}
+              </td>
+              <td class="border border-gray-200 px-3 py-2">
+                <span class="inline-flex items-center gap-1">
+                  <span
+                    class="w-3 h-3 rounded-full inline-block"
+                    :style="{ backgroundColor: tube.propertyColor }"
+                  />
+                  {{ tube.propertyLabel }}
+                </span>
+              </td>
+              <td class="border border-gray-200 px-3 py-2">
+                {{ tube.comment || '-' }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <p v-else class="text-gray-500 italic">
+          No special tubes configured.
+        </p>
+      </div>
+
+      <!-- Comments Section -->
+      <div v-if="commentsData.length > 0" class="mb-6" data-no-break>
+        <h2 class="text-xl font-bold text-gray-800 mb-4 border-b-2 border-primary-500 pb-2">
+          Survey Comments
+        </h2>
+        <table class="w-full text-sm border-collapse border border-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="border border-gray-200 px-3 py-2 text-left font-medium text-gray-700">
+                Tube ID
+              </th>
+              <th class="border border-gray-200 px-3 py-2 text-left font-medium text-gray-700">
+                Comment
+              </th>
+              <th class="border border-gray-200 px-3 py-2 text-left font-medium text-gray-700">
+                Timestamp
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="comment in commentsData" :key="comment._id" class="hover:bg-gray-50">
+              <td class="border border-gray-200 px-3 py-2">
+                {{ comment.tubeIdAsperLayout }}
+              </td>
+              <td class="border border-gray-200 px-3 py-2">
+                {{ comment.comment }}
+              </td>
+              <td class="border border-gray-200 px-3 py-2">
+                {{ formatDateTime(comment.timeStamp) }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Camera Details -->
+      <div v-if="tubeSheetDetails?.cameras && tubeSheetDetails.cameras.length > 0" class="mb-6" data-no-break>
+        <h2 class="text-xl font-bold text-gray-800 mb-4 border-b-2 border-primary-500 pb-2">
+          Camera Details
+        </h2>
+        <table class="w-full text-sm border-collapse border border-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="border border-gray-200 px-3 py-2 text-left font-medium text-gray-700">
+                #
+              </th>
+              <th class="border border-gray-200 px-3 py-2 text-left font-medium text-gray-700">
+                Camera ID
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(camera, index) in tubeSheetDetails?.cameras || []" :key="index" class="hover:bg-gray-50">
+              <td class="border border-gray-200 px-3 py-2">
+                {{ index + 1 }}
+              </td>
+              <td class="border border-gray-200 px-3 py-2">
+                {{ camera }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Survey Data Table -->
+      <div data-page-break class="page-break" />
+      <div class="mb-6">
+        <h2 class="text-xl font-bold text-gray-800 mb-4 border-b-2 border-primary-500 pb-2">
+          Survey Detection Data
+        </h2>
+        <table v-if="detectionData.length > 0" class="w-full text-sm border-collapse border border-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="border border-gray-200 px-2 py-2 text-left font-medium text-gray-700">
+                S.No
+              </th>
+              <th class="border border-gray-200 px-2 py-2 text-left font-medium text-gray-700">
+                Tube ID
+              </th>
+              <th class="border border-gray-200 px-2 py-2 text-left font-medium text-gray-700">
+                Layout ID
+              </th>
+              <th class="border border-gray-200 px-2 py-2 text-left font-medium text-gray-700">
+                Activity
+              </th>
+              <th class="border border-gray-200 px-2 py-2 text-left font-medium text-gray-700">
+                Face
+              </th>
+              <th class="border border-gray-200 px-2 py-2 text-left font-medium text-gray-700">
+                Status
+              </th>
+              <th class="border border-gray-200 px-2 py-2 text-left font-medium text-gray-700">
+                Timestamp
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(item, index) in detectionData" :key="item._id" class="hover:bg-gray-50">
+              <td class="border border-gray-200 px-2 py-1 text-xs">
+                {{ index + 1 }}
+              </td>
+              <td class="border border-gray-200 px-2 py-1 text-xs">
+                {{ item.tubeId }}
+              </td>
+              <td class="border border-gray-200 px-2 py-1 text-xs">
+                {{ item.tubeIdAsperLayout }}
+              </td>
+              <td class="border border-gray-200 px-2 py-1 text-xs">
+                {{ item.activity }}
+              </td>
+              <td class="border border-gray-200 px-2 py-1 text-xs capitalize">
+                {{ item.face || 'front' }}
+              </td>
+              <td class="border border-gray-200 px-2 py-1 text-xs">
                 <span
-                  class="w-3 h-3 rounded-full inline-block"
-                  :style="{ backgroundColor: tube.propertyColor }"
-                />
-                {{ tube.propertyLabel }}
-              </span>
-            </td>
-            <td class="border border-gray-200 px-3 py-2">
-              {{ tube.comment || '-' }}
-            </td>
-          </tr>
-        </tbody>
-      </table>
-      <p v-else class="text-gray-500 italic">
-        No special tubes configured.
-      </p>
-    </div>
-
-    <!-- Comments Section -->
-    <div v-if="commentsData.length > 0" class="mb-6" data-no-break>
-      <h2 class="text-xl font-bold text-gray-800 mb-4 border-b-2 border-primary-500 pb-2">
-        Survey Comments
-      </h2>
-      <table class="w-full text-sm border-collapse border border-gray-200">
-        <thead class="bg-gray-50">
-          <tr>
-            <th class="border border-gray-200 px-3 py-2 text-left font-medium text-gray-700">
-              Tube ID
-            </th>
-            <th class="border border-gray-200 px-3 py-2 text-left font-medium text-gray-700">
-              Comment
-            </th>
-            <th class="border border-gray-200 px-3 py-2 text-left font-medium text-gray-700">
-              Timestamp
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="comment in commentsData" :key="comment._id" class="hover:bg-gray-50">
-            <td class="border border-gray-200 px-3 py-2">
-              {{ comment.tubeIdAsperLayout }}
-            </td>
-            <td class="border border-gray-200 px-3 py-2">
-              {{ comment.comment }}
-            </td>
-            <td class="border border-gray-200 px-3 py-2">
-              {{ formatDateTime(comment.timeStamp) }}
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <!-- Camera Details -->
-    <div v-if="tubeSheetDetails?.cameras && tubeSheetDetails.cameras.length > 0" class="mb-6" data-no-break>
-      <h2 class="text-xl font-bold text-gray-800 mb-4 border-b-2 border-primary-500 pb-2">
-        Camera Details
-      </h2>
-      <table class="w-full text-sm border-collapse border border-gray-200">
-        <thead class="bg-gray-50">
-          <tr>
-            <th class="border border-gray-200 px-3 py-2 text-left font-medium text-gray-700">
-              #
-            </th>
-            <th class="border border-gray-200 px-3 py-2 text-left font-medium text-gray-700">
-              Camera ID
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="(camera, index) in tubeSheetDetails?.cameras || []" :key="index" class="hover:bg-gray-50">
-            <td class="border border-gray-200 px-3 py-2">
-              {{ index + 1 }}
-            </td>
-            <td class="border border-gray-200 px-3 py-2">
-              {{ camera }}
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <!-- Survey Data Table -->
-    <div data-page-break class="page-break" />
-    <div class="mb-6">
-      <h2 class="text-xl font-bold text-gray-800 mb-4 border-b-2 border-primary-500 pb-2">
-        Survey Detection Data
-      </h2>
-      <table v-if="detectionData.length > 0" class="w-full text-sm border-collapse border border-gray-200">
-        <thead class="bg-gray-50">
-          <tr>
-            <th class="border border-gray-200 px-2 py-2 text-left font-medium text-gray-700">
-              S.No
-            </th>
-            <th class="border border-gray-200 px-2 py-2 text-left font-medium text-gray-700">
-              Tube ID
-            </th>
-            <th class="border border-gray-200 px-2 py-2 text-left font-medium text-gray-700">
-              Layout ID
-            </th>
-            <th class="border border-gray-200 px-2 py-2 text-left font-medium text-gray-700">
-              Activity
-            </th>
-            <th class="border border-gray-200 px-2 py-2 text-left font-medium text-gray-700">
-              Face
-            </th>
-            <th class="border border-gray-200 px-2 py-2 text-left font-medium text-gray-700">
-              Status
-            </th>
-            <th class="border border-gray-200 px-2 py-2 text-left font-medium text-gray-700">
-              Timestamp
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="(item, index) in detectionData" :key="item._id" class="hover:bg-gray-50">
-            <td class="border border-gray-200 px-2 py-1 text-xs">
-              {{ index + 1 }}
-            </td>
-            <td class="border border-gray-200 px-2 py-1 text-xs">
-              {{ item.tubeId }}
-            </td>
-            <td class="border border-gray-200 px-2 py-1 text-xs">
-              {{ item.tubeIdAsperLayout }}
-            </td>
-            <td class="border border-gray-200 px-2 py-1 text-xs">
-              {{ item.activity }}
-            </td>
-            <td class="border border-gray-200 px-2 py-1 text-xs capitalize">
-              {{ item.face || 'front' }}
-            </td>
-            <td class="border border-gray-200 px-2 py-1 text-xs">
-              <span
-                class="px-1.5 py-0.5 rounded text-xs"
-                :class="item.isDuplicate ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'"
-              >
-                {{ item.isDuplicate ? 'Duplicate' : 'Detected' }}
-              </span>
-            </td>
-            <td class="border border-gray-200 px-2 py-1 text-xs">
-              {{ formatDateTime(item.timeStamp) }}
-            </td>
-          </tr>
-        </tbody>
-      </table>
-      <p v-else class="text-gray-500 italic">
-        No detection data available.
-      </p>
-    </div>
+                  class="px-1.5 py-0.5 rounded text-xs"
+                  :class="item.isDuplicate ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'"
+                >
+                  {{ item.isDuplicate ? 'Duplicate' : 'Detected' }}
+                </span>
+              </td>
+              <td class="border border-gray-200 px-2 py-1 text-xs">
+                {{ formatDateTime(item.timeStamp) }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <p v-else class="text-gray-500 italic">
+          No detection data available.
+        </p>
+      </div>
+    </template>
 
     <template #footer="{ page, total }">
       <div class="flex justify-between items-center border-t border-gray-200 pt-2 text-xs text-gray-500">
@@ -544,6 +546,7 @@ const props = defineProps<{
   surveyData: SurveyInfo | null
   reactorData: ReactorData | null
   progressData?: ProgressDataItem[]
+  condensed?: boolean
 }>()
 
 const pageDocRef = ref()

@@ -418,6 +418,13 @@
                       color="primary"
                       @click="saveReactorData(false)"
                     />
+                    <UButton
+                      label="Save & Export"
+                      color="primary"
+                      variant="outline"
+                      icon="i-lucide-download"
+                      @click="saveAndExportReport"
+                    />
                   </div>
                 </div>
               </template>
@@ -1149,6 +1156,40 @@ function saveReactorData(autoUPdate = false) {
       description: 'Reactor configuration has been saved successfully',
       color: 'success'
     })
+}
+
+function saveAndExportReport() {
+  // Save reactor data first
+  reactorsStore.saveReactor({
+    sheetId: sheetId,
+    reactorId: reactorId,
+    config: {
+      ...config.value,
+      positions: {
+        scale: scale.value,
+        tx: tx.value,
+        ty: ty.value,
+        rotation: rotation.value
+      }
+    },
+    tubes: currentTubes.value
+  }, true)
+  saveChangesModal.value = false
+
+  // Open condensed report (first 3 pages, no Survey Statistics)
+  let reportPath = `/report/${sheetId}`
+  if (reactorId) {
+    reportPath += `/${reactorId}`
+  }
+  reportPath += `?condensed=true`
+
+  window.open(reportPath, '_blank')
+
+  useToast().add({
+    title: 'Report Exported',
+    description: 'Opening condensed report for export',
+    color: 'success'
+  })
 }
 
 onMounted(async () => {

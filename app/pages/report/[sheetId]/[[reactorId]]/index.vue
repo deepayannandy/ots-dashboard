@@ -42,13 +42,14 @@
         :survey-data="surveyData"
         :reactor-data="reactorData"
         :progress-data="progressData"
+        :condensed="isCondensed"
       />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import type { Tube, ReactorConfig } from '@/types'
 
 definePageMeta({
@@ -121,6 +122,8 @@ const surveyData = ref<SurveyInfo | null>(null)
 const reactorData = ref<ReactorData | null>(null)
 const progressData = ref<ProgressDataItem[]>([])
 
+const isCondensed = computed(() => route.query.condensed === 'true')
+
 async function fetchReportData() {
   loading.value = true
   error.value = null
@@ -129,19 +132,23 @@ async function fetchReportData() {
     const surveyId = route.query.surveyId as string
     const sheetId = route.params.sheetId as string
     const reactorId = route.params.reactorId as string
+    const condensed = route.query.condensed === 'true'
 
-    if (!surveyId) {
+    // Only require surveyId when not in condensed mode
+    if (!surveyId && !condensed) {
       throw new Error('Survey ID is required')
     }
 
-    // Fetch survey data - response is { success, data: { ...surveyInfo } }
-    const surveyResponse = await axios.$get(`/api/v2/survey/getSurveyData/${surveyId}`)
-    const surveyResponseData = surveyResponse.data || surveyResponse
-    surveyData.value = surveyResponseData
+    // Fetch survey data only if surveyId is provided
+    if (surveyId) {
+      const surveyResponse = await axios.$get(`/api/v2/survey/getSurveyData/${surveyId}`)
+      const surveyResponseData = surveyResponse.data || surveyResponse
+      surveyData.value = surveyResponseData
 
-    // Extract progress data from survey response
-    if (surveyResponseData?.progress && Array.isArray(surveyResponseData.progress)) {
-      progressData.value = surveyResponseData.progress
+      // Extract progress data from survey response
+      if (surveyResponseData?.progress && Array.isArray(surveyResponseData.progress)) {
+        progressData.value = surveyResponseData.progress
+      }
     }
 
     // Fetch tubesheet details
