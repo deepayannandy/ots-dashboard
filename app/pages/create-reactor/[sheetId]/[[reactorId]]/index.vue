@@ -95,6 +95,20 @@
         </template>
 
         <template #left>
+          <UButton
+            color="neutral"
+            variant="subtle"
+            icon="i-lucide-upload"
+            label="Import JSON"
+            @click="triggerFileUpload"
+          />
+          <input
+            ref="fileInputRef"
+            type="file"
+            accept=".json,application/json"
+            class="hidden"
+            @change="handleFileUpload"
+          >
           <USwitch
             v-model="settingsInput.mirrorX"
             label="Mirror X (Top ↔ Bottom)"
@@ -439,7 +453,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, watch, onMounted } from 'vue'
+import { ref, reactive, computed, watch, onMounted, nextTick } from 'vue'
 import type { Tube, ReactorConfig } from '@/types'
 import RowConfigPannel from '@/components/tubesheet/RowConfigPannel.vue'
 import { useReactorsStore } from '@/stores/reactors'
@@ -576,6 +590,176 @@ const {
 const viewportStorageKey = reactorId
   ? `viewport:${reactorId}`
   : 'viewport:default'
+
+/* ----------------------------
+   JSON FILE UPLOAD & PARSING
+----------------------------- */
+const fileInputRef = ref<HTMLInputElement | null>(null)
+
+interface ReactorJsonTube {
+  tube_id?: number
+  id?: number
+  center_x: number
+  center_y: number
+  radius: number
+  diameter?: number
+  is_overlapping?: boolean
+}
+
+interface ReactorJsonRow {
+  row_id: number
+  tube_count: number
+  tubes: ReactorJsonTube[]
+}
+
+interface ReactorJson {
+  summary?: {
+    total_rows: number
+    total_tubes: number
+  }
+  outer_circle?: {
+    center_x: number
+    center_y: number
+    radius: number
+    diameter?: number
+  }
+  inner_circles?: {
+    total_count: number
+    circles: ReactorJsonTube[]
+  }
+  rows: ReactorJsonRow[]
+}
+
+function triggerFileUpload() {
+  fileInputRef.value?.click()
+}
+
+function handleFileUpload(event: Event) {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
+  if (!file) return
+
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    try {
+      const content = e.target?.result as string
+      const jsonData = JSON.parse(content) as ReactorJson
+      generateReactorFromJson(jsonData)
+      useToast().add({
+        title: 'JSON Imported',
+        description: `Successfully imported ${jsonData.summary?.total_tubes || jsonData.rows?.reduce((sum, r) => sum + r.tube_count, 0) || 0} tubes`,
+        color: 'success'
+      })
+    } catch (err) {
+      console.error('Failed to parse JSON:', err)
+      useToast().add({
+        title: 'Import Failed',
+        description: 'Invalid JSON file format',
+        color: 'error'
+      })
+    }
+  }
+  reader.readAsText(file)
+  // Reset input so same file can be uploaded again
+  target.value = ''
+}
+
+function generateReactorFromJson(jsonData: ReactorJson) {
+  // Push current state to history before making changes
+  pushHistory()
+
+  // Extract outer circle info for config
+  const outerCircle = jsonData.outer_circle
+
+  // Calculate center from outer circle or derive from tubes
+  const jsonCenterX = outerCircle?.center_x || 0
+  const jsonCenterY = outerCircle?.center_y || 0
+  const jsonOuterRadius = outerCircle?.radius || 600
+
+  // Target outer dimension for the app (normalized size)
+  const targetOuterDimension = 100
+
+  // Calculate scale factor to normalize JSON coordinates to app coordinates
+  // JSON radius 604 -> app outerDimension 100
+  const scaleFactor = jsonOuterRadius / targetOuterDimension
+
+  // Get average tube radius from JSON for proper scaling
+  let totalJsonRadius = 0
+  let tubeCount = 0
+  for (const row of jsonData.rows) {
+    for (const tube of row.tubes) {
+      totalJsonRadius += tube.radius
+      tubeCount++
+    }
+  }
+  const avgJsonTubeRadius = tubeCount > 0 ? totalJsonRadius / tubeCount : 60
+  const scaledTubeRadius = avgJsonTubeRadius / scaleFactor
+
+  // Calculate pitch from tube spacing (estimate from first row with 2+ tubes)
+  let estimatedPitch = 15
+  for (const row of jsonData.rows) {
+    if (row.tubes.length >= 2) {
+      const t1 = row.tubes[0]
+      const t2 = row.tubes[1]
+      const distance = Math.sqrt(
+        Math.pow(t2.center_x - t1.center_x, 2) +
+        Math.pow(t2.center_y - t1.center_y, 2)
+      )
+      estimatedPitch = distance / scaleFactor
+      break
+    }
+  }
+
+  // Update config with normalized dimensions
+  setConfig({
+    shape: 'CIRCLE',
+    outerDimension: targetOuterDimension,
+    tubeRadius: scaledTubeRadius,
+    padding: 5,
+    pitch: estimatedPitch,
+    angle: 60
+  })
+
+  // Convert rows to tubes with normalized coordinates
+  const tubes: Tube[] = []
+
+  for (const row of jsonData.rows) {
+    for (const tube of row.tubes) {
+      const tubeId = `R${row.row_id}C${tube.tube_id || tubes.filter(t => t.id.startsWith(`R${row.row_id}C`)).length + 1}`
+
+      // Convert absolute coordinates to center-relative and scale down
+      const relativeX = (tube.center_x - jsonCenterX) / scaleFactor
+      const relativeY = (tube.center_y - jsonCenterY) / scaleFactor
+      const scaledRadius = tube.radius / scaleFactor
+
+      tubes.push({
+        id: tubeId,
+        x: relativeX,
+        y: relativeY,
+        r: scaledRadius,
+        capped: false,
+        capColor: null,
+        blocked: false,
+        deleted: false,
+        property: null,
+        propertyColor: null,
+        comment: null
+      })
+    }
+  }
+
+  // Update tubes
+  currentTubes.value = tubes
+  handleUpdateTubes(tubes)
+
+  // Render the new configuration
+  renderAll()
+
+  // Fit to screen after import
+  nextTick(() => {
+    fitToScreenHandler()
+  })
+}
 
 function loadViewportState() {
   if (typeof localStorage === 'undefined') return
