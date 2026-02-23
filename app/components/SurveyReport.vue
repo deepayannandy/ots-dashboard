@@ -260,7 +260,7 @@
           ref="backSvgRef"
           xmlns="http://www.w3.org/2000/svg"
           preserveAspectRatio="xMidYMid meet"
-          class="w-full h-full"
+          class="w-full h-full invert"
           style="max-width: 100%; max-height: 100%; object-fit: contain; transform: scaleX(-1);"
         >
           <g id="back-viewport" />
