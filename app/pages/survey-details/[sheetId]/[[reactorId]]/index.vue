@@ -402,6 +402,7 @@
         </UPageBody>
         <template v-if="isRightOpen" #right>
           <div
+            ref="rightPanelRef"
             class="w-full max-h-[calc(100dvh-var(--ui-header-height)-49px)] overflow-y-auto p-4 space-y-4 relative"
             :class="{
               'opacity-30 pointer-events-none bg-gray-200 dark:bg-gray-700':
@@ -1718,8 +1719,46 @@ function resetView() {
   resetWithoutRotation()
 }
 
+// Keyboard handler for arrow keys
+// Shift + Arrow = move reactor, Arrow only (up/down) = scroll right panel
+function handleKeyDown(event: KeyboardEvent) {
+  const arrowKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']
+  if (!arrowKeys.includes(event.key)) return
+
+  event.preventDefault()
+  const step = 40
+
+  if (event.shiftKey) {
+    // Shift + Arrow = move reactor
+    switch (event.key) {
+      case 'ArrowUp':
+        panXY(0, -step)
+        break
+      case 'ArrowDown':
+        panXY(0, step)
+        break
+      case 'ArrowLeft':
+        panXY(-step, 0)
+        break
+      case 'ArrowRight':
+        panXY(step, 0)
+        break
+    }
+  } else {
+    // Arrow only (up/down) = scroll right panel
+    if (!rightPanelRef.value) return
+    if (event.key === 'ArrowUp') {
+      rightPanelRef.value.scrollBy({ top: -step, behavior: 'smooth' })
+    } else if (event.key === 'ArrowDown') {
+      rightPanelRef.value.scrollBy({ top: step, behavior: 'smooth' })
+    }
+  }
+}
+
 // Reference to the container div for fit-to-screen calculation
 const containerRef = ref<HTMLDivElement | null>(null)
+// Reference to the right panel for scrolling
+const rightPanelRef = ref<HTMLDivElement | null>(null)
 
 function fitToScreenHandler() {
   // Calculate actual reactor dimensions from config
@@ -1758,6 +1797,9 @@ function fitToScreenHandler() {
 
 // Load reactor data on mount
 onMounted(async () => {
+  // Add keyboard listener for arrow key controls
+  window.addEventListener('keydown', handleKeyDown)
+
   loadViewportState()
   watch(
     () => [scale.value, tx.value, ty.value, rotation.value],
@@ -2235,5 +2277,7 @@ const progressChartOptions = {
 
 onUnmounted(() => {
   if (interval) clearInterval(interval)
+  // Remove keyboard listener
+  window.removeEventListener('keydown', handleKeyDown)
 })
 </script>

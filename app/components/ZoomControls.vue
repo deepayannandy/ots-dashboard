@@ -150,10 +150,6 @@ function handleFitToScreen() {
 }
 
 defineShortcuts({
-  'ArrowUp': () => handlePan(0, -40, 'up'),
-  'ArrowDown': () => handlePan(0, 40, 'down'),
-  'ArrowLeft': () => handlePan(-40, 0, 'left'),
-  'ArrowRight': () => handlePan(40, 0, 'right'),
   '+': handleZoomIn,
   '-': handleZoomOut,
   '0': handleReset,
