@@ -1270,6 +1270,14 @@ function resetView() {
   resetWithoutRotation()
 }
 
+// Arrow key shortcuts for panning reactor (no shift required on this page)
+defineShortcuts({
+  'ArrowUp': () => panXY(0, -40),
+  'ArrowDown': () => panXY(0, 40),
+  'ArrowLeft': () => panXY(-40, 0),
+  'ArrowRight': () => panXY(40, 0)
+})
+
 // Reference to the container div for fit-to-screen calculation
 const containerRef = ref<HTMLDivElement | null>(null)
 
