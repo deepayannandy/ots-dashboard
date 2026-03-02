@@ -888,21 +888,42 @@ const totalSurveyTime = ref('0 min')
 // Computed for display times
 const surveyStartTime = computed(() => {
   if (surveyCreatedAt.value) {
-    return new Date(surveyCreatedAt.value).toLocaleTimeString()
+    return new Date(surveyCreatedAt.value).toLocaleString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    })
   }
   return 'N/A'
 })
 
 const surveyEndTime = computed(() => {
   if (surveyEndTimeStamp.value) {
-    return new Date(surveyEndTimeStamp.value).toLocaleTimeString()
+    return new Date(surveyEndTimeStamp.value).toLocaleString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    })
   }
   return 'N/A'
 })
 
 const lastUpdateTime = computed(() => {
   if (apiCallTime.value) {
-    return apiCallTime.value.toLocaleTimeString()
+    return apiCallTime.value.toLocaleString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    })
   }
   return 'N/A'
 })
