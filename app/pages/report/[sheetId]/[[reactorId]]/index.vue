@@ -42,6 +42,7 @@
         :survey-data="surveyData"
         :reactor-data="reactorData"
         :progress-data="progressData"
+        :phases-data="phasesData"
         :condensed="isCondensed"
       />
     </div>
@@ -109,6 +110,11 @@ interface ProgressDataItem {
   tubes: number
 }
 
+interface PhaseData {
+  phaseName: string
+  configs?: Record<string, { color: string, abbreviation: string }>
+}
+
 const route = useRoute()
 const router = useRouter()
 const axios = useAxios()
@@ -121,6 +127,7 @@ const tubeSheetDetails = ref<TubeSheetData | null>(null)
 const surveyData = ref<SurveyInfo | null>(null)
 const reactorData = ref<ReactorData | null>(null)
 const progressData = ref<ProgressDataItem[]>([])
+const phasesData = ref<PhaseData[]>([])
 
 const isCondensed = computed(() => route.query.condensed === 'true')
 
@@ -155,6 +162,7 @@ async function fetchReportData() {
     if (sheetId) {
       const sheetResponse = await axios.$get(`/api/v2/tubeSheet/getSpecificTubeSheet/${sheetId}`)
       tubeSheetDetails.value = sheetResponse.data || sheetResponse
+      phasesData.value = sheetResponse.phasesData || []
     }
 
     // Fetch reactor data

@@ -260,7 +260,7 @@
           ref="backSvgRef"
           xmlns="http://www.w3.org/2000/svg"
           preserveAspectRatio="xMidYMid meet"
-          class="w-full h-full invert"
+          class="w-full h-full"
           style="max-width: 100%; max-height: 100%; object-fit: contain; transform: scaleX(-1);"
         >
           <g id="back-viewport" />
@@ -379,6 +379,75 @@
               </td>
             </tr>
           </tbody>
+        </table>
+      </div>
+
+      <!-- Color Cap Tracking Details -->
+      <div v-if="isColorCapTrackingSurvey && colorCapLegend.length > 0" class="mb-6" data-no-break>
+        <h2 class="text-xl font-bold text-gray-800 mb-4 border-b-2 border-primary-500 pb-2">
+          Color Cap Tracking Details
+        </h2>
+        <table class="w-full text-sm border-collapse border border-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="border border-gray-200 px-3 py-2 text-left font-medium text-gray-700">
+                Color
+              </th>
+              <th class="border border-gray-200 px-3 py-2 text-left font-medium text-gray-700">
+                Abbreviation
+              </th>
+              <th class="border border-gray-200 px-3 py-2 text-center font-medium text-gray-700">
+                Front Count
+              </th>
+              <th class="border border-gray-200 px-3 py-2 text-center font-medium text-gray-700">
+                Back Count
+              </th>
+              <th class="border border-gray-200 px-3 py-2 text-center font-medium text-gray-700">
+                Total
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="item in colorCapLegend" :key="item.key" class="hover:bg-gray-50">
+              <td class="border border-gray-200 px-3 py-2">
+                <span class="inline-flex items-center gap-2">
+                  <span
+                    class="w-4 h-4 rounded border border-gray-300"
+                    :style="{ backgroundColor: item.color }"
+                  />
+                  {{ item.color }}
+                </span>
+              </td>
+              <td class="border border-gray-200 px-3 py-2 font-medium">
+                {{ item.abbreviation }}
+              </td>
+              <td class="border border-gray-200 px-3 py-2 text-center">
+                {{ item.frontCount }}
+              </td>
+              <td class="border border-gray-200 px-3 py-2 text-center">
+                {{ item.backCount }}
+              </td>
+              <td class="border border-gray-200 px-3 py-2 text-center font-bold">
+                {{ item.frontCount + item.backCount }}
+              </td>
+            </tr>
+          </tbody>
+          <tfoot class="bg-gray-100">
+            <tr>
+              <td colspan="2" class="border border-gray-200 px-3 py-2 font-bold text-gray-700">
+                Total
+              </td>
+              <td class="border border-gray-200 px-3 py-2 text-center font-bold">
+                {{ colorCapLegend.reduce((sum, item) => sum + item.frontCount, 0) }}
+              </td>
+              <td class="border border-gray-200 px-3 py-2 text-center font-bold">
+                {{ colorCapLegend.reduce((sum, item) => sum + item.backCount, 0) }}
+              </td>
+              <td class="border border-gray-200 px-3 py-2 text-center font-bold">
+                {{ colorCapLegend.reduce((sum, item) => sum + item.frontCount + item.backCount, 0) }}
+              </td>
+            </tr>
+          </tfoot>
         </table>
       </div>
 
@@ -541,11 +610,17 @@ interface ProgressDataItem {
   tubes: number
 }
 
+interface PhaseData {
+  phaseName: string
+  configs?: Record<string, { color: string, abbreviation: string }>
+}
+
 const props = defineProps<{
   tubeSheetDetails: TubeSheetData | null
   surveyData: SurveyInfo | null
   reactorData: ReactorData | null
   progressData?: ProgressDataItem[]
+  phasesData?: PhaseData[]
   condensed?: boolean
 }>()
 
@@ -605,6 +680,74 @@ const specialTubeData = computed(() => {
         comment: t.comment || ''
       }
     })
+})
+
+// Color Cap Tracking Legend - counts tubes by color for COLOR_CAP_TRACKING phase
+const isColorCapTrackingSurvey = computed(() => {
+  return props.surveyData?.surveyType === 'COLOR_CAP_TRACKING'
+})
+
+const colorCapLegend = computed(() => {
+  // Only compute for COLOR_CAP_TRACKING surveys
+  if (!isColorCapTrackingSurvey.value) return []
+
+  // Find the COLOR_CAP_TRACKING phase config
+  const colorCapPhase = props.phasesData?.find(
+    (p: PhaseData) => p.phaseName === 'COLOR_CAP_TRACKING'
+  )
+  if (!colorCapPhase?.configs) return []
+
+  const configs = colorCapPhase.configs
+
+  // Build color name to config mapping
+  const colorConfigMap = new Map<string, { color: string, abbreviation: string, key: string }>()
+  for (const [key, value] of Object.entries(configs)) {
+    const config = value as { color: string, abbreviation: string }
+    if (config.color && config.abbreviation) {
+      // Normalize color name for matching (lowercase)
+      colorConfigMap.set(config.color.toLowerCase(), {
+        color: config.color,
+        abbreviation: config.abbreviation,
+        key
+      })
+    }
+  }
+
+  // Count tubes by their propertyColor (which contains color names from survey)
+  const frontCounts = new Map<string, number>()
+  const backCounts = new Map<string, number>()
+  const activeTubes = props.reactorData?.tubes?.filter(t => !t.deleted) || []
+
+  for (const tube of activeTubes) {
+    // Count front view colors
+    if (tube.propertyColor) {
+      const normalizedColor = tube.propertyColor.toLowerCase()
+      if (colorConfigMap.has(normalizedColor)) {
+        frontCounts.set(normalizedColor, (frontCounts.get(normalizedColor) || 0) + 1)
+      }
+    }
+    // Count back view colors
+    if (tube.backColor) {
+      const normalizedColor = tube.backColor.toLowerCase()
+      if (colorConfigMap.has(normalizedColor)) {
+        backCounts.set(normalizedColor, (backCounts.get(normalizedColor) || 0) + 1)
+      }
+    }
+  }
+
+  // Build legend items from configs
+  const legend: { key: string, color: string, abbreviation: string, frontCount: number, backCount: number }[] = []
+  for (const [colorName, config] of colorConfigMap) {
+    legend.push({
+      key: config.key,
+      color: config.color,
+      abbreviation: config.abbreviation,
+      frontCount: frontCounts.get(colorName) || 0,
+      backCount: backCounts.get(colorName) || 0
+    })
+  }
+
+  return legend
 })
 
 // Statistics for charts
@@ -837,19 +980,38 @@ function renderReactorSvg(svgEl: SVGSVGElement | null, isBackView: boolean = fal
 
   // Get survey data for coloring
   const surveyDataItems = props.surveyData?.data || []
+  const surveyComments = props.surveyData?.comments || []
 
-  // Build a map of tube colors from survey data (similar to survey-details page)
+  // Build a map of tube colors and repeat counts from survey data (similar to survey-details page)
   const tubeColorMap = new Map<string, { frontColor?: string, backColor?: string }>()
+  const tubeRepeatCounts = new Map<string, { front: number, back: number }>()
+
   for (const d of surveyDataItems) {
     const tubeId = d.tubeIdAsperLayout
     if (!tubeColorMap.has(tubeId)) {
       tubeColorMap.set(tubeId, {})
     }
+    if (!tubeRepeatCounts.has(tubeId)) {
+      tubeRepeatCounts.set(tubeId, { front: 0, back: 0 })
+    }
+
     const entry = tubeColorMap.get(tubeId)!
+    const counts = tubeRepeatCounts.get(tubeId)!
+
     if (d.face === 'back') {
       entry.backColor = d.color
+      counts.back++
     } else {
       entry.frontColor = d.color
+      counts.front++
+    }
+  }
+
+  // Build a map of comments per tube (from survey comments and tube comments)
+  const tubeCommentsMap = new Map<string, boolean>()
+  for (const c of surveyComments) {
+    if (c.comment) {
+      tubeCommentsMap.set(c.tubeIdAsperLayout, true)
     }
   }
 
@@ -893,6 +1055,77 @@ function renderReactorSvg(svgEl: SVGSVGElement | null, isBackView: boolean = fal
     }
 
     tubesLayer.appendChild(circle)
+  }
+
+  // Create icons layer for repeat counts and comment indicators
+  let iconsLayer = vp.querySelector('#icons-layer') as SVGGElement
+  if (!iconsLayer) {
+    iconsLayer = document.createElementNS('http://www.w3.org/2000/svg', 'g')
+    iconsLayer.setAttribute('id', 'icons-layer')
+    vp.appendChild(iconsLayer)
+  }
+
+  // Draw icons for each tube (repeat counts and comments)
+  for (const t of tubes) {
+    if (t.deleted) continue
+
+    const cx = centerX + t.x * fitScale
+    const cy = centerY + t.y * fitScale
+    const r = t.r * fitScale
+
+    // Check for repeat counts
+    const repeatCounts = tubeRepeatCounts.get(t.id)
+    const repeatCount = isBackView ? (repeatCounts?.back || 0) : (repeatCounts?.front || 0)
+
+    // Check for comments (from survey comments or tube comments)
+    const hasComment = !!(t.comment || tubeCommentsMap.get(t.id))
+
+    // Skip if no icons needed
+    if (repeatCount <= 1 && !hasComment) continue
+
+    // Create icon group for this tube
+    const iconGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g')
+    iconGroup.setAttribute('class', 'tube-icons')
+    iconGroup.setAttribute('pointer-events', 'none')
+
+    // For back view, counter-flip icons to keep them readable
+    if (isBackView) {
+      iconGroup.setAttribute('transform', `scale(-1, 1) translate(${-2 * cx}, 0)`)
+    }
+
+    const iconSize = Math.max(r * 0.7, 3)
+
+    // Draw repeat count inside tube if > 1
+    if (repeatCount > 1) {
+      const text = document.createElementNS('http://www.w3.org/2000/svg', 'text')
+      text.setAttribute('x', String(cx))
+      text.setAttribute('y', String(cy))
+      text.setAttribute('text-anchor', 'middle')
+      text.setAttribute('dominant-baseline', 'central')
+      text.setAttribute('fill', '#ef4444')
+      text.setAttribute('font-size', String(Math.max(r * 1.1, 4)))
+      text.setAttribute('font-weight', 'bold')
+      text.setAttribute('font-family', 'Arial, sans-serif')
+      text.textContent = String(repeatCount)
+      iconGroup.appendChild(text)
+    }
+
+    // Draw comment icon to the right of tube if has comment
+    if (hasComment) {
+      const commentIcon = document.createElementNS('http://www.w3.org/2000/svg', 'g')
+      const s = iconSize
+      commentIcon.setAttribute('transform', `translate(${cx + r + 1}, ${cy - s * 0.6})`)
+
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+      path.setAttribute('d', `M0,0 h${s * 1.2} q${s * 0.3},0 ${s * 0.3},${s * 0.3} v${s * 0.5} q0,${s * 0.3} -${s * 0.3},${s * 0.3} h-${s * 0.5} l-${s * 0.3},${s * 0.3} v-${s * 0.3} h-${s * 0.1} q-${s * 0.3},0 -${s * 0.3},-${s * 0.3} v-${s * 0.5} q0,-${s * 0.3} ${s * 0.3},-${s * 0.3} z`)
+      path.setAttribute('fill', '#3b82f6')
+      path.setAttribute('opacity', '0.9')
+      commentIcon.appendChild(path)
+
+      iconGroup.appendChild(commentIcon)
+    }
+
+    iconsLayer.appendChild(iconGroup)
   }
 
   // Group tubes by row and add row labels with tube counts
