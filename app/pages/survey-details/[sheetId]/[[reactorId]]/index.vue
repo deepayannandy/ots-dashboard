@@ -1647,6 +1647,7 @@ async function stratSurvey() {
       surveyType: selectedPhase.value,
       reactorId: reactorId
     })
+    activeSurveyId.value = data.id
     // Call fetchUpdatedTubeColors immediately
     await fetchUpdatedTubeColors(data.id || (activeSurveyId.value as string))
     // Then set interval for polling
