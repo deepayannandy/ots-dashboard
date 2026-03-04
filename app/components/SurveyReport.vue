@@ -713,25 +713,22 @@ const colorCapLegend = computed(() => {
     }
   }
 
-  // Count tubes by their propertyColor (which contains color names from survey)
+  // Count colors from survey data items (not tube properties)
   const frontCounts = new Map<string, number>()
   const backCounts = new Map<string, number>()
-  const activeTubes = props.reactorData?.tubes?.filter(t => !t.deleted) || []
+  const surveyDataItems = props.surveyData?.data || []
 
-  for (const tube of activeTubes) {
-    // Count front view colors
-    if (tube.propertyColor) {
-      const normalizedColor = tube.propertyColor.toLowerCase()
-      if (colorConfigMap.has(normalizedColor)) {
-        frontCounts.set(normalizedColor, (frontCounts.get(normalizedColor) || 0) + 1)
-      }
-    }
-    // Count back view colors
-    if (tube.backColor) {
-      const normalizedColor = tube.backColor.toLowerCase()
-      if (colorConfigMap.has(normalizedColor)) {
-        backCounts.set(normalizedColor, (backCounts.get(normalizedColor) || 0) + 1)
-      }
+  for (const item of surveyDataItems) {
+    // Skip duplicates to avoid double counting
+    if (item.isDuplicate) continue
+
+    const normalizedColor = item.color?.toLowerCase()
+    if (!normalizedColor || !colorConfigMap.has(normalizedColor)) continue
+
+    if (item.face === 'back') {
+      backCounts.set(normalizedColor, (backCounts.get(normalizedColor) || 0) + 1)
+    } else {
+      frontCounts.set(normalizedColor, (frontCounts.get(normalizedColor) || 0) + 1)
     }
   }
 
