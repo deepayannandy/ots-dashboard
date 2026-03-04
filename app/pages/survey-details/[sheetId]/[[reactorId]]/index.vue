@@ -1074,6 +1074,9 @@ const {
   setRotation
 } = useViewportTransform()
 
+// Store initial viewport state from API for reset functionality
+const initialViewportState = ref<{ scale: number, tx: number, ty: number, rotation: number } | null>(null)
+
 const viewportStorageKey = reactorId
   ? `viewport:${reactorId}`
   : 'viewport:default'
@@ -1716,7 +1719,13 @@ function handleWheel(event: WheelEvent) {
   zoom(factor)
 }
 function resetView() {
-  resetWithoutRotation()
+  if (initialViewportState.value) {
+    setZoom(initialViewportState.value.scale)
+    setPan(initialViewportState.value.tx, initialViewportState.value.ty)
+    setRotation(initialViewportState.value.rotation)
+  } else {
+    resetWithoutRotation()
+  }
 }
 
 // Keyboard handler for arrow keys
@@ -1827,6 +1836,14 @@ onMounted(async () => {
           if (typeof savedTx === 'number' && typeof savedTy === 'number')
             setPan(savedTx, savedTy)
           if (typeof savedRotation === 'number') setRotation(savedRotation)
+
+          // Store initial state for reset functionality
+          initialViewportState.value = {
+            scale: savedScale ?? 1,
+            tx: savedTx ?? 0,
+            ty: savedTy ?? 0,
+            rotation: savedRotation ?? 0
+          }
         }
       }
 
