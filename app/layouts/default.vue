@@ -39,6 +39,14 @@ onMounted(async () => {
 const links = [
   [
     {
+      label: 'Dashboard',
+      icon: 'i-lucide-gauge',
+      to: '/dashboard',
+      onSelect: () => {
+        open.value = false
+      }
+    },
+    {
       label: 'Projects',
       icon: 'i-lucide-layers-2',
       to: '/',
