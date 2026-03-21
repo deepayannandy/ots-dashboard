@@ -11,8 +11,12 @@
           />
         </template>
         <template #trailing>
-          <UBadge v-if="camera" :color="camera.status ? 'success' : 'error'" variant="subtle">
-            {{ camera.status ? 'Online' : 'Offline' }}
+          <UBadge
+            v-if="camera"
+            :color="camera.status ? 'success' : 'error'"
+            variant="subtle"
+          >
+            {{ camera.status ? "Online" : "Offline" }}
           </UBadge>
         </template>
       </UDashboardNavbar>
@@ -21,10 +25,11 @@
     <template #body>
       <div v-if="loading" class="flex items-center justify-center h-full">
         <div class="flex flex-col items-center gap-4">
-          <UIcon name="i-lucide-loader-2" class="size-12 animate-spin text-primary" />
-          <p class="text-neutral-500">
-            Loading camera details...
-          </p>
+          <UIcon
+            name="i-lucide-loader-2"
+            class="size-12 animate-spin text-primary"
+          />
+          <p class="text-neutral-500">Loading camera details...</p>
         </div>
       </div>
 
@@ -32,9 +37,7 @@
         <UCard class="max-w-md">
           <div class="flex flex-col items-center gap-4 text-center">
             <UIcon name="i-lucide-alert-circle" class="size-12 text-error" />
-            <h3 class="text-lg font-semibold">
-              Failed to Load Camera
-            </h3>
+            <h3 class="text-lg font-semibold">Failed to Load Camera</h3>
             <p class="text-neutral-500">
               {{ error }}
             </p>
@@ -43,7 +46,10 @@
         </UCard>
       </div>
 
-      <div v-else-if="camera" class="h-full flex flex-col lg:flex-row gap-4 p-4 overflow-hidden">
+      <div
+        v-else-if="camera"
+        class="h-full flex flex-col lg:flex-row gap-4 p-4 overflow-hidden"
+      >
         <!-- Left Section: Video Stream -->
         <div class="flex-1 flex flex-col min-h-0 gap-2">
           <!-- Top Bar: Camera Info + Position Display -->
@@ -55,15 +61,27 @@
               </UBadge>
             </div>
 
-            <div class="bg-primary/10 border border-primary/30 rounded-lg px-4 py-1.5 flex items-center gap-3">
+            <div
+              class="bg-primary/10 border border-primary/30 rounded-lg px-4 py-1.5 flex items-center gap-3"
+            >
               <div class="flex items-center gap-1.5">
-                <UIcon name="i-lucide-move-horizontal" class="size-4 text-primary" />
-                <span class="text-lg font-bold text-primary">X: {{ angleX }}°</span>
+                <UIcon
+                  name="i-lucide-move-horizontal"
+                  class="size-4 text-primary"
+                />
+                <span class="text-lg font-bold text-primary"
+                  >X: {{ angleX }}°</span
+                >
               </div>
               <USeparator orientation="vertical" class="h-5" />
               <div class="flex items-center gap-1.5">
-                <UIcon name="i-lucide-move-vertical" class="size-4 text-primary" />
-                <span class="text-lg font-bold text-primary">Y: {{ angleY }}°</span>
+                <UIcon
+                  name="i-lucide-move-vertical"
+                  class="size-4 text-primary"
+                />
+                <span class="text-lg font-bold text-primary"
+                  >Y: {{ angleY }}°</span
+                >
               </div>
             </div>
 
@@ -77,9 +95,7 @@
               />
               <template #content>
                 <div class="p-4 space-y-3 w-64">
-                  <h4 class="font-semibold text-sm">
-                    Keyboard Shortcuts
-                  </h4>
+                  <h4 class="font-semibold text-sm">Keyboard Shortcuts</h4>
                   <div class="grid grid-cols-2 gap-2 text-xs">
                     <div class="flex items-center gap-2">
                       <UKbd>↑</UKbd>
@@ -108,7 +124,9 @@
           </div>
 
           <!-- Video Stream - Full Height -->
-          <div class="flex-1 bg-neutral-900 rounded-lg overflow-hidden relative">
+          <div
+            class="flex-1 bg-neutral-900 rounded-lg overflow-hidden relative"
+          >
             <!-- Video Element for HLS Stream -->
             <video
               ref="videoElement"
@@ -120,26 +138,40 @@
 
             <!-- TV Static Effect when no stream -->
 
-            <div
-              v-if="!streamActive"
-              class="absolute inset-0 tv-static"
-            >
+            <div v-if="!streamActive" class="absolute inset-0 tv-static">
               <!-- Glitter sparkle overlay -->
               <div class="glitter-layer" />
 
-              <div class="absolute inset-0 flex flex-col items-center justify-center z-10">
-                <div class="bg-black/70 backdrop-blur-sm rounded-xl px-8 py-6 flex flex-col items-center border border-white/10 shadow-2xl">
+              <div
+                class="absolute inset-0 flex flex-col items-center justify-center z-10"
+              >
+                <div
+                  class="bg-black/70 backdrop-blur-sm rounded-xl px-8 py-6 flex flex-col items-center border border-white/10 shadow-2xl"
+                >
                   <div class="relative">
-                    <UIcon name="i-lucide-tv" class="size-16 mb-3 text-neutral-300 animate-pulse" />
-                    <div class="absolute -top-1 -right-1 size-3 bg-red-500 rounded-full animate-ping" />
+                    <UIcon
+                      name="i-lucide-tv"
+                      class="size-16 mb-3 text-neutral-300 animate-pulse"
+                    />
+                    <div
+                      class="absolute -top-1 -right-1 size-3 bg-red-500 rounded-full animate-ping"
+                    />
                   </div>
                   <p class="text-2xl font-bold text-white tracking-wider">
                     NO SIGNAL
                   </p>
                   <p class="text-sm mt-2 text-neutral-400 text-center max-w-xs">
-                    {{ streamError || (camera.rtspUrl ? 'Connecting to stream...' : 'RTSP URL not configured') }}
+                    {{
+                      streamError ||
+                      (camera.rtspUrl
+                        ? "Connecting to stream..."
+                        : "RTSP URL not configured")
+                    }}
                   </p>
-                  <p v-if="camera.rtspUrl" class="text-[10px] mt-3 text-neutral-500 text-center max-w-xs break-all font-mono bg-black/30 px-3 py-1 rounded">
+                  <p
+                    v-if="camera.rtspUrl"
+                    class="text-[10px] mt-3 text-neutral-500 text-center max-w-xs break-all font-mono bg-black/30 px-3 py-1 rounded"
+                  >
                     {{ camera.rtspUrl }}
                   </p>
                 </div>
@@ -147,7 +179,10 @@
             </div>
 
             <!-- Stream info overlay -->
-            <div v-if="streamActive" class="absolute bottom-2 left-2 flex gap-2">
+            <div
+              v-if="streamActive"
+              class="absolute bottom-2 left-2 flex gap-2"
+            >
               <UBadge
                 color="error"
                 variant="solid"
@@ -160,9 +195,13 @@
             </div>
 
             <!-- Footer overlay -->
-            <div class="absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/80 to-transparent p-3">
-              <div class="flex items-center justify-between text-xs text-neutral-300">
-                <span>Controller: {{ camera.controllerIp || 'N/A' }}</span>
+            <div
+              class="absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/80 to-transparent p-3"
+            >
+              <div
+                class="flex items-center justify-between text-xs text-neutral-300"
+              >
+                <span>Controller: {{ camera.controllerIp || "N/A" }}</span>
                 <span>MAC: {{ camera.macId }}</span>
               </div>
             </div>
@@ -262,36 +301,31 @@
 
             <dl class="space-y-2 text-xs">
               <div class="flex justify-between">
-                <dt class="text-neutral-500">
-                  Name
-                </dt>
+                <dt class="text-neutral-500">Name</dt>
                 <dd class="font-medium">
                   {{ camera.name }}
                 </dd>
               </div>
               <div class="flex justify-between">
-                <dt class="text-neutral-500">
-                  IP Address
-                </dt>
+                <dt class="text-neutral-500">IP Address</dt>
                 <dd class="font-medium">
                   {{ camera.ipAddress }}
                 </dd>
               </div>
               <div class="flex justify-between">
-                <dt class="text-neutral-500">
-                  Controller IP
-                </dt>
+                <dt class="text-neutral-500">Controller IP</dt>
                 <dd class="font-medium">
-                  {{ camera.controllerIp || 'N/A' }}
+                  {{ camera.controllerIp || "N/A" }}
                 </dd>
               </div>
               <div class="flex justify-between">
-                <dt class="text-neutral-500">
-                  Status
-                </dt>
+                <dt class="text-neutral-500">Status</dt>
                 <dd>
-                  <UBadge :color="camera.status ? 'success' : 'error'" size="xs">
-                    {{ camera.status ? 'Online' : 'Offline' }}
+                  <UBadge
+                    :color="camera.status ? 'success' : 'error'"
+                    size="xs"
+                  >
+                    {{ camera.status ? "Online" : "Offline" }}
                   </UBadge>
                 </dd>
               </div>
@@ -304,219 +338,238 @@
 </template>
 
 <script setup lang="ts">
-import { useCamera, type Camera } from '@/stores/camera'
-import { useDebounceFn } from '@vueuse/core'
-import Hls from 'hls.js'
+import { useCamera, type Camera } from "@/stores/camera";
+import { useDebounceFn } from "@vueuse/core";
+import Hls from "hls.js";
 
-const route = useRoute()
-const cameraStore = useCamera()
-const toast = useToast()
+const route = useRoute();
+const cameraStore = useCamera();
+const toast = useToast();
 
-const cameraId = computed(() => route.params.cameraId as string)
+const cameraId = computed(() => route.params.cameraId as string);
 
-const camera = ref<Camera | null>(null)
-const loading = ref(true)
-const error = ref<string | null>(null)
-const saving = ref(false)
-const streamActive = ref(false)
-const videoElement = ref<HTMLVideoElement | null>(null)
-const staticCanvas = ref<HTMLCanvasElement | null>(null)
-const hlsInstance = ref<Hls | null>(null)
-const streamError = ref<string | null>(null)
+const camera = ref<Camera | null>(null);
+const loading = ref(true);
+const error = ref<string | null>(null);
+const saving = ref(false);
+const streamActive = ref(false);
+const videoElement = ref<HTMLVideoElement | null>(null);
+const staticCanvas = ref<HTMLCanvasElement | null>(null);
+const hlsInstance = ref<Hls | null>(null);
+const streamError = ref<string | null>(null);
 
 // Angle state
-const angleX = ref(90)
-const angleY = ref(90)
+const angleX = ref(90);
+const angleY = ref(90);
 
 // Pressed key state for button animation
-const pressedKey = ref<'up' | 'down' | 'left' | 'right' | 'center' | null>(null)
+const pressedKey = ref<"up" | "down" | "left" | "right" | "center" | null>(
+  null,
+);
 
 // Helper to trigger press animation
-function triggerPress(key: 'up' | 'down' | 'left' | 'right' | 'center') {
-  pressedKey.value = key
+function triggerPress(key: "up" | "down" | "left" | "right" | "center") {
+  pressedKey.value = key;
   setTimeout(() => {
-    pressedKey.value = null
-  }, 100)
+    pressedKey.value = null;
+  }, 100);
 }
 
 // Define keyboard shortcuts using Nuxt
 defineShortcuts({
-  'arrowup': {
+  arrowup: {
     handler: () => {
       if (angleY.value < 180) {
-        triggerPress('up')
-        adjustAngle('y', 1)
+        triggerPress("up");
+        adjustAngle("y", 1);
       }
-    }
+    },
   },
-  'arrowdown': {
+  arrowdown: {
     handler: () => {
       if (angleY.value > 0) {
-        triggerPress('down')
-        adjustAngle('y', -1)
+        triggerPress("down");
+        adjustAngle("y", -1);
       }
-    }
+    },
   },
-  'arrowleft': {
+  arrowleft: {
     handler: () => {
       if (angleX.value > 0) {
-        triggerPress('left')
-        adjustAngle('x', -1)
+        triggerPress("left");
+        adjustAngle("x", -1);
       }
-    }
+    },
   },
-  'arrowright': {
+  arrowright: {
     handler: () => {
       if (angleX.value < 180) {
-        triggerPress('right')
-        adjustAngle('x', 1)
+        triggerPress("right");
+        adjustAngle("x", 1);
       }
-    }
+    },
   },
-  ' ': {
+  " ": {
     handler: () => {
-      triggerPress('center')
-      resetToCenter()
-    }
-  }
-})
+      triggerPress("center");
+      resetToCenter();
+    },
+  },
+});
 
 // Fetch camera details on mount
 onMounted(async () => {
-  await fetchCameraDetails()
-  initializeStream()
-})
+  await fetchCameraDetails();
+  initializeStream();
+});
 
 onUnmounted(() => {
-  destroyHls()
-  cameraStore.clearCamera()
-})
+  destroyHls();
+  cameraStore.clearCamera();
+});
 
 function destroyHls() {
   if (hlsInstance.value) {
-    hlsInstance.value.destroy()
-    hlsInstance.value = null
+    hlsInstance.value.destroy();
+    hlsInstance.value = null;
   }
 }
 
 // TV Static noise animation
-let staticAnimationId: number | null = null
+let staticAnimationId: number | null = null;
 
 function startStaticNoise() {
-  const canvas = staticCanvas.value
-  if (!canvas) return
+  const canvas = staticCanvas.value;
+  if (!canvas) return;
 
-  const ctx = canvas.getContext('2d')
-  if (!ctx) return
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
 
   // Set canvas size to match container
   const updateCanvasSize = () => {
     if (canvas.parentElement) {
-      canvas.width = canvas.parentElement.offsetWidth
-      canvas.height = canvas.parentElement.offsetHeight
+      canvas.width = canvas.parentElement.offsetWidth;
+      canvas.height = canvas.parentElement.offsetHeight;
     }
-  }
-  updateCanvasSize()
+  };
+  updateCanvasSize();
 
   const drawNoise = () => {
-    const imageData = ctx.createImageData(canvas.width, canvas.height)
-    const data = imageData.data
+    const imageData = ctx.createImageData(canvas.width, canvas.height);
+    const data = imageData.data;
 
     for (let i = 0; i < data.length; i += 4) {
-      const value = Math.random() * 255
-      data[i] = value // red
-      data[i + 1] = value // green
-      data[i + 2] = value // blue
-      data[i + 3] = 255 // alpha
+      const value = Math.random() * 255;
+      data[i] = value; // red
+      data[i + 1] = value; // green
+      data[i + 2] = value; // blue
+      data[i + 3] = 255; // alpha
     }
 
-    ctx.putImageData(imageData, 0, 0)
-    staticAnimationId = requestAnimationFrame(drawNoise)
-  }
+    ctx.putImageData(imageData, 0, 0);
+    staticAnimationId = requestAnimationFrame(drawNoise);
+  };
 
-  drawNoise()
+  drawNoise();
 }
 
 function stopStaticNoise() {
   if (staticAnimationId) {
-    cancelAnimationFrame(staticAnimationId)
-    staticAnimationId = null
+    cancelAnimationFrame(staticAnimationId);
+    staticAnimationId = null;
   }
 }
 
 // Watch streamActive to start/stop static noise
-watch(streamActive, (active) => {
-  if (!active) {
-    nextTick(() => startStaticNoise())
-  } else {
-    stopStaticNoise()
-  }
-}, { immediate: true })
+watch(
+  streamActive,
+  (active) => {
+    if (!active) {
+      nextTick(() => startStaticNoise());
+    } else {
+      stopStaticNoise();
+    }
+  },
+  { immediate: true },
+);
 
 async function fetchCameraDetails() {
-  loading.value = true
-  error.value = null
+  loading.value = true;
+  error.value = null;
 
   try {
-    const data = await cameraStore.getCameraDetails(cameraId.value)
+    const data = await cameraStore.getCameraDetails(cameraId.value);
     if (data) {
-      camera.value = data
+      camera.value = data;
       // Initialize angles from camera data or default to 90
-      angleX.value = data.x !== undefined ? Math.abs(data.x) : 90
-      angleY.value = data.y !== undefined ? Math.abs(data.y) : 90
+      angleX.value = data.x !== undefined ? Math.abs(data.x) : 90;
+      angleY.value = data.y !== undefined ? Math.abs(data.y) : 90;
     } else {
-      error.value = 'Camera not found'
+      error.value = "Camera not found";
     }
   } catch (e) {
-    error.value = 'Failed to load camera details'
-    console.error(e)
+    error.value = "Failed to load camera details";
+    console.error(e);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
 async function initializeStream() {
   if (!videoElement.value) {
-    streamActive.value = false
-    streamError.value = 'Video element not ready'
-    return
+    streamActive.value = false;
+    streamError.value = "Video element not ready";
+    return;
   }
 
   if (!camera.value?.rtspUrl) {
-    streamActive.value = false
-    streamError.value = 'No RTSP URL configured'
-    return
+    streamActive.value = false;
+    streamError.value = "No RTSP URL configured";
+    return;
   }
 
   // Destroy existing HLS instance
-  destroyHls()
-  streamError.value = null
-  streamActive.value = false
+  destroyHls();
+  streamError.value = null;
+  streamActive.value = false;
 
   try {
     // Backend converts RTSP to HLS and serves it at this endpoint
-    const hlsUrl = `/api/v2/camera/stream/${cameraId.value}/index.m3u8`
+    const hlsUrl = `/api/v2/camera/stream/${cameraId.value}/index.m3u8`;
 
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       // Check if HLS is supported natively (Safari)
-      if (videoElement.value.canPlayType('application/vnd.apple.mpegurl')) {
+      if (videoElement.value.canPlayType("application/vnd.apple.mpegurl")) {
         // Remove old listeners first
-        const newVideo = videoElement.value.cloneNode(false) as HTMLVideoElement
-        videoElement.value.parentNode?.replaceChild(newVideo, videoElement.value)
-        videoElement.value = newVideo
+        const newVideo = videoElement.value.cloneNode(
+          false,
+        ) as HTMLVideoElement;
+        videoElement.value.parentNode?.replaceChild(
+          newVideo,
+          videoElement.value,
+        );
+        videoElement.value = newVideo;
 
-        videoElement.value.src = hlsUrl
+        videoElement.value.src = hlsUrl;
 
-        videoElement.value.addEventListener('loadedmetadata', () => {
-          streamActive.value = true
-          streamError.value = null
-          videoElement.value?.play().catch(console.error)
-        }, { once: true })
+        videoElement.value.addEventListener(
+          "loadedmetadata",
+          () => {
+            streamActive.value = true;
+            streamError.value = null;
+            videoElement.value?.play().catch(console.error);
+          },
+          { once: true },
+        );
 
-        videoElement.value.addEventListener('error', () => {
-          streamActive.value = false
-          streamError.value = 'Stream not available'
-        }, { once: true })
+        videoElement.value.addEventListener(
+          "error",
+          () => {
+            streamActive.value = false;
+            streamError.value = "Stream not available";
+          },
+          { once: true },
+        );
       }
       // Use HLS.js for other browsers
       else if (Hls.isSupported()) {
@@ -524,95 +577,95 @@ async function initializeStream() {
           debug: false,
           enableWorker: true,
           lowLatencyMode: true,
-          backBufferLength: 90
-        })
+          backBufferLength: 90,
+        });
 
-        hlsInstance.value = hls
-        hls.loadSource(hlsUrl)
-        hls.attachMedia(videoElement.value)
+        hlsInstance.value = hls;
+        hls.loadSource(hlsUrl);
+        hls.attachMedia(videoElement.value);
 
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
-          streamActive.value = true
-          streamError.value = null
-          videoElement.value?.play().catch(console.error)
-        })
+          streamActive.value = true;
+          streamError.value = null;
+          videoElement.value?.play().catch(console.error);
+        });
 
         hls.on(Hls.Events.ERROR, (event, data) => {
-          console.error('HLS.js error:', event, data)
+          console.error("HLS.js error:", event, data);
 
           if (data.fatal) {
             switch (data.type) {
               case Hls.ErrorTypes.NETWORK_ERROR:
-                streamError.value = 'Network error - stream not available'
+                streamError.value = "Network error - stream not available";
                 // Try to recover
-                hls.startLoad()
-                break
+                hls.startLoad();
+                break;
               case Hls.ErrorTypes.MEDIA_ERROR:
-                streamError.value = 'Media error - trying to recover'
-                hls.recoverMediaError()
-                break
+                streamError.value = "Media error - trying to recover";
+                hls.recoverMediaError();
+                break;
               default:
-                streamError.value = 'Fatal streaming error'
-                streamActive.value = false
-                destroyHls()
-                break
+                streamError.value = "Fatal streaming error";
+                streamActive.value = false;
+                destroyHls();
+                break;
             }
           }
-        })
+        });
       } else {
-        streamError.value = 'HLS not supported in this browser'
-        streamActive.value = false
+        streamError.value = "HLS not supported in this browser";
+        streamActive.value = false;
       }
     }
   } catch (e) {
-    console.error('Failed to initialize stream:', e)
-    streamActive.value = false
-    streamError.value = 'Failed to initialize stream'
+    console.error("Failed to initialize stream:", e);
+    streamActive.value = false;
+    streamError.value = "Failed to initialize stream";
   }
 }
 
 // Debounced function to set camera angle
 const debouncedSetAngle = useDebounceFn(async () => {
-  await saveAngle()
-}, 300)
+  await saveAngle();
+}, 300);
 
 async function saveAngle() {
-  if (!cameraId.value) return
+  if (!cameraId.value) return;
 
-  saving.value = true
+  saving.value = true;
   try {
-    const success = await cameraStore.setCameraAngle(cameraId.value, angleX.value, angleY.value)
+    const success = await cameraStore.setCameraAngle(
+      cameraId.value,
+      angleX.value,
+      angleY.value,
+    );
     if (success) {
-      toast.add({
-        title: 'Camera angle updated',
-        color: 'success',
-        icon: 'i-lucide-check'
-      })
+      console.log("Camera angle updated successfully");
     } else {
       toast.add({
-        title: 'Failed to update camera angle',
-        color: 'error',
-        icon: 'i-lucide-x'
-      })
+        title: "Failed to update camera angle",
+        color: "error",
+        icon: "i-lucide-x",
+      });
     }
   } finally {
-    saving.value = false
+    saving.value = false;
   }
 }
 
-function adjustAngle(axis: 'x' | 'y', delta: number) {
-  if (axis === 'x') {
-    angleX.value = Math.max(0, Math.min(180, angleX.value + delta))
+function adjustAngle(axis: "x" | "y", delta: number) {
+  if (axis === "x") {
+    angleX.value = Math.max(0, Math.min(180, angleX.value + delta));
   } else {
-    angleY.value = Math.max(0, Math.min(180, angleY.value + delta))
+    angleY.value = Math.max(0, Math.min(180, angleY.value + delta));
   }
-  debouncedSetAngle()
+  debouncedSetAngle();
 }
 
 function resetToCenter() {
-  angleX.value = 90
-  angleY.value = 90
-  debouncedSetAngle()
+  angleX.value = 90;
+  angleY.value = 90;
+  debouncedSetAngle();
 }
 </script>
 

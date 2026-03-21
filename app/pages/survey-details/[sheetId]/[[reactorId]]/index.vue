@@ -119,7 +119,7 @@
           <!--  @click="deselectAll"
             @contextmenu.prevent -->
           <div
-            class="absolute top-0 size-full -z-10 left-0 opacity-20 "
+            class="absolute top-0 size-full -z-10 left-0 opacity-20"
             style="
               background-image: url(&quot;/ots_background.png&quot;);
               background-size: cover;
@@ -127,7 +127,10 @@
             "
           />
 
-          <div ref="containerRef" class="h-full p-10 w-full flex justify-center items-center">
+          <div
+            ref="containerRef"
+            class="h-full p-10 w-full flex justify-center items-center"
+          >
             <!-- SVG Canvas -->
             <svg
               ref="svgRef"
@@ -139,11 +142,11 @@
                 height: '100%',
                 ...(viewDisplay === 'Back View'
                   ? {
-                    transform: 'scale(-1,1)',
-                    transformOrigin: 'center',
-                    transformBox: 'fill-box'
-                  }
-                  : {})
+                      transform: 'scale(-1,1)',
+                      transformOrigin: 'center',
+                      transformBox: 'fill-box',
+                    }
+                  : {}),
               }"
               :class="viewDisplay === 'Back View' ? 'invert' : ''"
               @wheel.prevent="handleWheel"
@@ -300,13 +303,11 @@
                     getPhaseLabels(tubeSheetDetails.typeOfPhases).length > 0
                   "
                 >
-                  <p class="font-medium mb-1">
-                    Phases:
-                  </p>
+                  <p class="font-medium mb-1">Phases:</p>
                   <ul class="list-disc list-inside space-y-0.5 ml-2">
                     <li
                       v-for="(phase, idx) in getPhaseLabels(
-                        tubeSheetDetails.typeOfPhases
+                        tubeSheetDetails.typeOfPhases,
                       )"
                       :key="idx"
                       class="text-[11px]"
@@ -329,7 +330,7 @@
                       'bg-info-100 text-info-700 dark:bg-info-900/30 dark:text-info-300':
                         tubeSheetDetails.status === 'CAMERA_CALIBRATED',
                       'bg-warning-100 text-warning-700 dark:bg-warning-900/30 dark:text-warning-300':
-                        tubeSheetDetails.status === 'UNDER_SURVEY'
+                        tubeSheetDetails.status === 'UNDER_SURVEY',
                     }"
                   >
                     {{
@@ -347,7 +348,7 @@
               <g
                 :style="{
                   transform: `rotate(${rotation}deg)`,
-                  transformOrigin: 'center'
+                  transformOrigin: 'center',
                 }"
               >
                 <!-- North needle (red) -->
@@ -396,7 +397,9 @@
               </text>
             </svg>
             <div class="text-center mt-2">
-              <span class="text-lg font-bold text-red-600 dark:text-red-500">{{ rotation }}°</span>
+              <span class="text-lg font-bold text-red-600 dark:text-red-500"
+                >{{ rotation }}°</span
+              >
             </div>
           </div>
         </UPageBody>
@@ -406,7 +409,7 @@
             class="w-full max-h-[calc(100dvh-var(--ui-header-height)-49px)] overflow-y-auto p-4 space-y-4 relative"
             :class="{
               'opacity-30 pointer-events-none bg-gray-200 dark:bg-gray-700':
-                !loading && !viewMode
+                !loading && !viewMode,
             }"
           >
             <div
@@ -419,12 +422,14 @@
               spotlight
               spotlight-color="primary"
               class="h-fit"
-              :ui="{ root: 'overflow-hidden shadow-md', container: 'sm:p-0 gap-2!', header: 'w-full p-3 bg-primary' }"
+              :ui="{
+                root: 'overflow-hidden shadow-md',
+                container: 'sm:p-0 gap-2!',
+                header: 'w-full p-3 bg-primary',
+              }"
             >
               <template #header>
-                <div class="bg-primary w-full">
-                  Survey Progress
-                </div>
+                <div class="bg-primary w-full">Survey Progress</div>
               </template>
               <div class="grid grid-cols-2 p-2">
                 <div>
@@ -472,7 +477,7 @@
                   >
                     <div>
                       Repeat
-                      <br>
+                      <br />
                       {{ repeatCount }}
                     </div>
                   </div>
@@ -481,7 +486,7 @@
                   >
                     <div>
                       Start Time
-                      <br>
+                      <br />
                       {{ surveyStartTime }}
                     </div>
                   </div>
@@ -489,8 +494,8 @@
                     class="flex justify-center text-center text-sm text-neutral-700 dark:text-neutral-200"
                   >
                     <div>
-                      {{ surveyEndTimeStamp ? 'Survey End' : 'Last Updated' }}
-                      <br>
+                      {{ surveyEndTimeStamp ? "Survey End" : "Last Updated" }}
+                      <br />
                       {{ surveyEndTimeStamp ? surveyEndTime : lastUpdateTime }}
                     </div>
                   </div>
@@ -505,12 +510,21 @@
               spotlight
               spotlight-color="success"
               class="h-fit col-span-2"
-              :ui="{ root: 'overflow-hidden shadow-md', container: 'sm:p-0 gap-2!', header: 'w-full p-3 bg-primary mb-0' }"
+              :ui="{
+                root: 'overflow-hidden shadow-md',
+                container: 'sm:p-0 gap-2!',
+                header: 'w-full p-3 bg-primary mb-0',
+              }"
             >
               <template #header>
-                <div class="bg-primary w-full flex items-center justify-between">
+                <div
+                  class="bg-primary w-full flex items-center justify-between"
+                >
                   <span>Total Survey Time</span>
-                  <span class="text-lg font-bold text-amber-600 dark:text-amber-400 font-mono">{{ totalSurveyTime }}</span>
+                  <span
+                    class="text-lg font-bold text-amber-600 dark:text-amber-400 font-mono"
+                    >{{ totalSurveyTime }}</span
+                  >
                 </div>
               </template>
               <div class="h-40">
@@ -545,7 +559,7 @@
                       : tableData
                     ).find((t) => t.tube === id)!.Activity
                   }}
-                  <br>
+                  <br />
                   Time:
                   {{
                     (viewDisplay === "Back View"
@@ -553,7 +567,7 @@
                       : tableData
                     ).find((t) => t.tube === id)!.time
                   }}
-                  <br>
+                  <br />
                 </div>
                 <div
                   v-else
@@ -578,16 +592,21 @@
             </UPageCard>
             <!-- Color Cap Tracking Grid - Only visible for COLOR_CAP_TRACKING phase -->
             <UPageCard
-              v-if="selectedPhase === 'COLOR_CAP_TRACKING' && colorCapLegend.length > 0"
+              v-if="
+                selectedPhase === 'COLOR_CAP_TRACKING' &&
+                colorCapLegend.length > 0
+              "
               spotlight
               spotlight-color="info"
               class="p-0 w-full"
-              :ui="{ root: 'overflow-hidden shadow-md', container: 'sm:p-0 gap-0! h-full', header: 'w-full p-3 bg-primary mb-0' }"
+              :ui="{
+                root: 'overflow-hidden shadow-md',
+                container: 'sm:p-0 gap-0! h-full',
+                header: 'w-full p-3 bg-primary mb-0',
+              }"
             >
               <template #header>
-                <div class="bg-primary w-full">
-                  Color Cap Tracking
-                </div>
+                <div class="bg-primary w-full">Color Cap Tracking</div>
               </template>
               <div class="grid grid-cols-5 p-0 h-full">
                 <div
@@ -618,14 +637,16 @@
               spotlight
               spotlight-color="secondary"
               class="p-0 w-full"
-              :ui="{ root: 'overflow-hidden shadow-md', container: 'sm:p-0 gap-0! h-full', header: 'w-full p-3 bg-primary mb-0' }"
+              :ui="{
+                root: 'overflow-hidden shadow-md',
+                container: 'sm:p-0 gap-0! h-full',
+                header: 'w-full p-3 bg-primary mb-0',
+              }"
             >
               <template #header>
-                <div class="bg-primary w-full">
-                  Special Tubes
-                </div>
+                <div class="bg-primary w-full">Special Tubes</div>
               </template>
-              <div class="grid grid-cols-6  p-0 h-full">
+              <div class="grid grid-cols-6 p-0 h-full">
                 <div
                   v-for="item in propertyLegend"
                   :key="item.value"
@@ -643,7 +664,7 @@
                     </span>
                   </div>
                   <span
-                    class="text-[12px] font-bold text-neutral-900 dark:text-neutral-100  dark:bg-neutral-800  mt-3"
+                    class="text-[12px] font-bold text-neutral-900 dark:text-neutral-100 dark:bg-neutral-800 mt-3"
                   >
                     {{ item.count }}
                   </span>
@@ -668,7 +689,11 @@
                 spotlight
                 spotlight-color="info"
                 class="h-fit"
-                :ui="{ root: 'overflow-hidden shadow-md', container: 'sm:p-0 gap-0! h-full', header: 'w-full p-3 bg-primary mb-0' }"
+                :ui="{
+                  root: 'overflow-hidden shadow-md',
+                  container: 'sm:p-0 gap-0! h-full',
+                  header: 'w-full p-3 bg-primary mb-0',
+                }"
               >
                 <template #header>
                   <div class="bg-primary w-full">
@@ -732,7 +757,9 @@
                     sticky="header"
                   >
                     <template #Activity-cell="{ row }">
-                      <span class="block max-w-[120px] whitespace-normal break-words text-xs">
+                      <span
+                        class="block max-w-[120px] whitespace-normal break-words text-xs"
+                      >
                         {{ row.original?.Activity }}
                       </span>
                     </template>
@@ -810,17 +837,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, watch } from 'vue'
-import type { Tube } from '@/types'
-import { useReactorsStore } from '@/stores/reactors'
-import { useSurveyStore } from '@/stores/survey'
+import { ref, reactive, computed, watch } from "vue";
+import type { Tube } from "@/types";
+import { useReactorsStore } from "@/stores/reactors";
+import { useSurveyStore } from "@/stores/survey";
 import {
   tubeSheetTypeItems,
   typeOfPhases as allTypeOfPhasesItems,
-  tubeSheetStatusLabels
-} from '@/utils/tubesheetOptions'
-import { UFieldGroup } from '#components'
-import { Pie, Bar } from 'vue-chartjs'
+  tubeSheetStatusLabels,
+} from "@/utils/tubesheetOptions";
+import { UFieldGroup } from "#components";
+import { Pie, Bar } from "vue-chartjs";
 import {
   Chart as ChartJS,
   ArcElement,
@@ -829,18 +856,18 @@ import {
   CategoryScale,
   LinearScale,
   BarElement,
-  Title
-} from 'chart.js'
-import type { TooltipItem } from 'chart.js'
-import { SURVEY_POLLING_INTERVAL } from '@/types/constants'
+  Title,
+} from "chart.js";
+import type { TooltipItem } from "chart.js";
+import { SURVEY_POLLING_INTERVAL } from "@/types/constants";
 
 type TubeDataTable = {
-  tube: string
-  Activity: string
-  time: string
-  face: string
-  comment?: string
-}
+  tube: string;
+  Activity: string;
+  time: string;
+  face: string;
+  comment?: string;
+};
 ChartJS.register(
   ArcElement,
   Tooltip,
@@ -848,204 +875,206 @@ ChartJS.register(
   CategoryScale,
   LinearScale,
   BarElement,
-  Title
-)
+  Title,
+);
 
-const loading = ref(false)
-const isRightOpen = ref(true)
-const stopModalOpen = ref(false)
-const successModalOpen = ref(false)
-const successMessage = ref('')
-const { setConfig } = useReactorGenerator()
+const loading = ref(false);
+const isRightOpen = ref(true);
+const stopModalOpen = ref(false);
+const successModalOpen = ref(false);
+const successMessage = ref("");
+const { setConfig } = useReactorGenerator();
 
-const reactorId = useRoute().params?.reactorId as string
-const sheetId = useRoute().params?.sheetId as string
-const tableData = ref<TubeDataTable[]>([])
-const repeatTableData = ref<TubeDataTable[]>([])
-const backTableData = ref<TubeDataTable[]>([])
-const backRepeatTableData = ref<TubeDataTable[]>([])
+const reactorId = useRoute().params?.reactorId as string;
+const sheetId = useRoute().params?.sheetId as string;
+const tableData = ref<TubeDataTable[]>([]);
+const repeatTableData = ref<TubeDataTable[]>([]);
+const backTableData = ref<TubeDataTable[]>([]);
+const backRepeatTableData = ref<TubeDataTable[]>([]);
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const tubeSheetDetails = ref<any>(null)
+const tubeSheetDetails = ref<any>(null);
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const phasesData = ref<any[]>([])
-const selectedPhase = ref<string>('')
-const currentSurvey = ref('')
+const phasesData = ref<any[]>([]);
+const selectedPhase = ref<string>("");
+const currentSurvey = ref("");
 
-const showDetails = ref(false)
-const items = ref(['Front View', 'Back View'])
-const viewDisplay = ref('Front View')
-const repeatCount = ref(0)
-const viewMode = ref(false)
-const activeSurveyId = ref<string | undefined>(undefined)
+const showDetails = ref(false);
+const items = ref(["Front View", "Back View"]);
+const viewDisplay = ref("Front View");
+const repeatCount = ref(0);
+const viewMode = ref(false);
+const activeSurveyId = ref<string | undefined>(undefined);
 
 // Progress data from API and timer
-const progressData = ref<{ time: string, tubes: number, isDay?: boolean }[]>([])
-const surveyCreatedAt = ref<string | null>(null)
-const surveyEndTimeStamp = ref<string | null>(null)
-const apiCallTime = ref<Date | null>(null)
-const totalSurveyTime = ref('0 min')
+const progressData = ref<{ time: string; tubes: number; isDay?: boolean }[]>(
+  [],
+);
+const surveyCreatedAt = ref<string | null>(null);
+const surveyEndTimeStamp = ref<string | null>(null);
+const apiCallTime = ref<Date | null>(null);
+const totalSurveyTime = ref("0 min");
 
 // Computed for display times
 const surveyStartTime = computed(() => {
   if (surveyCreatedAt.value) {
     return new Date(surveyCreatedAt.value).toLocaleString(undefined, {
-      year: 'numeric',
-      month: 'short',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit'
-    })
+      year: "numeric",
+      month: "short",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
   }
-  return 'N/A'
-})
+  return "N/A";
+});
 
 const surveyEndTime = computed(() => {
   if (surveyEndTimeStamp.value) {
     return new Date(surveyEndTimeStamp.value).toLocaleString(undefined, {
-      year: 'numeric',
-      month: 'short',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit'
-    })
+      year: "numeric",
+      month: "short",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
   }
-  return 'N/A'
-})
+  return "N/A";
+});
 
 const lastUpdateTime = computed(() => {
   if (apiCallTime.value) {
     return apiCallTime.value.toLocaleString(undefined, {
-      year: 'numeric',
-      month: 'short',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit'
-    })
+      year: "numeric",
+      month: "short",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
   }
-  return 'N/A'
-})
+  return "N/A";
+});
 
 // Comment functionality
-const showCommentInput = ref(false)
-const commentText = ref('')
-const addingComment = ref(false)
+const showCommentInput = ref(false);
+const commentText = ref("");
+const addingComment = ref(false);
 const tubeComments = ref<
   {
-    tubeIdAsperLayout: string
-    comment: string
-    timeStamp: string
-    _id: string
+    tubeIdAsperLayout: string;
+    comment: string;
+    timeStamp: string;
+    _id: string;
   }[]
->([])
+>([]);
 
 // Track repeat counts per tube and last detected tube
-const tubeRepeatCounts = ref<Map<string, number>>(new Map())
-const lastDetectedTubeId = ref<string>('')
-const lastDetectedFace = ref<string>('front')
+const tubeRepeatCounts = ref<Map<string, number>>(new Map());
+const lastDetectedTubeId = ref<string>("");
+const lastDetectedFace = ref<string>("front");
 // Cache for icon overlay elements
-const iconElById = new Map<string, SVGGElement>()
+const iconElById = new Map<string, SVGGElement>();
 
 // Update total survey time when API is called
 function updateTotalSurveyTime() {
   if (!surveyCreatedAt.value) {
-    totalSurveyTime.value = '0 min'
-    return
+    totalSurveyTime.value = "0 min";
+    return;
   }
 
-  const startTime = new Date(surveyCreatedAt.value).getTime()
-  let endTime: number
+  const startTime = new Date(surveyCreatedAt.value).getTime();
+  let endTime: number;
 
   if (surveyEndTimeStamp.value) {
     // Survey has ended - use end timestamp
-    endTime = new Date(surveyEndTimeStamp.value).getTime()
+    endTime = new Date(surveyEndTimeStamp.value).getTime();
   } else {
     // Survey still running - use API call time
-    endTime = apiCallTime.value ? apiCallTime.value.getTime() : Date.now()
+    endTime = apiCallTime.value ? apiCallTime.value.getTime() : Date.now();
   }
 
-  const diffMs = endTime - startTime
-  const diffMins = Math.floor(diffMs / 60000)
-  const hours = Math.floor(diffMins / 60)
-  const mins = diffMins % 60
+  const diffMs = endTime - startTime;
+  const diffMins = Math.floor(diffMs / 60000);
+  const hours = Math.floor(diffMins / 60);
+  const mins = diffMins % 60;
 
   if (hours > 0) {
-    totalSurveyTime.value = `${hours}h ${mins}m`
+    totalSurveyTime.value = `${hours}h ${mins}m`;
   } else {
-    totalSurveyTime.value = `${mins} min`
+    totalSurveyTime.value = `${mins} min`;
   }
 }
 
 const tabs = [
   {
-    label: 'Progress',
-    icon: 'i-lucide-activity'
+    label: "Progress",
+    icon: "i-lucide-activity",
   },
   {
-    label: 'Repeat',
-    icon: 'i-lucide-refresh-ccw'
-  }
-]
+    label: "Repeat",
+    icon: "i-lucide-refresh-ccw",
+  },
+];
 
 const pageUi = computed(() => ({
-  root: 'gap-0!',
-  right: isRightOpen.value ? 'lg:col-span-4 order-first lg:order-last' : '',
-  center: isRightOpen.value ? 'lg:col-span-6' : 'lg:col-span-10'
-}))
+  root: "gap-0!",
+  right: isRightOpen.value ? "lg:col-span-4 order-first lg:order-last" : "",
+  center: isRightOpen.value ? "lg:col-span-6" : "lg:col-span-10",
+}));
 
 const bodyClass = computed(() => {
-  const base = 'relative select-none !p-0 !mt-0 h-full w-full '
-  const gridLight
-    = 'bg-[linear-gradient(to_right,#e5e7eb_.5px,transparent_.5px),linear-gradient(to_bottom,#e5e7eb_.5px,transparent_.5px)] bg-[size:20px_20px]'
-  const gridDark
-    = 'dark:bg-[linear-gradient(to_right,#2d2d2d_.5px,transparent_.5px),linear-gradient(to_bottom,#2d2d2d_.5px,transparent_.5px)] dark:bg-[size:20px_20px]'
-  const bgLight = 'bg-white'
-  const bgDark = 'dark:bg-neutral-950'
+  const base = "relative select-none !p-0 !mt-0 h-full w-full ";
+  const gridLight =
+    "bg-[linear-gradient(to_right,#e5e7eb_.5px,transparent_.5px),linear-gradient(to_bottom,#e5e7eb_.5px,transparent_.5px)] bg-[size:20px_20px]";
+  const gridDark =
+    "dark:bg-[linear-gradient(to_right,#2d2d2d_.5px,transparent_.5px),linear-gradient(to_bottom,#2d2d2d_.5px,transparent_.5px)] dark:bg-[size:20px_20px]";
+  const bgLight = "bg-white";
+  const bgDark = "dark:bg-neutral-950";
 
-  if (viewDisplay.value === 'Back View') {
+  if (viewDisplay.value === "Back View") {
     // For back view, use a reddish grid to differentiate
-    const gridLightBack
-      = 'bg-[linear-gradient(to_right,#ffcccc_.5px,transparent_.5px),linear-gradient(to_bottom,#ffcccc_.5px,transparent_.5px)] bg-[size:20px_20px]'
-    const gridDarkBack
-      = 'dark:bg-[linear-gradient(to_right,#4d0000_.5px,transparent_.5px),linear-gradient(to_bottom,#4d0000_.5px,transparent_.5px)] dark:bg-[size:20px_20px]'
-    return `${base} ${gridLightBack} ${gridDarkBack} ${bgLight} ${bgDark}`
+    const gridLightBack =
+      "bg-[linear-gradient(to_right,#ffcccc_.5px,transparent_.5px),linear-gradient(to_bottom,#ffcccc_.5px,transparent_.5px)] bg-[size:20px_20px]";
+    const gridDarkBack =
+      "dark:bg-[linear-gradient(to_right,#4d0000_.5px,transparent_.5px),linear-gradient(to_bottom,#4d0000_.5px,transparent_.5px)] dark:bg-[size:20px_20px]";
+    return `${base} ${gridLightBack} ${gridDarkBack} ${bgLight} ${bgDark}`;
   } else {
-    return `${base} ${gridLight} ${gridDark} ${bgLight} ${bgDark}`
+    return `${base} ${gridLight} ${gridDark} ${bgLight} ${bgDark}`;
   }
-})
+});
 // Computed property to get only phases from tubesheet details
 const typeOfPhasesItems = computed(() => {
   if (
-    !tubeSheetDetails.value?.typeOfPhases
-    || tubeSheetDetails.value.typeOfPhases.length === 0
+    !tubeSheetDetails.value?.typeOfPhases ||
+    tubeSheetDetails.value.typeOfPhases.length === 0
   ) {
-    return []
+    return [];
   }
   return tubeSheetDetails.value.typeOfPhases.map((phaseValue: string) => {
-    const item = allTypeOfPhasesItems.find(p => p.value === phaseValue)
-    return item || { label: phaseValue, value: phaseValue }
-  })
-})
+    const item = allTypeOfPhasesItems.find((p) => p.value === phaseValue);
+    return item || { label: phaseValue, value: phaseValue };
+  });
+});
 
 const getEquipmentTypeLabel = (value: string) => {
-  const item = tubeSheetTypeItems.find(t => t.value === value)
-  return item ? item.label : value
-}
+  const item = tubeSheetTypeItems.find((t) => t.value === value);
+  return item ? item.label : value;
+};
 
 const getPhaseLabels = (phases: string[]) => {
-  if (!phases || phases.length === 0) return []
+  if (!phases || phases.length === 0) return [];
   return phases.map((phase) => {
-    const item = allTypeOfPhasesItems.find(p => p.value === phase)
-    return item ? item.label : phase
-  })
-}
+    const item = allTypeOfPhasesItems.find((p) => p.value === phase);
+    return item ? item.label : phase;
+  });
+};
 
 const settingsInput = reactive({
-  mirrorX: false
-})
+  mirrorX: false,
+});
 
 // const settingitems = computed<DropdownMenuItem[]>(() => [
 
@@ -1059,7 +1088,7 @@ const settingsInput = reactive({
 //   }
 // ])
 
-const { config, tubes: currentTubes } = useReactorGenerator()
+const { config, tubes: currentTubes } = useReactorGenerator();
 const {
   scale,
   tx,
@@ -1071,303 +1100,336 @@ const {
   fitToScreen,
   setZoom,
   setPan,
-  setRotation
-} = useViewportTransform()
+  setRotation,
+} = useViewportTransform();
 
 // Store initial viewport state from API for reset functionality
-const initialViewportState = ref<{ scale: number, tx: number, ty: number, rotation: number } | null>(null)
+const initialViewportState = ref<{
+  scale: number;
+  tx: number;
+  ty: number;
+  rotation: number;
+} | null>(null);
 
 const viewportStorageKey = reactorId
   ? `viewport:${reactorId}`
-  : 'viewport:default'
+  : "viewport:default";
 
 function loadViewportState() {
-  if (typeof localStorage === 'undefined') return
-  const raw = localStorage.getItem(viewportStorageKey)
-  if (!raw) return
+  if (typeof localStorage === "undefined") return;
+  const raw = localStorage.getItem(viewportStorageKey);
+  if (!raw) return;
   try {
     const parsed = JSON.parse(raw) as {
-      scale?: number
-      tx?: number
-      ty?: number
-      rotation?: number
-    }
-    if (typeof parsed.scale === 'number') setZoom(parsed.scale)
-    if (typeof parsed.tx === 'number' && typeof parsed.ty === 'number')
-      setPan(parsed.tx, parsed.ty)
-    if (typeof parsed.rotation === 'number') setRotation(parsed.rotation)
+      scale?: number;
+      tx?: number;
+      ty?: number;
+      rotation?: number;
+    };
+    if (typeof parsed.scale === "number") setZoom(parsed.scale);
+    if (typeof parsed.tx === "number" && typeof parsed.ty === "number")
+      setPan(parsed.tx, parsed.ty);
+    if (typeof parsed.rotation === "number") setRotation(parsed.rotation);
   } catch (err) {
-    console.error('Failed to load viewport state', err)
+    console.error("Failed to load viewport state", err);
   }
 }
 
 function persistViewportState() {
-  if (typeof localStorage === 'undefined') return
+  if (typeof localStorage === "undefined") return;
   const payload = {
     scale: scale.value,
     tx: tx.value,
     ty: ty.value,
-    rotation: rotation.value
-  }
-  localStorage.setItem(viewportStorageKey, JSON.stringify(payload))
+    rotation: rotation.value,
+  };
+  localStorage.setItem(viewportStorageKey, JSON.stringify(payload));
 }
 
 // Initialize stores
-const reactorsStore = useReactorsStore()
+const reactorsStore = useReactorsStore();
 
 const transformStr = computed(
   () =>
-    `translate(${tx.value} ${ty.value}) scale(${scale.value}) rotate(${rotation.value} 600 600)`
-)
-const svgRef = ref<SVGSVGElement | null>(null)
+    `translate(${tx.value} ${ty.value}) scale(${scale.value}) rotate(${rotation.value} 600 600)`,
+);
+const svgRef = ref<SVGSVGElement | null>(null);
 const svgWidth = 1200,
-  svgHeight = 1200
+  svgHeight = 1200;
 const centerX = svgWidth / 2,
   centerY = svgHeight / 2,
-  scalePx = 2
-const searchValue = ref<string>('')
+  scalePx = 2;
+const searchValue = ref<string>("");
 
 // Computed compass dimensions based on shape type
 const compassSize = computed(() => {
-  const shape = config.value.shape
-  const outerDim = config.value.outerDimension || 100
-  const width = config.value.width || outerDim
-  const height = config.value.height || outerDim
+  const shape = config.value.shape;
+  const outerDim = config.value.outerDimension || 100;
+  const width = config.value.width || outerDim;
+  const height = config.value.height || outerDim;
 
   switch (shape) {
-    case 'RECTANGLE': {
+    case "RECTANGLE": {
       // Use diagonal distance to ensure compass stays visible at all rotation angles
-      const diagonal
-        = Math.sqrt((width / 2) ** 2 + (height / 2) ** 2) * scalePx
+      const diagonal =
+        Math.sqrt((width / 2) ** 2 + (height / 2) ** 2) * scalePx;
       return {
         horizontal: diagonal,
-        vertical: diagonal
-      }
+        vertical: diagonal,
+      };
     }
-    case 'HEXAGONE':
+    case "HEXAGONE":
       return {
         horizontal: outerDim * scalePx,
-        vertical: outerDim * scalePx * 0.866 // hex height ratio
-      }
-    case 'DONUT':
-    case 'CIRCLE':
+        vertical: outerDim * scalePx * 0.866, // hex height ratio
+      };
+    case "DONUT":
+    case "CIRCLE":
     default:
       return {
         horizontal: outerDim * scalePx,
-        vertical: outerDim * scalePx
-      }
+        vertical: outerDim * scalePx,
+      };
   }
-})
+});
 
 // Cache DOM elements for fast access
-const elById = new Map<string, SVGCircleElement>()
-const selectedIds = ref<Set<string>>(new Set())
+const elById = new Map<string, SVGCircleElement>();
+const selectedIds = ref<Set<string>>(new Set());
 // Property options
 const propertiesOptions = [
-  { label: 'Catalyst Tc', value: 'CATALYST_TC', color: '#FF6B6B' },
-  { label: 'Coolant', value: 'COOLANT', color: '#4ECDC4' },
-  { label: 'Solid', value: 'SOLID', color: '#556270' },
-  { label: 'Bend', value: 'BEND', color: '#C7F464' },
-  { label: 'Salt Tc', value: 'SALT_TC', color: '#FFA500' },
-  { label: 'Blocked', value: 'BLOCKED', color: '#1E90FF' }
-]
+  { label: "Catalyst Tc", value: "CATALYST_TC", color: "#FF6B6B" },
+  { label: "Coolant", value: "COOLANT", color: "#4ECDC4" },
+  { label: "Solid", value: "SOLID", color: "#556270" },
+  { label: "Bend", value: "BEND", color: "#C7F464" },
+  { label: "Salt Tc", value: "SALT_TC", color: "#FFA500" },
+  { label: "Blocked", value: "BLOCKED", color: "#1E90FF" },
+];
 
 /* ----------------------------
    UTIL: Find mirrored IDs
 ----------------------------- */
 function getMirroredIds(id: string): string[] {
-  if (!settingsInput.mirrorX) return []
+  if (!settingsInput.mirrorX) return [];
 
-  const match = id.match(/^R(\d+)C(\d+)$/)
-  if (!match) return []
-  const [, rStr, cStr] = match
-  const row = Number(rStr)
-  const col = Number(cStr)
+  const match = id.match(/^R(\d+)C(\d+)$/);
+  if (!match) return [];
+  const [, rStr, cStr] = match;
+  const row = Number(rStr);
+  const col = Number(cStr);
 
   const rows = currentTubes.value
-    .filter(t => !t.deleted)
+    .filter((t) => !t.deleted)
     .map((t) => {
-      const m = t?.id?.match(/^R(\d+)C/)
-      return m ? Number(m[1]) : undefined
+      const m = t?.id?.match(/^R(\d+)C/);
+      return m ? Number(m[1]) : undefined;
     })
-    .filter((n): n is number => n !== undefined)
+    .filter((n): n is number => n !== undefined);
 
-  const maxRow = rows.length ? Math.max(...rows) : row
+  const maxRow = rows.length ? Math.max(...rows) : row;
 
-  const mirrors = new Set<string>()
+  const mirrors = new Set<string>();
 
   // X mirror (top-bottom)
   if (settingsInput.mirrorX && row !== maxRow) {
-    mirrors.add(`R${maxRow - (row - 1)}C${col}`) // e.g. R1 -> Rmax, R2 -> Rmax-1
+    mirrors.add(`R${maxRow - (row - 1)}C${col}`); // e.g. R1 -> Rmax, R2 -> Rmax-1
   }
 
   // XY combined (diagonal mirror)
 
   return [...mirrors].filter(
-    mid =>
-      mid !== id && currentTubes.value.some(t => t.id === mid && !t.deleted)
-  )
+    (mid) =>
+      mid !== id && currentTubes.value.some((t) => t.id === mid && !t.deleted),
+  );
 }
 
 /* ----------------------------
    VISUAL UPDATE
 ----------------------------- */
 function updateCircleVisual(
-  t: Tube & { backColor?: string, _backendUpdatedBack?: boolean },
-  newPropertyColor = ''
+  t: Tube & { backColor?: string; _backendUpdatedBack?: boolean },
+  newPropertyColor = "",
 ) {
-  const c = elById.get(t.id)
-  if (!c) return
-  const isBackView = viewDisplay.value === 'Back View'
+  const c = elById.get(t.id);
+  if (!c) return;
+  const isBackView = viewDisplay.value === "Back View";
   // Special property color (e.g. CATALYST_TC, COOLANT) always shows on both faces
-  const specialPropertyColor = propertiesOptions.find(p => p.value === t.property)?.color
+  const specialPropertyColor = propertiesOptions.find(
+    (p) => p.value === t.property,
+  )?.color;
   // Detection color only shows on the face it was detected on
-  let propertyColor: string | null | undefined
+  let propertyColor: string | null | undefined;
   if (specialPropertyColor) {
-    propertyColor = specialPropertyColor
+    propertyColor = specialPropertyColor;
   } else if (isBackView) {
     // In Back View, only show backColor (from back detection), not front propertyColor
-    propertyColor = t.backColor || undefined
+    propertyColor = t.backColor || undefined;
   } else {
     // In Front View, only show propertyColor if it was set by front detection
-    propertyColor = t._backendUpdated ? t.propertyColor : undefined
+    propertyColor = t._backendUpdated ? t.propertyColor : undefined;
   }
-  const isSelected = selectedIds.value.has(t.id)
+  const isSelected = selectedIds.value.has(t.id);
 
-  const cx = centerX + t.x * scalePx
-  const cy = centerY + t.y * scalePx
-  const r = t.r * scalePx
+  const cx = centerX + t.x * scalePx;
+  const cy = centerY + t.y * scalePx;
+  const r = t.r * scalePx;
 
-  c.setAttribute('cx', String(cx))
-  c.setAttribute('cy', String(cy))
-  c.setAttribute('r', String(r))
-  c.setAttribute('fill', newPropertyColor || propertyColor || '#fff')
-  c.setAttribute(
-    'stroke',
-    isSelected ? '#FF0000' : '#0f172a'
-  )
-  c.setAttribute('stroke-width', isSelected ? '1.5' : '0.3')
-  c.setAttribute('filter', isBackView ? 'invert(1)' : 'none')
+  c.setAttribute("cx", String(cx));
+  c.setAttribute("cy", String(cy));
+  c.setAttribute("r", String(r));
+  c.setAttribute("fill", newPropertyColor || propertyColor || "#fff");
+  c.setAttribute("stroke", isSelected ? "#FF0000" : "#0f172a");
+  c.setAttribute("stroke-width", isSelected ? "1.5" : "0.3");
+  c.setAttribute("filter", isBackView ? "invert(1)" : "none");
 
   // Update icon overlays
-  updateTubeIcons(t, cx, cy, r)
+  updateTubeIcons(t, cx, cy, r);
 }
 
 function updateTubeIcons(
-  t: Tube & { backColor?: string, _backendUpdatedBack?: boolean },
+  t: Tube & { backColor?: string; _backendUpdatedBack?: boolean },
   cx: number,
   cy: number,
-  r: number
+  r: number,
 ) {
-  let iconGroup = iconElById.get(t.id)
+  let iconGroup = iconElById.get(t.id);
 
   // Check what icons are needed
-  const isBackView = viewDisplay.value === 'Back View'
-  const hasComment = !!(t.comment || tubeComments.value.find(c => c.tubeIdAsperLayout === t.id)?.comment)
-  const repeatCount = tubeRepeatCounts.value.get(t.id) || 0
+  const isBackView = viewDisplay.value === "Back View";
+  const hasComment = !!(
+    t.comment ||
+    tubeComments.value.find((c) => c.tubeIdAsperLayout === t.id)?.comment
+  );
+  const repeatCount = tubeRepeatCounts.value.get(t.id) || 0;
   // Only show arrow if the detection face matches the current view
-  const isLastDetected = lastDetectedTubeId.value === t.id
-    && ((isBackView && lastDetectedFace.value === 'back') || (!isBackView && lastDetectedFace.value !== 'back'))
-  const needsIcons = hasComment || repeatCount > 1 || isLastDetected
+  const isLastDetected =
+    lastDetectedTubeId.value === t.id &&
+    ((isBackView && lastDetectedFace.value === "back") ||
+      (!isBackView && lastDetectedFace.value !== "back"));
+  const needsIcons = hasComment || repeatCount > 1 || isLastDetected;
 
   if (!needsIcons) {
     // Remove icon group if present
     if (iconGroup) {
-      iconGroup.remove()
-      iconElById.delete(t.id)
+      iconGroup.remove();
+      iconElById.delete(t.id);
     }
-    return
+    return;
   }
 
   // Create or reuse icon group
   if (!iconGroup) {
-    iconGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g')
-    iconGroup.setAttribute('class', 'tube-icons')
-    iconGroup.setAttribute('pointer-events', 'none')
-    iconElById.set(t.id, iconGroup)
+    iconGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    iconGroup.setAttribute("class", "tube-icons");
+    iconGroup.setAttribute("pointer-events", "none");
+    iconElById.set(t.id, iconGroup);
     // Append to the icons layer (will be created in renderAll)
-    const svg = svgRef.value
+    const svg = svgRef.value;
     if (svg) {
-      const vp = svg.querySelector('#viewport') as SVGGElement
-      let iconsLayer = vp?.querySelector('#icons-layer') as SVGGElement
+      const vp = svg.querySelector("#viewport") as SVGGElement;
+      let iconsLayer = vp?.querySelector("#icons-layer") as SVGGElement;
       if (!iconsLayer) {
-        iconsLayer = document.createElementNS('http://www.w3.org/2000/svg', 'g')
-        iconsLayer.setAttribute('id', 'icons-layer')
-        vp?.appendChild(iconsLayer)
+        iconsLayer = document.createElementNS(
+          "http://www.w3.org/2000/svg",
+          "g",
+        );
+        iconsLayer.setAttribute("id", "icons-layer");
+        vp?.appendChild(iconsLayer);
       }
-      iconsLayer.appendChild(iconGroup)
+      iconsLayer.appendChild(iconGroup);
     }
   }
 
   // In Back View the SVG is flipped with scale(-1,1), so counter-flip icons
   // to keep text/icons readable
   if (isBackView) {
-    iconGroup.setAttribute('transform', `scale(-1, 1) translate(${-2 * cx}, 0)`)
+    iconGroup.setAttribute(
+      "transform",
+      `scale(-1, 1) translate(${-2 * cx}, 0)`,
+    );
   } else {
-    iconGroup.removeAttribute('transform')
+    iconGroup.removeAttribute("transform");
   }
 
   // Clear existing icons
-  iconGroup.innerHTML = ''
+  iconGroup.innerHTML = "";
 
-  const iconSize = Math.max(r * 0.7, 3)
+  const iconSize = Math.max(r * 0.7, 3);
 
   // INSIDE TUBE — Repeat count
   if (repeatCount > 1) {
-    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text')
-    text.setAttribute('x', String(cx))
-    text.setAttribute('y', String(cy))
-    text.setAttribute('text-anchor', 'middle')
-    text.setAttribute('dominant-baseline', 'central')
-    text.setAttribute('fill', '#ef4444')
-    text.setAttribute('font-size', String(Math.max(r * 1.1, 4)))
-    text.setAttribute('font-weight', 'bold')
-    text.setAttribute('font-family', 'Arial, sans-serif')
-    text.textContent = String(repeatCount)
-    iconGroup.appendChild(text)
+    const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    text.setAttribute("x", String(cx));
+    text.setAttribute("y", String(cy));
+    text.setAttribute("text-anchor", "middle");
+    text.setAttribute("dominant-baseline", "central");
+    text.setAttribute("fill", "#ef4444");
+    text.setAttribute("font-size", String(Math.max(r * 1.1, 4)));
+    text.setAttribute("font-weight", "bold");
+    text.setAttribute("font-family", "Arial, sans-serif");
+    text.textContent = String(repeatCount);
+    iconGroup.appendChild(text);
   }
 
   // TOP — Last detected arrow (pointing down at tube)
   if (isLastDetected) {
-    const arrowGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g')
-    const arrowSize = Math.max(r * 1.2, 5)
-    const arrowX = cx
-    const arrowTipY = cy - r - 1
-    const arrowBaseY = arrowTipY - arrowSize
+    const arrowGroup = document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "g",
+    );
+    const arrowSize = Math.max(r * 1.2, 5);
+    const arrowX = cx;
+    const arrowTipY = cy - r - 1;
+    const arrowBaseY = arrowTipY - arrowSize;
 
-    const arrow = document.createElementNS('http://www.w3.org/2000/svg', 'polygon')
-    arrow.setAttribute('points', `${arrowX},${arrowTipY} ${arrowX - arrowSize * 0.7},${arrowBaseY} ${arrowX + arrowSize * 0.7},${arrowBaseY}`)
-    arrow.setAttribute('fill', '#ef4444')
-    arrow.setAttribute('stroke', '#fff')
-    arrow.setAttribute('stroke-width', '1')
-    arrowGroup.appendChild(arrow)
+    const arrow = document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "polygon",
+    );
+    arrow.setAttribute(
+      "points",
+      `${arrowX},${arrowTipY} ${arrowX - arrowSize * 0.7},${arrowBaseY} ${arrowX + arrowSize * 0.7},${arrowBaseY}`,
+    );
+    arrow.setAttribute("fill", "#ef4444");
+    arrow.setAttribute("stroke", "#fff");
+    arrow.setAttribute("stroke-width", "1");
+    arrowGroup.appendChild(arrow);
 
-    const stem = document.createElementNS('http://www.w3.org/2000/svg', 'line')
-    stem.setAttribute('x1', String(arrowX))
-    stem.setAttribute('y1', String(arrowBaseY))
-    stem.setAttribute('x2', String(arrowX))
-    stem.setAttribute('y2', String(arrowBaseY - arrowSize * 0.6))
-    stem.setAttribute('stroke', '#ef4444')
-    stem.setAttribute('stroke-width', String(Math.max(arrowSize * 0.25, 1.5)))
-    stem.setAttribute('stroke-linecap', 'round')
-    arrowGroup.appendChild(stem)
+    const stem = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    stem.setAttribute("x1", String(arrowX));
+    stem.setAttribute("y1", String(arrowBaseY));
+    stem.setAttribute("x2", String(arrowX));
+    stem.setAttribute("y2", String(arrowBaseY - arrowSize * 0.6));
+    stem.setAttribute("stroke", "#ef4444");
+    stem.setAttribute("stroke-width", String(Math.max(arrowSize * 0.25, 1.5)));
+    stem.setAttribute("stroke-linecap", "round");
+    arrowGroup.appendChild(stem);
 
-    iconGroup.appendChild(arrowGroup)
+    iconGroup.appendChild(arrowGroup);
   }
 
   // RIGHT — Comment icon
   if (hasComment) {
-    const commentIcon = document.createElementNS('http://www.w3.org/2000/svg', 'g')
-    const s = iconSize
-    commentIcon.setAttribute('transform', `translate(${cx + r + 1}, ${cy - s * 0.6})`)
+    const commentIcon = document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "g",
+    );
+    const s = iconSize;
+    commentIcon.setAttribute(
+      "transform",
+      `translate(${cx + r + 1}, ${cy - s * 0.6})`,
+    );
 
-    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path')
-    path.setAttribute('d', `M0,0 h${s * 1.2} q${s * 0.3},0 ${s * 0.3},${s * 0.3} v${s * 0.5} q0,${s * 0.3} -${s * 0.3},${s * 0.3} h-${s * 0.5} l-${s * 0.3},${s * 0.3} v-${s * 0.3} h-${s * 0.1} q-${s * 0.3},0 -${s * 0.3},-${s * 0.3} v-${s * 0.5} q0,-${s * 0.3} ${s * 0.3},-${s * 0.3} z`)
-    path.setAttribute('fill', '#3b82f6')
-    path.setAttribute('opacity', '0.9')
-    commentIcon.appendChild(path)
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute(
+      "d",
+      `M0,0 h${s * 1.2} q${s * 0.3},0 ${s * 0.3},${s * 0.3} v${s * 0.5} q0,${s * 0.3} -${s * 0.3},${s * 0.3} h-${s * 0.5} l-${s * 0.3},${s * 0.3} v-${s * 0.3} h-${s * 0.1} q-${s * 0.3},0 -${s * 0.3},-${s * 0.3} v-${s * 0.5} q0,-${s * 0.3} ${s * 0.3},-${s * 0.3} z`,
+    );
+    path.setAttribute("fill", "#3b82f6");
+    path.setAttribute("opacity", "0.9");
+    commentIcon.appendChild(path);
 
-    iconGroup.appendChild(commentIcon)
+    iconGroup.appendChild(commentIcon);
   }
 }
 
@@ -1375,34 +1437,34 @@ function updateTubeIcons(
    SELECTION WITH MIRRORING
 ----------------------------- */
 function addSelection(ids: string[]) {
-  const set = new Set(selectedIds.value)
-  ids.forEach(id => set.add(id))
-  selectedIds.value = set
-  ids.forEach(id =>
-    updateCircleVisual(currentTubes.value.find(t => t.id === id)!)
-  )
+  const set = new Set(selectedIds.value);
+  ids.forEach((id) => set.add(id));
+  selectedIds.value = set;
+  ids.forEach((id) =>
+    updateCircleVisual(currentTubes.value.find((t) => t.id === id)!),
+  );
 }
 
 function removeSelection(ids: string[]) {
-  ids.forEach(id => selectedIds.value.delete(id))
-  ids.forEach(id =>
-    updateCircleVisual(currentTubes.value.find(t => t.id === id)!)
-  )
+  ids.forEach((id) => selectedIds.value.delete(id));
+  ids.forEach((id) =>
+    updateCircleVisual(currentTubes.value.find((t) => t.id === id)!),
+  );
 }
 
 function selectWithMirrors(id: string, exclusive = false) {
-  const mirrors = getMirroredIds(id)
-  const all = [id, ...mirrors]
+  const mirrors = getMirroredIds(id);
+  const all = [id, ...mirrors];
 
   if (exclusive) {
-    const prev = [...selectedIds.value]
-    selectedIds.value = new Set()
-    prev.forEach(pid =>
-      updateCircleVisual(currentTubes.value.find(t => t.id === pid)!)
-    )
+    const prev = [...selectedIds.value];
+    selectedIds.value = new Set();
+    prev.forEach((pid) =>
+      updateCircleVisual(currentTubes.value.find((t) => t.id === pid)!),
+    );
   }
 
-  addSelection(all)
+  addSelection(all);
 }
 
 // function toggleSelect(id: string) {
@@ -1415,90 +1477,111 @@ function selectWithMirrors(id: string, exclusive = false) {
 // }
 
 function selectOnly(id: string) {
-  selectWithMirrors(id, true)
+  selectWithMirrors(id, true);
 }
 
 function deselect(id: string) {
-  const mirrors = getMirroredIds(id)
-  removeSelection([id, ...mirrors])
+  const mirrors = getMirroredIds(id);
+  removeSelection([id, ...mirrors]);
 }
 
 function deselectAll() {
-  const prev = [...selectedIds.value]
-  selectedIds.value.clear()
-  prev.forEach(pid =>
-    updateCircleVisual(currentTubes.value.find(t => t.id === pid)!)
-  )
+  const prev = [...selectedIds.value];
+  selectedIds.value.clear();
+  prev.forEach((pid) =>
+    updateCircleVisual(currentTubes.value.find((t) => t.id === pid)!),
+  );
 }
 
 /* ----------------------------
    UI CLICK HANDLERS
 ----------------------------- */
 function handleTubeClick(e: MouseEvent, id: string) {
-  e.stopPropagation()
-  if (selectedIds.value.has(id)) deselect(id)
-  else selectOnly(id)
+  e.stopPropagation();
+  if (selectedIds.value.has(id)) deselect(id);
+  else selectOnly(id);
 }
 
 /* ----------------------------
    SEARCH SINGLE TUBE WITH ZOOM
 ----------------------------- */
-function searchTubes() {
-  if (!searchValue.value) return
 
-  const tube = currentTubes.value.find(t => t.id === searchValue.value)
-  if (!tube) return
+import axios from "axios";
+interface MyData {
+  holeId: string;
+}
+
+async function postData(url: string, payload: MyData) {
+  try {
+    // Axios handles the JSON conversion for you
+    const response = await axios.post(url, payload);
+    console.log("Success:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("Error sending data:", error);
+  }
+}
+
+function searchTubes() {
+  if (!searchValue.value) return;
+
+  const tube = currentTubes.value.find((t) => t.id === searchValue.value);
+  if (!tube) return;
 
   // Zoom to a reasonable level for viewing a single tube
-  const zoomLevel = 3
-  setZoom(zoomLevel)
+  const zoomLevel = 3;
+  setZoom(zoomLevel);
 
   // Calculate position to center the tube
   // Tube position in SVG coordinates (when scale=1): centerX + tube.x * scalePx, centerY + tube.y * scalePx
   // After transform translate(tx, ty) scale(s), final position = tx + (centerX + tube.x * scalePx) * s
   // We want this to equal svgWidth/2, so: tx = svgWidth/2 - (centerX + tube.x * scalePx) * s
-  const tx = svgWidth / 2 - (centerX + tube.x * scalePx) * zoomLevel
-  const ty = svgHeight / 2 - (centerY + tube.y * scalePx) * zoomLevel
+  const tx = svgWidth / 2 - (centerX + tube.x * scalePx) * zoomLevel;
+  const ty = svgHeight / 2 - (centerY + tube.y * scalePx) * zoomLevel;
 
-  setPan(tx, ty)
+  setPan(tx, ty);
 
   // Select the tube
-  selectOnly(searchValue.value)
+  selectOnly(searchValue.value);
+
+  console.log("Tubes searched ", searchValue.value);
+  const info = { holeId: searchValue.value };
+  postData("https://apiots.dnyindia.in/api/v2/actions/searchActions", info);
 }
 
 /* ----------------------------
    COMMENT FUNCTIONALITY
 ----------------------------- */
 async function submitComment() {
-  if (!commentText.value.trim() || selectedIds.value.size === 0) return
+  if (!commentText.value.trim() || selectedIds.value.size === 0) return;
 
-  const surveyId = activeSurveyId.value
+  const surveyId = activeSurveyId.value;
   if (!surveyId) {
-    useToast().add({ title: 'No active survey', color: 'error' })
-    return
+    useToast().add({ title: "No active survey", color: "error" });
+    return;
   }
 
-  addingComment.value = true
+  addingComment.value = true;
   try {
     // Add comment for each selected tube
     for (const tubeId of selectedIds.value) {
       await useAxios().$post(`/api/v2/survey/addComment/${surveyId}`, {
         tubeIdAsperLayout: tubeId,
-        comment: commentText.value.trim()
-      })
+        comment: commentText.value.trim(),
+      });
     }
 
-    useToast().add({ title: 'Comment added successfully', color: 'success' })
-    showCommentInput.value = false
-    commentText.value = ''
+    useToast().add({ title: "Comment added successfully", color: "success" });
+    showCommentInput.value = false;
+    commentText.value = "";
 
     // Refresh data to show updated comments
-    await fetchUpdatedTubeColors(surveyId)
+    await fetchUpdatedTubeColors(surveyId);
   } catch (err) {
-    console.error('Failed to add comment:', err)
-    useToast().add({ title: 'Failed to add comment', color: 'error' })
+    console.error("Failed to add comment:", err);
+    useToast().add({ title: "Failed to add comment", color: "error" });
   } finally {
-    addingComment.value = false
+    addingComment.value = false;
   }
 }
 
@@ -1506,299 +1589,306 @@ async function submitComment() {
    RENDERING
 ----------------------------- */
 function renderAll() {
-  const svg = svgRef.value
-  if (!svg) return
-  const vp = svg.querySelector('#viewport') as SVGGElement
-  if (!vp) return
+  const svg = svgRef.value;
+  if (!svg) return;
+  const vp = svg.querySelector("#viewport") as SVGGElement;
+  if (!vp) return;
 
-  const { boundary, tubes, labels } = ensureLayers(vp)
-  boundary.innerHTML = ''
+  const { boundary, tubes, labels } = ensureLayers(vp);
+  boundary.innerHTML = "";
   Array.from(labels.children).forEach((child) => {
-    if ((child as Element).id !== 'tooltip') child.remove()
-  })
+    if ((child as Element).id !== "tooltip") child.remove();
+  });
 
   // Ensure icons layer exists
-  let iconsLayer = vp.querySelector('#icons-layer') as SVGGElement
+  let iconsLayer = vp.querySelector("#icons-layer") as SVGGElement;
   if (!iconsLayer) {
-    iconsLayer = document.createElementNS('http://www.w3.org/2000/svg', 'g')
-    iconsLayer.setAttribute('id', 'icons-layer')
-    vp.appendChild(iconsLayer)
+    iconsLayer = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    iconsLayer.setAttribute("id", "icons-layer");
+    vp.appendChild(iconsLayer);
   }
 
-  drawBoundary(boundary, config.value, centerX, centerY, scalePx)
+  drawBoundary(boundary, config.value, centerX, centerY, scalePx);
 
-  const isBackView = viewDisplay.value === 'Back View'
-  const activeTubes = currentTubes.value.filter(t => !t.deleted)
-  const presentIds = new Set(activeTubes.map(t => t.id))
+  const isBackView = viewDisplay.value === "Back View";
+  const activeTubes = currentTubes.value.filter((t) => !t.deleted);
+  const presentIds = new Set(activeTubes.map((t) => t.id));
 
   // Remove stale circles and icons
   for (const [id, el] of Array.from(elById.entries())) {
     if (!presentIds.has(id)) {
-      el.remove()
-      elById.delete(id)
+      el.remove();
+      elById.delete(id);
     }
   }
   for (const [id, el] of Array.from(iconElById.entries())) {
     if (!presentIds.has(id)) {
-      el.remove()
-      iconElById.delete(id)
+      el.remove();
+      iconElById.delete(id);
     }
   }
 
   // Render or update existing circles
   for (const t of activeTubes) {
-    let c = elById.get(t.id)
+    let c = elById.get(t.id);
     if (!c) {
-      c = document.createElementNS('http://www.w3.org/2000/svg', 'circle')
-      c.dataset.name = t.id
-      c.addEventListener('click', e => handleTubeClick(e, t.id))
+      c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      c.dataset.name = t.id;
+      c.addEventListener("click", (e) => handleTubeClick(e, t.id));
       // c.addEventListener('contextmenu', e => handleTubeContextMenu(e, t.id))
-      elById.set(t.id, c)
-      tubes.appendChild(c)
+      elById.set(t.id, c);
+      tubes.appendChild(c);
     }
 
-    updateCircleVisual(t)
+    updateCircleVisual(t);
   }
 
   // Render row labels with tube counts
-  renderRowLabels(vp, activeTubes, isBackView)
+  renderRowLabels(vp, activeTubes, isBackView);
 }
 
-function renderRowLabels(vp: SVGGElement, activeTubes: Tube[], isBackView: boolean) {
+function renderRowLabels(
+  vp: SVGGElement,
+  activeTubes: Tube[],
+  isBackView: boolean,
+) {
   // Remove existing row labels
-  let labelsLayer = vp.querySelector('#row-labels') as SVGGElement
+  let labelsLayer = vp.querySelector("#row-labels") as SVGGElement;
   if (labelsLayer) {
-    labelsLayer.innerHTML = ''
+    labelsLayer.innerHTML = "";
   } else {
-    labelsLayer = document.createElementNS('http://www.w3.org/2000/svg', 'g')
-    labelsLayer.setAttribute('id', 'row-labels')
-    vp.appendChild(labelsLayer)
+    labelsLayer = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    labelsLayer.setAttribute("id", "row-labels");
+    vp.appendChild(labelsLayer);
   }
 
   // Group tubes by row
-  const rowData = new Map<number, { count: number, maxX: number, avgY: number }>()
+  const rowData = new Map<
+    number,
+    { count: number; maxX: number; avgY: number }
+  >();
 
   for (const t of activeTubes) {
     // Extract row number from tube ID (e.g., "R1C2" -> 1)
-    const match = t.id.match(/^R(\d+)C/)
-    if (!match || !match[1]) continue
+    const match = t.id.match(/^R(\d+)C/);
+    if (!match || !match[1]) continue;
 
-    const rowNum = parseInt(match[1], 10)
-    const tubeX = centerX + t.x * scalePx
-    const tubeY = centerY + t.y * scalePx
+    const rowNum = parseInt(match[1], 10);
+    const tubeX = centerX + t.x * scalePx;
+    const tubeY = centerY + t.y * scalePx;
 
     if (!rowData.has(rowNum)) {
-      rowData.set(rowNum, { count: 0, maxX: tubeX, avgY: tubeY })
+      rowData.set(rowNum, { count: 0, maxX: tubeX, avgY: tubeY });
     }
 
-    const row = rowData.get(rowNum)!
-    row.count++
-    row.maxX = Math.max(row.maxX, tubeX + t.r * scalePx)
+    const row = rowData.get(rowNum)!;
+    row.count++;
+    row.maxX = Math.max(row.maxX, tubeX + t.r * scalePx);
     // Calculate running average Y position
-    row.avgY = ((row.avgY * (row.count - 1)) + tubeY) / row.count
+    row.avgY = (row.avgY * (row.count - 1) + tubeY) / row.count;
   }
 
   // Sort rows by row number and add labels
-  const sortedRows = Array.from(rowData.entries()).sort((a, b) => a[0] - b[0])
-  const labelOffset = 25 // Offset from the rightmost tube
+  const sortedRows = Array.from(rowData.entries()).sort((a, b) => a[0] - b[0]);
+  const labelOffset = 25; // Offset from the rightmost tube
 
   for (const [rowNum, data] of sortedRows) {
-    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text')
+    const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
     // Position label to the right of the rightmost tube in the row
     // For back view, we need to position on the left side (which appears on right after flip)
     const xPos = isBackView
       ? centerX - (data.maxX - centerX) - labelOffset
-      : data.maxX + labelOffset
-    text.setAttribute('x', String(xPos))
-    text.setAttribute('y', String(data.avgY))
-    text.setAttribute('font-size', '12')
-    text.setAttribute('font-family', 'Arial, sans-serif')
-    text.setAttribute('font-weight', 'bold')
-    text.setAttribute('fill', '#374151')
-    text.setAttribute('dominant-baseline', 'middle')
+      : data.maxX + labelOffset;
+    text.setAttribute("x", String(xPos));
+    text.setAttribute("y", String(data.avgY));
+    text.setAttribute("font-size", "12");
+    text.setAttribute("font-family", "Arial, sans-serif");
+    text.setAttribute("font-weight", "bold");
+    text.setAttribute("fill", "#374151");
+    text.setAttribute("dominant-baseline", "middle");
 
     // For back view, flip the text horizontally so it's readable after the SVG scaleX(-1)
     // Also apply filter invert to counteract the SVG-level invert and keep text visible
     if (isBackView) {
-      text.setAttribute('transform', `scale(-1, 1) translate(${-2 * xPos}, 0)`)
-      text.setAttribute('text-anchor', 'start')
-      text.setAttribute('fill', '#22c55e') // Green color for back view
-      text.setAttribute('font-weight', '900') // Extra bold
-      text.setAttribute('filter', 'invert(1)')
+      text.setAttribute("transform", `scale(-1, 1) translate(${-2 * xPos}, 0)`);
+      text.setAttribute("text-anchor", "start");
+      text.setAttribute("fill", "#22c55e"); // Green color for back view
+      text.setAttribute("font-weight", "900"); // Extra bold
+      text.setAttribute("filter", "invert(1)");
     } else {
-      text.setAttribute('text-anchor', 'start')
+      text.setAttribute("text-anchor", "start");
     }
-    text.textContent = `R${rowNum}: ${data.count}`
+    text.textContent = `R${rowNum}: ${data.count}`;
 
-    labelsLayer.appendChild(text)
+    labelsLayer.appendChild(text);
   }
 }
-let interval: ReturnType<typeof setInterval> | null = null
+let interval: ReturnType<typeof setInterval> | null = null;
 async function stratSurvey() {
   if (!selectedPhase.value) {
-    useToast().add({ title: 'Please select a phase', color: 'error' })
-    return
+    useToast().add({ title: "Please select a phase", color: "error" });
+    return;
   }
 
-  loading.value = true
+  loading.value = true;
   try {
     const data = await useSurveyStore().createSurvey({
       tubeSheetId: sheetId,
       surveyType: selectedPhase.value,
-      reactorId: reactorId
-    })
-    activeSurveyId.value = data.id
+      reactorId: reactorId,
+    });
+    activeSurveyId.value = data.id;
     // Call fetchUpdatedTubeColors immediately
-    await fetchUpdatedTubeColors(data.id || (activeSurveyId.value as string))
+    await fetchUpdatedTubeColors(data.id || (activeSurveyId.value as string));
     // Then set interval for polling
     interval = setInterval(
       () => fetchUpdatedTubeColors(data.id || (activeSurveyId.value as string)),
-      SURVEY_POLLING_INTERVAL
-    )
+      SURVEY_POLLING_INTERVAL,
+    );
     if (data.Success) {
-      useToast().add({ title: 'Survey Started', color: 'success' })
+      useToast().add({ title: "Survey Started", color: "success" });
     }
   } catch {
     // useToast().add({ title: 'Survey Started', color: 'success' })
-    loading.value = false
+    loading.value = false;
   }
 }
 
 function openStopModal() {
-  stopModalOpen.value = true
+  stopModalOpen.value = true;
 }
 
 async function stopSurvey() {
   try {
-    await useSurveyStore().stopSurvey(activeSurveyId.value as string)
-    loading.value = false
-    if (interval) clearInterval(interval)
-    stopModalOpen.value = false
-    successMessage.value = 'Survey is ended'
-    successModalOpen.value = true
+    await useSurveyStore().stopSurvey(activeSurveyId.value as string);
+    loading.value = false;
+    if (interval) clearInterval(interval);
+    stopModalOpen.value = false;
+    successMessage.value = "Survey is ended";
+    successModalOpen.value = true;
   } catch {
-    useToast().add({ title: 'Failed to stop survey', color: 'error' })
+    useToast().add({ title: "Failed to stop survey", color: "error" });
   }
 }
 
-const { openReportForPrint } = usePdfReport()
+const { openReportForPrint } = usePdfReport();
 
 async function downloadReport() {
   if (!useRoute().query?.surveyId) {
-    useToast().add({ title: 'No survey ID available', color: 'error' })
-    return
+    useToast().add({ title: "No survey ID available", color: "error" });
+    return;
   }
 
   openReportForPrint({
     sheetId,
     reactorId,
-    surveyId: useRoute().query?.surveyId as string
-  })
+    surveyId: useRoute().query?.surveyId as string,
+  });
 }
 
 function goHome() {
-  navigateTo('/')
+  navigateTo("/");
 }
 
 /* ----------------------------
    ZOOM HANDLERS
 ----------------------------- */
 function zoomIn() {
-  zoom(1.15)
+  zoom(1.15);
 }
 function zoomOut() {
-  zoom(1 / 1.15)
+  zoom(1 / 1.15);
 }
 function panXY(dx: number, dy: number) {
   // Invert X direction when in Back View (mirrored) mode
-  const adjustedDx = viewDisplay.value === 'Back View' ? -dx : dx
-  pan(adjustedDx, dy)
+  const adjustedDx = viewDisplay.value === "Back View" ? -dx : dx;
+  pan(adjustedDx, dy);
 }
 function handleWheel(event: WheelEvent) {
   // Slower zoom factor (1.03 instead of 1.1) for smoother control
-  const factor = event.deltaY < 0 ? 1.03 : 1 / 1.03
-  zoom(factor)
+  const factor = event.deltaY < 0 ? 1.03 : 1 / 1.03;
+  zoom(factor);
 }
 function resetView() {
   if (initialViewportState.value) {
-    setZoom(initialViewportState.value.scale)
-    setPan(initialViewportState.value.tx, initialViewportState.value.ty)
-    setRotation(initialViewportState.value.rotation)
+    setZoom(initialViewportState.value.scale);
+    setPan(initialViewportState.value.tx, initialViewportState.value.ty);
+    setRotation(initialViewportState.value.rotation);
   } else {
-    resetWithoutRotation()
+    resetWithoutRotation();
   }
 }
 
 // Keyboard handler for arrow keys
 // Shift + Arrow = move reactor, Arrow only (up/down) = scroll right panel
 function handleKeyDown(event: KeyboardEvent) {
-  const arrowKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']
-  if (!arrowKeys.includes(event.key)) return
+  const arrowKeys = ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"];
+  if (!arrowKeys.includes(event.key)) return;
 
-  event.preventDefault()
-  const step = 40
+  event.preventDefault();
+  const step = 40;
 
   if (event.shiftKey) {
     // Shift + Arrow = move reactor
     switch (event.key) {
-      case 'ArrowUp':
-        panXY(0, -step)
-        break
-      case 'ArrowDown':
-        panXY(0, step)
-        break
-      case 'ArrowLeft':
-        panXY(-step, 0)
-        break
-      case 'ArrowRight':
-        panXY(step, 0)
-        break
+      case "ArrowUp":
+        panXY(0, -step);
+        break;
+      case "ArrowDown":
+        panXY(0, step);
+        break;
+      case "ArrowLeft":
+        panXY(-step, 0);
+        break;
+      case "ArrowRight":
+        panXY(step, 0);
+        break;
     }
   } else {
     // Arrow only (up/down) = scroll right panel
-    if (!rightPanelRef.value) return
-    if (event.key === 'ArrowUp') {
-      rightPanelRef.value.scrollBy({ top: -step, behavior: 'smooth' })
-    } else if (event.key === 'ArrowDown') {
-      rightPanelRef.value.scrollBy({ top: step, behavior: 'smooth' })
+    if (!rightPanelRef.value) return;
+    if (event.key === "ArrowUp") {
+      rightPanelRef.value.scrollBy({ top: -step, behavior: "smooth" });
+    } else if (event.key === "ArrowDown") {
+      rightPanelRef.value.scrollBy({ top: step, behavior: "smooth" });
     }
   }
 }
 
 // Reference to the container div for fit-to-screen calculation
-const containerRef = ref<HTMLDivElement | null>(null)
+const containerRef = ref<HTMLDivElement | null>(null);
 // Reference to the right panel for scrolling
-const rightPanelRef = ref<HTMLDivElement | null>(null)
+const rightPanelRef = ref<HTMLDivElement | null>(null);
 
 function fitToScreenHandler() {
   // Calculate actual reactor dimensions from config
-  const outerDim = config.value.outerDimension || 100
-  const width = config.value.width || outerDim
-  const height = config.value.height || outerDim
+  const outerDim = config.value.outerDimension || 100;
+  const width = config.value.width || outerDim;
+  const height = config.value.height || outerDim;
 
   // The reactor content is rendered with scalePx = 2, so total dimensions are:
   // width * scalePx * 2, height * scalePx * 2
-  const renderedWidth = width * scalePx * 2
-  const renderedHeight = height * scalePx * 2
+  const renderedWidth = width * scalePx * 2;
+  const renderedHeight = height * scalePx * 2;
 
   // SVG viewBox is 1200x1200 - use full viewBox for fitting
-  const viewBoxSize = 1200
+  const viewBoxSize = 1200;
 
   // Calculate scale to fit reactor within the full viewBox
-  const scaleX = viewBoxSize / renderedWidth
-  const scaleY = viewBoxSize / renderedHeight
-  const fitScale = Math.min(scaleX, scaleY)
+  const scaleX = viewBoxSize / renderedWidth;
+  const scaleY = viewBoxSize / renderedHeight;
+  const fitScale = Math.min(scaleX, scaleY);
 
   // Clamp scale between reasonable bounds (0.1 to 3.0)
-  const finalScale = Math.max(0.1, Math.min(fitScale, 3.0))
+  const finalScale = Math.max(0.1, Math.min(fitScale, 3.0));
 
   // Set scale
-  setZoom(finalScale)
+  setZoom(finalScale);
 
   // Center the reactor: translate to keep center at svgCenter after scaling
-  const newTx = centerX * (1 - finalScale)
-  const newTy = centerY * (1 - finalScale)
-  setPan(newTx, newTy)
+  const newTx = centerX * (1 - finalScale);
+  const newTy = centerY * (1 - finalScale);
+  setPan(newTx, newTy);
 }
 
 /* ----------------------------
@@ -1808,22 +1898,22 @@ function fitToScreenHandler() {
 // Load reactor data on mount
 onMounted(async () => {
   // Add keyboard listener for arrow key controls
-  window.addEventListener('keydown', handleKeyDown)
+  window.addEventListener("keydown", handleKeyDown);
 
-  loadViewportState()
+  loadViewportState();
   watch(
     () => [scale.value, tx.value, ty.value, rotation.value],
     persistViewportState,
-    { deep: false }
-  )
+    { deep: false },
+  );
 
   // Fetch tubesheet details
 
   if (reactorId) {
-    const reactor = await reactorsStore.getAReactor(reactorId)
+    const reactor = await reactorsStore.getAReactor(reactorId);
     if (reactor) {
       if (reactor.config) {
-        setConfig(reactor.config)
+        setConfig(reactor.config);
 
         // Load viewport positions from config if available
         if (reactor.config.positions) {
@@ -1831,26 +1921,26 @@ onMounted(async () => {
             scale: savedScale,
             tx: savedTx,
             ty: savedTy,
-            rotation: savedRotation
-          } = reactor.config.positions
-          if (typeof savedScale === 'number') setZoom(savedScale)
-          if (typeof savedTx === 'number' && typeof savedTy === 'number')
-            setPan(savedTx, savedTy)
-          if (typeof savedRotation === 'number') setRotation(savedRotation)
+            rotation: savedRotation,
+          } = reactor.config.positions;
+          if (typeof savedScale === "number") setZoom(savedScale);
+          if (typeof savedTx === "number" && typeof savedTy === "number")
+            setPan(savedTx, savedTy);
+          if (typeof savedRotation === "number") setRotation(savedRotation);
 
           // Store initial state for reset functionality
           initialViewportState.value = {
             scale: savedScale ?? 1,
             tx: savedTx ?? 0,
             ty: savedTy ?? 0,
-            rotation: savedRotation ?? 0
-          }
+            rotation: savedRotation ?? 0,
+          };
         }
       }
 
       if (reactor.tubes && reactor.tubes.length > 0) {
-        currentTubes.value = [...reactor.tubes]
-        renderAll()
+        currentTubes.value = [...reactor.tubes];
+        renderAll();
       }
     }
   }
@@ -1858,32 +1948,33 @@ onMounted(async () => {
   if (sheetId) {
     try {
       const response = await useAxios().$get(
-        `/api/v2/tubeSheet/getSpecificTubeSheet/${sheetId}`
-      )
-      tubeSheetDetails.value = response.data
-      phasesData.value = response.phasesData || []
+        `/api/v2/tubeSheet/getSpecificTubeSheet/${sheetId}`,
+      );
+      tubeSheetDetails.value = response.data;
+      phasesData.value = response.phasesData || [];
     } catch (err) {
-      console.error('Failed to fetch tubesheet details:', err)
+      console.error("Failed to fetch tubesheet details:", err);
     }
-    const querySurveyId = (useRoute().query.surveyId || useSurveyStore().currentSurveyId) as string | undefined
-    const resumedJourney = useRoute().query.resumedJourney
+    const querySurveyId = (useRoute().query.surveyId ||
+      useSurveyStore().currentSurveyId) as string | undefined;
+    const resumedJourney = useRoute().query.resumedJourney;
     // alert(querySurveyId)
     if (querySurveyId) {
-      activeSurveyId.value = querySurveyId
+      activeSurveyId.value = querySurveyId;
       if (resumedJourney) {
-        loading.value = true
-        await fetchUpdatedTubeColors(activeSurveyId.value)
+        loading.value = true;
+        await fetchUpdatedTubeColors(activeSurveyId.value);
         interval = setInterval(
           () => fetchUpdatedTubeColors(activeSurveyId.value as string),
-          SURVEY_POLLING_INTERVAL
-        )
+          SURVEY_POLLING_INTERVAL,
+        );
       } else {
-        fetchUpdatedTubeColors(activeSurveyId.value)
-        viewMode.value = true
+        fetchUpdatedTubeColors(activeSurveyId.value);
+        viewMode.value = true;
       }
     }
   }
-})
+});
 
 /* ----------------------------
    WATCH
@@ -1892,12 +1983,12 @@ onMounted(async () => {
 watch(viewDisplay, () => {
   // Re-render everything when switching between front and back view
   // This will update tube visuals and row labels
-  renderAll()
-})
+  renderAll();
+});
 
 async function fetchUpdatedTubeColors(surveyId: string) {
   try {
-    const idToUse = surveyId || activeSurveyId.value
+    const idToUse = surveyId || activeSurveyId.value;
     const {
       data,
       surveyType,
@@ -1905,350 +1996,370 @@ async function fetchUpdatedTubeColors(surveyId: string) {
       repeat,
       progress,
       endTimeStamp,
-      comments
+      comments,
     } = idToUse
       ? await useSurveyStore().getSurveyUpdates(idToUse)
-      : await useSurveyStore().getSurveyUpdates()
-    repeatCount.value = repeat || 0
+      : await useSurveyStore().getSurveyUpdates();
+    repeatCount.value = repeat || 0;
 
     // Record API call time
-    apiCallTime.value = new Date()
+    apiCallTime.value = new Date();
 
     // Update comments from API
     if (comments && Array.isArray(comments)) {
-      tubeComments.value = comments
+      tubeComments.value = comments;
     }
 
     // Update progress data and timer
     if (progress && Array.isArray(progress)) {
-      progressData.value = progress
+      progressData.value = progress;
     }
 
     // Store timing data
-    surveyCreatedAt.value = createdAt || null
-    surveyEndTimeStamp.value = endTimeStamp || null
-    updateTotalSurveyTime()
+    surveyCreatedAt.value = createdAt || null;
+    surveyEndTimeStamp.value = endTimeStamp || null;
+    updateTotalSurveyTime();
 
-    currentSurvey.value
-      = (allTypeOfPhasesItems.find(phase => phase.value === surveyType)
-        ?.label as string) || ''
+    currentSurvey.value =
+      (allTypeOfPhasesItems.find((phase) => phase.value === surveyType)
+        ?.label as string) || "";
 
-    selectedPhase.value = surveyType || ''
+    selectedPhase.value = surveyType || "";
 
     // Track repeat counts per tube and last detected tube
-    const repeatCounts = new Map<string, number>()
-    let latestTubeId = ''
-    let latestTimestamp = 0
-    let latestFace = 'front'
+    const repeatCounts = new Map<string, number>();
+    let latestTubeId = "";
+    let latestTimestamp = 0;
+    let latestFace = "front";
 
     data.forEach(
-      (element: { tubeId: string | number, color: string, face?: string, tubeIdAsperLayout?: string, timeStamp?: string, isDuplicate?: boolean }) => {
-        const tube = currentTubes.value[element.tubeId as number]
-        if (!tube) return
+      (element: {
+        tubeId: string | number;
+        color: string;
+        face?: string;
+        tubeIdAsperLayout?: string;
+        timeStamp?: string;
+        isDuplicate?: boolean;
+      }) => {
+        const tube = currentTubes.value[element.tubeId as number];
+        if (!tube) return;
 
         // Track last detected tube by timestamp and face
         if (element.timeStamp) {
-          const ts = new Date(element.timeStamp).getTime()
+          const ts = new Date(element.timeStamp).getTime();
           if (ts > latestTimestamp) {
-            latestTimestamp = ts
-            latestTubeId = tube.id
-            latestFace = element.face || 'front'
+            latestTimestamp = ts;
+            latestTubeId = tube.id;
+            latestFace = element.face || "front";
           }
         }
 
         // Count repeats per tube (by layout ID)
-        const layoutId = element.tubeIdAsperLayout || tube.id
+        const layoutId = element.tubeIdAsperLayout || tube.id;
         if (element.isDuplicate) {
-          repeatCounts.set(layoutId, (repeatCounts.get(layoutId) || 1) + 1)
+          repeatCounts.set(layoutId, (repeatCounts.get(layoutId) || 1) + 1);
         }
 
-        if (element.face === 'back') {
-          tube.backColor = element.color
-          tube._backendUpdatedBack = true
+        if (element.face === "back") {
+          tube.backColor = element.color;
+          tube._backendUpdatedBack = true;
         } else {
-          tube.propertyColor = element.color
-          tube._backendUpdated = true
+          tube.propertyColor = element.color;
+          tube._backendUpdated = true;
         }
-        updateCircleVisual(tube)
-      }
-    )
+        updateCircleVisual(tube);
+      },
+    );
 
     // Update tracked state
-    tubeRepeatCounts.value = repeatCounts
-    lastDetectedTubeId.value = latestTubeId
-    lastDetectedFace.value = latestFace
+    tubeRepeatCounts.value = repeatCounts;
+    lastDetectedTubeId.value = latestTubeId;
+    lastDetectedFace.value = latestFace;
 
     // Refresh all tube icons after data update
-    const activeTubes = currentTubes.value.filter(t => !t.deleted)
+    const activeTubes = currentTubes.value.filter((t) => !t.deleted);
     for (const t of activeTubes) {
-      const cx = centerX + t.x * scalePx
-      const cy = centerY + t.y * scalePx
-      const r = t.r * scalePx
-      updateTubeIcons(t, cx, cy, r)
+      const cx = centerX + t.x * scalePx;
+      const cy = centerY + t.y * scalePx;
+      const r = t.r * scalePx;
+      updateTubeIcons(t, cx, cy, r);
     }
 
-    const frontData = data?.filter((e: { face?: string }) => e.face !== 'back')
-    const backData = data?.filter((e: { face?: string }) => e.face === 'back')
+    const frontData = data?.filter((e: { face?: string }) => e.face !== "back");
+    const backData = data?.filter((e: { face?: string }) => e.face === "back");
 
     tableData.value = frontData
       ?.filter((e: { isDuplicate: boolean }) => !e?.isDuplicate)
       .map(
         (item: {
-          tubeIdAsperLayout: string
-          activity: string
-          timeStamp: string
-          isDuplicate: boolean
+          tubeIdAsperLayout: string;
+          activity: string;
+          timeStamp: string;
+          isDuplicate: boolean;
         }) => {
           return {
             tube: item.tubeIdAsperLayout,
             Activity: item.activity,
             time: new Date(item.timeStamp).toLocaleString(),
-            Action: 'Locate'
-          }
-        }
-      ).sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
+            Action: "Locate",
+          };
+        },
+      )
+      .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
 
     repeatTableData.value = frontData
       ?.filter((e: { isDuplicate: boolean }) => e?.isDuplicate)
       .map(
         (item: {
-          tubeIdAsperLayout: string
-          activity: string
-          timeStamp: string
-          isDuplicate: boolean
-
+          tubeIdAsperLayout: string;
+          activity: string;
+          timeStamp: string;
+          isDuplicate: boolean;
         }) => {
           return {
             tube: item.tubeIdAsperLayout,
             Activity: item.activity,
             time: new Date(item.timeStamp).toLocaleString(),
-            Action: 'Locate'
-
-          }
-        }
-      ).sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
+            Action: "Locate",
+          };
+        },
+      )
+      .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
 
     backTableData.value = backData
       ?.filter((e: { isDuplicate: boolean }) => !e?.isDuplicate)
       .map(
         (item: {
-          tubeIdAsperLayout: string
-          activity: string
-          timeStamp: string
-          isDuplicate: boolean
+          tubeIdAsperLayout: string;
+          activity: string;
+          timeStamp: string;
+          isDuplicate: boolean;
         }) => {
           return {
             tube: item.tubeIdAsperLayout,
             Activity: item.activity,
             time: new Date(item.timeStamp).toLocaleString(),
-            Action: 'Locate'
-          }
-        }
-      ).sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()) // Sort by time desc
+            Action: "Locate",
+          };
+        },
+      )
+      .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()); // Sort by time desc
 
     backRepeatTableData.value = backData
       ?.filter((e: { isDuplicate: boolean }) => e?.isDuplicate)
       .map(
         (item: {
-          tubeIdAsperLayout: string
-          activity: string
-          timeStamp: string
-          isDuplicate: boolean
+          tubeIdAsperLayout: string;
+          activity: string;
+          timeStamp: string;
+          isDuplicate: boolean;
         }) => {
           return {
             tube: item.tubeIdAsperLayout,
             Activity: item.activity,
             time: new Date(item.timeStamp).toLocaleString(),
-            Action: 'Locate'
-          }
-        }
-      ).sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()) // Sort by time desc
+            Action: "Locate",
+          };
+        },
+      )
+      .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()); // Sort by time desc
   } catch (err) {
-    console.error('Failed to fetch tube colors:', err)
+    console.error("Failed to fetch tube colors:", err);
   }
 }
 
 const backendUpdatedCount = computed(
   () =>
     currentTubes.value.filter(
-      t =>
-        t._backendUpdated
-        && !propertiesOptions.some(p => p.value === t.property)
-    ).length
-)
+      (t) =>
+        t._backendUpdated &&
+        !propertiesOptions.some((p) => p.value === t.property),
+    ).length,
+);
 
 const backBackendUpdatedCount = computed(
   () =>
     currentTubes.value.filter(
-      t =>
-        t._backendUpdatedBack
-        && !propertiesOptions.some(p => p.value === t.property)
-    ).length
-)
+      (t) =>
+        t._backendUpdatedBack &&
+        !propertiesOptions.some((p) => p.value === t.property),
+    ).length,
+);
 
 // total tubes
-const totalCount = computed(() => currentTubes.value.length)
+const totalCount = computed(() => currentTubes.value.length);
 
 // Property legend with counts
 const propertyLegend = computed(() => {
-  const counts: Record<string, number> = {}
+  const counts: Record<string, number> = {};
 
   // Initialize counts for all properties
   propertiesOptions.forEach((prop) => {
-    counts[prop.value] = 0
-  })
+    counts[prop.value] = 0;
+  });
 
   // Count tubes by property
   currentTubes.value.forEach((tube) => {
     if (tube.property && !tube.deleted) {
-      counts[tube.property] = (counts[tube.property] || 0) + 1
+      counts[tube.property] = (counts[tube.property] || 0) + 1;
     }
-  })
+  });
 
   // Map to legend items with property details
-  return propertiesOptions.map(prop => ({
+  return propertiesOptions.map((prop) => ({
     label: prop.label,
     value: prop.value,
     color: prop.color,
-    count: counts[prop.value] || 0
-  }))
-})
+    count: counts[prop.value] || 0,
+  }));
+});
 
 const specialTubes = computed(() =>
-  propertyLegend.value.reduce((sum, item) => sum + item.count, 0)
-)
+  propertyLegend.value.reduce((sum, item) => sum + item.count, 0),
+);
 
 // Color Cap Tracking Legend - counts tubes by color for COLOR_CAP_TRACKING phase
 const colorCapLegend = computed(() => {
   // Only compute for COLOR_CAP_TRACKING phase
-  if (selectedPhase.value !== 'COLOR_CAP_TRACKING') return []
+  if (selectedPhase.value !== "COLOR_CAP_TRACKING") return [];
 
   // Find the COLOR_CAP_TRACKING phase config
   const colorCapPhase = phasesData.value.find(
-    (p: { phaseName: string }) => p.phaseName === 'COLOR_CAP_TRACKING'
-  )
-  if (!colorCapPhase?.configs) return []
+    (p: { phaseName: string }) => p.phaseName === "COLOR_CAP_TRACKING",
+  );
+  if (!colorCapPhase?.configs) return [];
 
-  const configs = colorCapPhase.configs
-  const isBackView = viewDisplay.value === 'Back View'
+  const configs = colorCapPhase.configs;
+  const isBackView = viewDisplay.value === "Back View";
 
   // Build color name to config mapping
-  const colorConfigMap = new Map<string, { color: string, abbreviation: string, key: string }>()
+  const colorConfigMap = new Map<
+    string,
+    { color: string; abbreviation: string; key: string }
+  >();
   for (const [key, value] of Object.entries(configs)) {
-    const config = value as { color: string, abbreviation: string }
+    const config = value as { color: string; abbreviation: string };
     if (config.color && config.abbreviation) {
       // Normalize color name for matching (lowercase)
       colorConfigMap.set(config.color.toLowerCase(), {
         color: config.color,
         abbreviation: config.abbreviation,
-        key
-      })
+        key,
+      });
     }
   }
 
   // Count tubes by their propertyColor (which contains color names from survey)
-  const counts = new Map<string, number>()
-  const activeTubes = currentTubes.value.filter(t => !t.deleted)
+  const counts = new Map<string, number>();
+  const activeTubes = currentTubes.value.filter((t) => !t.deleted);
 
   for (const tube of activeTubes) {
     // Get the color based on view
-    const tubeColor = isBackView ? tube.backColor : tube.propertyColor
-    if (!tubeColor) continue
+    const tubeColor = isBackView ? tube.backColor : tube.propertyColor;
+    if (!tubeColor) continue;
 
     // Try to match the color
-    const normalizedColor = tubeColor.toLowerCase()
+    const normalizedColor = tubeColor.toLowerCase();
     if (colorConfigMap.has(normalizedColor)) {
-      counts.set(normalizedColor, (counts.get(normalizedColor) || 0) + 1)
+      counts.set(normalizedColor, (counts.get(normalizedColor) || 0) + 1);
     }
   }
 
   // Build legend items from configs
-  const legend: { key: string, color: string, abbreviation: string, count: number }[] = []
+  const legend: {
+    key: string;
+    color: string;
+    abbreviation: string;
+    count: number;
+  }[] = [];
   for (const [colorName, config] of colorConfigMap) {
     legend.push({
       key: config.key,
       color: config.color,
       abbreviation: config.abbreviation,
-      count: counts.get(colorName) || 0
-    })
+      count: counts.get(colorName) || 0,
+    });
   }
 
-  return legend
-})
+  return legend;
+});
 
-const effectiveTotal = computed(() => totalCount.value - specialTubes.value)
+const effectiveTotal = computed(() => totalCount.value - specialTubes.value);
 const completed = computed(() =>
-  viewDisplay.value === 'Back View'
+  viewDisplay.value === "Back View"
     ? backBackendUpdatedCount.value
-    : backendUpdatedCount.value
-)
+    : backendUpdatedCount.value,
+);
 const remaining = computed(() =>
-  Math.max(0, effectiveTotal.value - completed.value)
-)
+  Math.max(0, effectiveTotal.value - completed.value),
+);
 
 const chartData = computed(() => ({
-  labels: ['Completed', 'Remaining', 'Special Tubes'],
+  labels: ["Completed", "Remaining", "Special Tubes"],
   datasets: [
     {
       data: [completed.value, remaining.value, specialTubes.value],
-      backgroundColor: ['#4CAF50', '#FFC107', '#9C27B0'],
-      borderWidth: 1
-    }
-  ]
-}))
+      backgroundColor: ["#4CAF50", "#FFC107", "#9C27B0"],
+      borderWidth: 1,
+    },
+  ],
+}));
 
 const chartOptions = {
   responsive: true,
   plugins: {
     legend: {
-      position: 'right' as const,
-      align: 'start' as const,
-      labels: { boxWidth: 10 }
+      position: "right" as const,
+      align: "start" as const,
+      labels: { boxWidth: 10 },
     },
     tooltip: {
       callbacks: {
-        label: function (context: TooltipItem<'pie'>) {
-          const label = context.label || ''
-          const value = context.parsed
+        label: function (context: TooltipItem<"pie">) {
+          const label = context.label || "";
+          const value = context.parsed;
           const total = context.dataset.data.reduce(
             (a: number, b: number) => a + b,
-            0
-          )
-          const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0
-          return `${label}: ${value} (${percentage}%)`
-        }
-      }
-    }
-  }
-}
+            0,
+          );
+          const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+          return `${label}: ${value} (${percentage}%)`;
+        },
+      },
+    },
+  },
+};
 
 // Progress Bar Chart Data
 const progressChartData = computed(() => {
   return {
     labels: progressData.value.map((p) => {
-      const date = new Date(p.time)
-      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      const date = new Date(p.time);
+      return date.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
     }),
     datasets: [
       {
-        label: 'Day',
-        data: progressData.value.map(p => p.isDay ? p.tubes : null),
-        backgroundColor: '#4CAF50',
-        borderColor: '#388E3C',
+        label: "Day",
+        data: progressData.value.map((p) => (p.isDay ? p.tubes : null)),
+        backgroundColor: "#4CAF50",
+        borderColor: "#388E3C",
         borderWidth: 1,
-        borderRadius: 4
+        borderRadius: 4,
       },
       {
-        label: 'Night',
-        data: progressData.value.map(p => !p.isDay ? p.tubes : null),
-        backgroundColor: '#9E9E9E',
-        borderColor: '#757575',
+        label: "Night",
+        data: progressData.value.map((p) => (!p.isDay ? p.tubes : null)),
+        backgroundColor: "#9E9E9E",
+        borderColor: "#757575",
         borderWidth: 1,
-        borderRadius: 4
-      }
-    ]
-  }
-})
+        borderRadius: 4,
+      },
+    ],
+  };
+});
 
 const progressChartOptions = {
   responsive: true,
@@ -2256,46 +2367,46 @@ const progressChartOptions = {
   plugins: {
     legend: {
       display: true,
-      position: 'bottom' as const,
+      position: "bottom" as const,
       labels: {
-        font: { size: 10 }
-      }
+        font: { size: 10 },
+      },
     },
     title: {
       display: true,
-      text: 'Efficiency',
-      font: { size: 12 }
-    }
+      text: "Efficiency",
+      font: { size: 12 },
+    },
   },
   scales: {
     x: {
       display: true,
       title: {
-        display: false
+        display: false,
       },
       ticks: {
         maxRotation: 45,
-        font: { size: 9 }
-      }
+        font: { size: 9 },
+      },
     },
     y: {
       display: true,
       beginAtZero: true,
       title: {
         display: true,
-        text: 'Tubes',
-        font: { size: 10 }
+        text: "Tubes",
+        font: { size: 10 },
       },
       ticks: {
-        font: { size: 9 }
-      }
-    }
-  }
-}
+        font: { size: 9 },
+      },
+    },
+  },
+};
 
 onUnmounted(() => {
-  if (interval) clearInterval(interval)
+  if (interval) clearInterval(interval);
   // Remove keyboard listener
-  window.removeEventListener('keydown', handleKeyDown)
-})
+  window.removeEventListener("keydown", handleKeyDown);
+});
 </script>
