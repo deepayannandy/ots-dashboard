@@ -937,6 +937,7 @@ import {
 import type { TooltipItem } from "chart.js";
 import { SURVEY_POLLING_INTERVAL } from "@/types/constants";
 import type { TableColumn } from "@nuxt/ui";
+import { appendLucideIconToSvgGroup } from "@/utils/lucideSvgInline";
 
 type TubeDataTable = {
   tube: string;
@@ -1538,6 +1539,9 @@ function updateTubeIcons(
   iconGroup.innerHTML = "";
 
   const iconSize = Math.max(r * 0.7, 3);
+  /** Lucide overlay icons: solid fill + larger than tube-relative `iconSize`. */
+  const arrowOverlaySize = Math.max(r * 2.1, 22);
+  const penOverlaySize = Math.max(r * 1.35, 14);
 
   // INSIDE TUBE — Repeat count
   if (repeatCount > 1) {
@@ -1554,63 +1558,42 @@ function updateTubeIcons(
     iconGroup.appendChild(text);
   }
 
-  // TOP — Last detected arrow (pointing down at tube)
+  // TOP — Last detected (Lucide `arrow-big-down` via iconify, not hand-drawn paths)
   if (isLastDetected) {
     const arrowGroup = document.createElementNS(
       "http://www.w3.org/2000/svg",
       "g",
     );
-    const arrowSize = Math.max(r * 1.2, 5);
-    const arrowX = cx;
-    const arrowTipY = cy - r - 1;
-    const arrowBaseY = arrowTipY - arrowSize;
-
-    const arrow = document.createElementNS(
-      "http://www.w3.org/2000/svg",
-      "polygon",
+    const bottomY = cy - r - 1;
+    arrowGroup.setAttribute(
+      "transform",
+      `translate(${cx - arrowOverlaySize / 2}, ${bottomY - arrowOverlaySize}) scale(${arrowOverlaySize / 24})`,
     );
-    arrow.setAttribute(
-      "points",
-      `${arrowX},${arrowTipY} ${arrowX - arrowSize * 0.7},${arrowBaseY} ${arrowX + arrowSize * 0.7},${arrowBaseY}`,
-    );
-    arrow.setAttribute("fill", "#ef4444");
-    arrow.setAttribute("stroke", "#fff");
-    arrow.setAttribute("stroke-width", "1");
-    arrowGroup.appendChild(arrow);
 
-    const stem = document.createElementNS("http://www.w3.org/2000/svg", "line");
-    stem.setAttribute("x1", String(arrowX));
-    stem.setAttribute("y1", String(arrowBaseY));
-    stem.setAttribute("x2", String(arrowX));
-    stem.setAttribute("y2", String(arrowBaseY - arrowSize * 0.6));
-    stem.setAttribute("stroke", "#ef4444");
-    stem.setAttribute("stroke-width", String(Math.max(arrowSize * 0.25, 1.5)));
-    stem.setAttribute("stroke-linecap", "round");
-    arrowGroup.appendChild(stem);
+    appendLucideIconToSvgGroup(arrowGroup, "arrow-big-down", {
+      stroke: "#ef4444",
+      variant: "solid",
+    });
 
     iconGroup.appendChild(arrowGroup);
   }
 
-  // RIGHT — Comment icon
+  // RIGHT — Comment indicator (Lucide icon from @iconify-json/lucide, see `appendLucideIconToSvgGroup`)
   if (hasComment) {
     const commentIcon = document.createElementNS(
       "http://www.w3.org/2000/svg",
       "g",
     );
-    const s = iconSize;
     commentIcon.setAttribute(
       "transform",
-      `translate(${cx + r + 1}, ${cy - s * 0.6})`,
+      `translate(${cx + r + 2}, ${cy - penOverlaySize * 0.55}) scale(${penOverlaySize / 24})`,
     );
 
-    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-    path.setAttribute(
-      "d",
-      `M0,0 h${s * 1.2} q${s * 0.3},0 ${s * 0.3},${s * 0.3} v${s * 0.5} q0,${s * 0.3} -${s * 0.3},${s * 0.3} h-${s * 0.5} l-${s * 0.3},${s * 0.3} v-${s * 0.3} h-${s * 0.1} q-${s * 0.3},0 -${s * 0.3},-${s * 0.3} v-${s * 0.5} q0,-${s * 0.3} ${s * 0.3},-${s * 0.3} z`,
-    );
-    path.setAttribute("fill", "#3b82f6");
-    path.setAttribute("opacity", "0.9");
-    commentIcon.appendChild(path);
+    appendLucideIconToSvgGroup(commentIcon, "pen", {
+      stroke: "#3b82f6",
+      opacity: "0.95",
+      variant: "solid",
+    });
 
     iconGroup.appendChild(commentIcon);
   }
