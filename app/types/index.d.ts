@@ -51,6 +51,8 @@ export interface Survey {
 
 export interface TubeSheet {
   _id: string
+  /** Work order identifier (e.g. OT/2526/1236); required when creating a new tube sheet */
+  workOrder?: string
   clientName: string
   type: string
   clientAddress: string

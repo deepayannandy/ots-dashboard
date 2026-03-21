@@ -43,7 +43,7 @@ export const useSurveyStore = defineStore('survey', () => {
       currentSurveyId.value = ''
       return data
     } catch (e) {
-      console.error('Failed to stop survey:', e)
+      console.error('Failed to complete phase:', e)
       throw e
     }
   }

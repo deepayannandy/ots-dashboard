@@ -64,9 +64,9 @@
           </UFieldGroup>
           <UButton
             v-if="!viewMode"
-            :label="loading ? 'Stop Survey' : 'Start Survey'"
+            :label="loading ? 'Complete Phase' : 'Start Survey'"
             color="primary"
-            :icon="loading ? 'i-lucide-stop-circle' : 'i-lucide-target'"
+            :icon="loading ? 'i-lucide-circle-check' : 'i-lucide-target'"
             :disabled="!selectedPhase"
             @click="loading ? openStopModal() : stratSurvey()"
           />
@@ -802,8 +802,8 @@
 
   <UModal
     v-model:open="stopModalOpen"
-    title="Stop Survey"
-    description="Are you sure you want to stop the survey?"
+    title="Complete Phase"
+    description="Are you sure you want to complete the phase?"
   >
     <template #footer>
       <div class="w-full flex justify-end items-center gap-4">
@@ -820,15 +820,47 @@
 
   <UModal v-model:open="successModalOpen" :title="successMessage">
     <template #body>
-      <p>The survey has been successfully stopped.</p>
+      <div class="space-y-4">
+        <p>The phase has been completed successfully.</p>
+        <template v-if="typeOfPhasesItems.length">
+          <div class="space-y-2">
+            <span class="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+              Start next phase
+            </span>
+            <USelectMenu
+              v-model="nextPhaseSelected"
+              placeholder="Select phase"
+              :items="typeOfPhasesItems"
+              value-key="value"
+              class="w-full"
+            />
+          </div>
+        </template>
+        <p
+          v-else
+          class="text-sm text-neutral-500 dark:text-neutral-400"
+        >
+          All phases for this tube sheet have been completed.
+        </p>
+      </div>
     </template>
     <template #footer>
-      <div class="w-full flex justify-end items-center gap-4">
+      <div
+        class="w-full flex flex-wrap justify-end items-center gap-3 sm:gap-4"
+      >
         <UButton
           label="Download Report"
           color="neutral"
           variant="outline"
           @click="downloadReport"
+        />
+        <UButton
+          v-if="typeOfPhasesItems.length"
+          label="Start next phase"
+          color="neutral"
+          variant="outline"
+          :disabled="!nextPhaseSelected"
+          @click="startNextPhaseFromModal"
         />
         <UButton label="Go back to home" color="primary" @click="goHome" />
       </div>
@@ -837,7 +869,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, watch } from "vue";
+import { ref, reactive, computed, watch, nextTick } from "vue";
 import type { Tube } from "@/types";
 import { useReactorsStore } from "@/stores/reactors";
 import { useSurveyStore } from "@/stores/survey";
@@ -883,6 +915,10 @@ const isRightOpen = ref(true);
 const stopModalOpen = ref(false);
 const successModalOpen = ref(false);
 const successMessage = ref("");
+/** Phase values already completed for this visit (toolbar + success modal exclude these). */
+const completedPhasesList = ref<string[]>([]);
+const nextPhaseSelected = ref<string>("");
+const route = useRoute();
 const { setConfig } = useReactorGenerator();
 
 const reactorId = useRoute().params?.reactorId as string;
@@ -1045,7 +1081,56 @@ const bodyClass = computed(() => {
     return `${base} ${gridLight} ${gridDark} ${bgLight} ${bgDark}`;
   }
 });
-// Computed property to get only phases from tubesheet details
+function addCompletedPhase(phaseValue: string) {
+  if (!phaseValue) return;
+  if (!completedPhasesList.value.includes(phaseValue)) {
+    completedPhasesList.value = [...completedPhasesList.value, phaseValue];
+  }
+}
+
+/** Optional: same shape as dashboard `phaseData` rows when API includes them on the tube sheet. */
+function mergeCompletedPhasesFromTubeSheetPayload(
+  data: Record<string, unknown> | null | undefined,
+) {
+  if (!data) return;
+  const rows = data.phaseData;
+  if (!Array.isArray(rows)) return;
+  for (const row of rows) {
+    if (!row || typeof row !== "object") continue;
+    const r = row as Record<string, unknown>;
+    const name = r.phaseName as string | undefined;
+    if (!name) continue;
+    const status = String(r.phaseStatus ?? "").toUpperCase();
+    const nested =
+      r.phaseData && typeof r.phaseData === "object"
+        ? (r.phaseData as Record<string, unknown>)
+        : null;
+    const phaseEnd = r.phaseEndTimeStamp ?? nested?.endTimeStamp;
+    const completed =
+      status === "COMPLETED" ||
+      status === "DONE" ||
+      (phaseEnd != null && String(phaseEnd) !== "");
+    if (completed) addCompletedPhase(name);
+  }
+}
+
+async function refreshTubeSheetDetails() {
+  if (!sheetId) return;
+  try {
+    const response = await useAxios().$get(
+      `/api/v2/tubeSheet/getSpecificTubeSheet/${sheetId}`,
+    );
+    tubeSheetDetails.value = response.data;
+    phasesData.value = response.phasesData || [];
+    mergeCompletedPhasesFromTubeSheetPayload(
+      response.data as Record<string, unknown>,
+    );
+  } catch (err) {
+    console.error("Failed to fetch tubesheet details:", err);
+  }
+}
+
+// Phases from tubesheet details, excluding completed phases
 const typeOfPhasesItems = computed(() => {
   if (
     !tubeSheetDetails.value?.typeOfPhases ||
@@ -1053,10 +1138,22 @@ const typeOfPhasesItems = computed(() => {
   ) {
     return [];
   }
-  return tubeSheetDetails.value.typeOfPhases.map((phaseValue: string) => {
-    const item = allTypeOfPhasesItems.find((p) => p.value === phaseValue);
-    return item || { label: phaseValue, value: phaseValue };
-  });
+  return tubeSheetDetails.value.typeOfPhases
+    .map((phaseValue: string) => {
+      const item = allTypeOfPhasesItems.find((p) => p.value === phaseValue);
+      return item || { label: phaseValue, value: phaseValue };
+    })
+    .filter(
+      (item: { label: string; value: string }) =>
+        !completedPhasesList.value.includes(item.value),
+    );
+});
+
+watch(successModalOpen, (open) => {
+  if (open) {
+    const items = typeOfPhasesItems.value;
+    nextPhaseSelected.value = items[0]?.value ?? "";
+  }
 });
 
 const getEquipmentTypeLabel = (value: string) => {
@@ -1737,21 +1834,38 @@ async function stratSurvey() {
       surveyType: selectedPhase.value,
       reactorId: reactorId,
     });
+    if (!data?.id) {
+      loading.value = false;
+      return;
+    }
     activeSurveyId.value = data.id;
+    await navigateTo({
+      path: route.path,
+      query: { ...route.query, surveyId: data.id, resumedJourney: "true" },
+    });
     // Call fetchUpdatedTubeColors immediately
-    await fetchUpdatedTubeColors(data.id || (activeSurveyId.value as string));
+    await fetchUpdatedTubeColors(data.id);
     // Then set interval for polling
     interval = setInterval(
-      () => fetchUpdatedTubeColors(data.id || (activeSurveyId.value as string)),
+      () => fetchUpdatedTubeColors(data.id),
       SURVEY_POLLING_INTERVAL,
     );
     if (data.Success) {
       useToast().add({ title: "Survey Started", color: "success" });
     }
   } catch {
-    // useToast().add({ title: 'Survey Started', color: 'success' })
     loading.value = false;
   }
+}
+
+async function startNextPhaseFromModal() {
+  if (!nextPhaseSelected.value) {
+    useToast().add({ title: "Please select a phase", color: "error" });
+    return;
+  }
+  successModalOpen.value = false;
+  selectedPhase.value = nextPhaseSelected.value;
+  await stratSurvey();
 }
 
 function openStopModal() {
@@ -1760,14 +1874,27 @@ function openStopModal() {
 
 async function stopSurvey() {
   try {
+    const phaseJustCompleted = selectedPhase.value;
     await useSurveyStore().stopSurvey(activeSurveyId.value as string);
     loading.value = false;
     if (interval) clearInterval(interval);
+    interval = null;
     stopModalOpen.value = false;
-    successMessage.value = "Survey is ended";
+    if (phaseJustCompleted) addCompletedPhase(phaseJustCompleted);
+    await refreshTubeSheetDetails();
+    await nextTick();
+    if (
+      !typeOfPhasesItems.value.some(
+        (i: { label: string; value: string }) =>
+          i.value === selectedPhase.value,
+      )
+    ) {
+      selectedPhase.value = typeOfPhasesItems.value[0]?.value ?? "";
+    }
+    successMessage.value = "Phase completed";
     successModalOpen.value = true;
   } catch {
-    useToast().add({ title: "Failed to stop survey", color: "error" });
+    useToast().add({ title: "Failed to complete phase", color: "error" });
   }
 }
 
@@ -1946,15 +2073,7 @@ onMounted(async () => {
   }
 
   if (sheetId) {
-    try {
-      const response = await useAxios().$get(
-        `/api/v2/tubeSheet/getSpecificTubeSheet/${sheetId}`,
-      );
-      tubeSheetDetails.value = response.data;
-      phasesData.value = response.phasesData || [];
-    } catch (err) {
-      console.error("Failed to fetch tubesheet details:", err);
-    }
+    await refreshTubeSheetDetails();
     const querySurveyId = (useRoute().query.surveyId ||
       useSurveyStore().currentSurveyId) as string | undefined;
     const resumedJourney = useRoute().query.resumedJourney;

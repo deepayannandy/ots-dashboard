@@ -48,8 +48,8 @@
                     <UBadge :color="getEquipmentTypeColor(equipment.type)" variant="soft" size="sm">
                       {{ formatEquipmentTypeLabel(equipment.type) }}
                     </UBadge>
-                    <UBadge :color="getSurveyRunStatusColor(equipment.equipmentStatus)" variant="subtle" size="sm">
-                      {{ formatEquipmentStatus(equipment.equipmentStatus) }}
+                    <UBadge color="neutral" variant="subtle" size="sm">
+                      {{ equipment.equipmentStatus }}
                     </UBadge>
                   </div>
                   <p class="text-sm text-neutral-500">
@@ -103,11 +103,18 @@
                   </div>
                   <div class="flex items-center gap-1.5">
                     <UIcon name="i-lucide-clock" class="size-4" />
-                    <span>Started: {{ formatDateTime(equipment.projectStartTime) }}</span>
+                    <span>Start: {{ formatDateTime(equipment.startTime) }}</span>
+                  </div>
+                  <div
+                    v-if="equipment.endTime"
+                    class="flex items-center gap-1.5"
+                  >
+                    <UIcon name="i-lucide-flag" class="size-4" />
+                    <span>End: {{ formatDateTime(equipment.endTime) }}</span>
                   </div>
                   <div class="flex items-center gap-1.5">
                     <UIcon name="i-lucide-activity" class="size-4" />
-                    <span>Last Update: {{ formatDateTime(equipment.lastUpdatedTime) }}</span>
+                    <span>Updated: {{ formatDateTime(equipment.lastUpdatedTime) }}</span>
                   </div>
                 </div>
               </div>
@@ -116,17 +123,10 @@
 
           <!-- Phases Timeline -->
           <div class="py-4">
-            <div class="flex items-center justify-between mb-6">
+            <div class="mb-6">
               <h4 class="text-sm font-medium text-neutral-700 dark:text-neutral-300">
                 Process Flow Status
               </h4>
-              <UBadge
-                v-if="equipment.phases.length"
-                :color="getOverallStatusColor(equipment.phases)"
-                variant="subtle"
-              >
-                {{ getOverallStatus(equipment.phases) }}
-              </UBadge>
             </div>
 
             <p
@@ -144,7 +144,7 @@
               <!-- Timeline Progress -->
               <div
                 class="absolute top-5 left-0 h-0.5 bg-primary transition-all duration-500"
-                :style="{ width: getTimelineProgress(equipment.phases) + '%' }"
+                :style="{ width: getTimelineProgress(equipment) + '%' }"
               />
 
               <!-- Timeline Points -->
@@ -175,23 +175,26 @@
                         <div class="space-y-1.5 text-xs">
                           <div class="flex justify-between gap-4">
                             <span class="text-neutral-500 dark:text-neutral-400">Status:</span>
-                            <span class="font-medium text-neutral-900 dark:text-white">{{ formatPhaseStatus(phase.phaseStatus) }}</span>
+                            <span class="font-medium text-neutral-900 dark:text-white">{{ phase.phaseStatus }}</span>
                           </div>
                           <div class="flex justify-between gap-4">
                             <span class="text-neutral-500 dark:text-neutral-400">Progress:</span>
-                            <span class="font-medium text-neutral-900 dark:text-white">{{ phase.progress !== null ? phase.progress + '%' : '—' }}</span>
+                            <span class="font-medium text-neutral-900 dark:text-white">{{ phase.progress !== null && phase.progress !== undefined ? phase.progress + '%' : '—' }}</span>
                           </div>
                           <div class="flex justify-between gap-4">
-                            <span class="text-neutral-500 dark:text-neutral-400">Started:</span>
+                            <span class="text-neutral-500 dark:text-neutral-400">Start:</span>
                             <span class="font-medium text-neutral-900 dark:text-white">{{ phase.phaseStartTime ? formatDateTime(phase.phaseStartTime) : '-' }}</span>
                           </div>
-                          <div class="flex justify-between gap-4">
-                            <span class="text-neutral-500 dark:text-neutral-400">Last Update:</span>
-                            <span class="font-medium text-neutral-900 dark:text-white">{{ phase.lastUpdatedTime ? formatDateTime(phase.lastUpdatedTime) : '-' }}</span>
+                          <div
+                            v-if="phase.endTime"
+                            class="flex justify-between gap-4"
+                          >
+                            <span class="text-neutral-500 dark:text-neutral-400">End:</span>
+                            <span class="font-medium text-neutral-900 dark:text-white">{{ formatDateTime(phase.endTime) }}</span>
                           </div>
                           <div class="flex justify-between gap-4">
-                            <span class="text-neutral-500 dark:text-neutral-400">End Time:</span>
-                            <span class="font-medium text-neutral-900 dark:text-white">{{ phase.endTime ? formatDateTime(phase.endTime) : '-' }}</span>
+                            <span class="text-neutral-500 dark:text-neutral-400">Updated:</span>
+                            <span class="font-medium text-neutral-900 dark:text-white">{{ phase.lastUpdatedTime ? formatDateTime(phase.lastUpdatedTime) : '-' }}</span>
                           </div>
                           <div v-if="phase.surveyID" class="pt-2 mt-2 border-t border-neutral-200 dark:border-neutral-700">
                             <span class="text-neutral-500 dark:text-neutral-400">Survey ID:</span>
@@ -207,7 +210,10 @@
                     <p class="text-xs font-medium text-neutral-700 dark:text-neutral-300 leading-tight">
                       {{ phase.phaseName }}
                     </p>
-                    <div v-if="phase.progress !== null && phase.progress !== 100" class="mt-1.5">
+                    <p class="text-[10px] text-neutral-500 mt-0.5 leading-tight break-words">
+                      {{ phase.phaseStatus }}
+                    </p>
+                    <div v-if="phase.progress !== null && phase.progress !== undefined" class="mt-1.5">
                       <UProgress
                         :model-value="phase.progress"
                         size="xs"
@@ -216,15 +222,6 @@
                       />
                       <span class="text-xs text-neutral-500 mt-0.5">{{ phase.progress }}%</span>
                     </div>
-                    <UBadge
-                      v-else-if="phase.progress === 100"
-                      color="success"
-                      variant="soft"
-                      size="xs"
-                      class="mt-1.5"
-                    >
-                      Complete
-                    </UBadge>
                   </div>
                 </div>
               </div>
@@ -239,7 +236,6 @@
 <script setup lang="ts">
 import {
   mapDashboardApiToView,
-  formatEquipmentStatus,
   resolveReportSurveyId,
   type DashboardEquipmentView,
   type DashboardPhaseView
@@ -311,25 +307,6 @@ function getEquipmentTypeColor(type: string): 'primary' | 'info' | 'warning' | '
   return colors[type] || 'neutral'
 }
 
-function getSurveyRunStatusColor(status: string): 'success' | 'primary' | 'neutral' | 'warning' {
-  const s = status.toLowerCase()
-  if (s === 'ongoing') return 'primary'
-  if (s === 'notstarted') return 'neutral'
-  if (s === 'completed') return 'success'
-  return 'warning'
-}
-
-function formatPhaseStatus(status: string): string {
-  const map: Record<string, string> = {
-    NotStarted: 'Not started',
-    Completed: 'Completed',
-    OnGoing: 'Ongoing',
-    InProgress: 'In progress'
-  }
-  if (map[status]) return map[status]
-  return status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
-}
-
 // Format date time
 function formatDateTime(dateStr: string | null): string {
   if (!dateStr) return '-'
@@ -342,24 +319,21 @@ function formatDateTime(dateStr: string | null): string {
   })
 }
 
-// Get phase icon based on status
+// Get phase icon from API progress when present
 function getPhaseIcon(phase: DashboardPhaseView): string {
-  if (phase.progress === 100) return 'i-lucide-check'
-  if (phase.progress !== null && phase.progress > 0) return 'i-lucide-loader-2'
-  if (phase.phaseName === 'Idle Time') return 'i-lucide-pause'
+  const p = phase.progress
+  if (p !== null && p !== undefined && p >= 100) return 'i-lucide-check'
+  if (p !== null && p !== undefined && p > 0) return 'i-lucide-loader-2'
   return 'i-lucide-circle'
 }
 
-// Get phase icon classes based on status
 function getPhaseIconClasses(phase: DashboardPhaseView): string {
-  if (phase.progress === 100) {
+  const p = phase.progress
+  if (p !== null && p !== undefined && p >= 100) {
     return 'bg-green-500 border-green-500 text-white'
   }
-  if (phase.progress !== null && phase.progress > 0) {
+  if (p !== null && p !== undefined && p > 0) {
     return 'bg-primary border-primary text-white animate-pulse'
-  }
-  if (phase.phaseName === 'Idle Time' && phase.endTime) {
-    return 'bg-amber-500 border-amber-500 text-white'
   }
   return 'bg-white dark:bg-neutral-800 border-neutral-300 dark:border-neutral-600 text-neutral-400'
 }
@@ -371,47 +345,15 @@ function getProgressColor(progress: number): 'primary' | 'success' | 'warning' {
   return 'warning'
 }
 
-// Calculate timeline progress percentage
-function getTimelineProgress(phases: DashboardPhaseView[]): number {
+/** Timeline bar: average of each phase’s `phaseData.progress` (only phases that report a number). */
+function getTimelineProgress(equipment: DashboardEquipmentView): number {
+  const phases = equipment.phases
   if (!phases.length) return 0
-
-  let completedSteps = 0
-  for (const phase of phases) {
-    if (phase.progress === 100) {
-      completedSteps += 1
-    } else if (phase.progress !== null && phase.progress > 0) {
-      completedSteps += phase.progress / 100
-      break
-    } else if (phase.phaseName === 'Idle Time' && phase.endTime) {
-      completedSteps += 1
-    } else {
-      break
-    }
-  }
-
-  return (completedSteps / phases.length) * 100
-}
-
-// Get overall status text
-function getOverallStatus(phases: DashboardPhaseView[]): string {
-  const allComplete = phases.every(p => p.progress === 100 || (p.phaseName === 'Idle Time' && p.endTime))
-  if (allComplete) return 'Completed'
-
-  const hasInProgress = phases.some(p => p.progress !== null && p.progress > 0 && p.progress < 100)
-  if (hasInProgress) return 'In Progress'
-
-  const hasStarted = phases.some(p => p.progress !== null && p.progress > 0)
-  if (hasStarted) return 'In Progress'
-
-  return 'Pending'
-}
-
-// Get overall status color
-function getOverallStatusColor(phases: DashboardPhaseView[]): 'success' | 'primary' | 'neutral' {
-  const status = getOverallStatus(phases)
-  if (status === 'Completed') return 'success'
-  if (status === 'In Progress') return 'primary'
-  return 'neutral'
+  const nums = phases
+    .map(p => p.progress)
+    .filter((n): n is number => n !== null && n !== undefined && !Number.isNaN(n))
+  if (!nums.length) return 0
+  return nums.reduce((a, b) => a + b, 0) / nums.length
 }
 
 onMounted(() => {

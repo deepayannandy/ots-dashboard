@@ -21,6 +21,8 @@ export interface DashboardApiPhaseNested {
   _id: string
   updatedAt?: string
   endTimeStamp?: string
+  /** 0–100 from API */
+  progress?: number | null
   [key: string]: unknown
 }
 
@@ -51,8 +53,9 @@ export interface DashboardApiRow {
 export interface DashboardPhaseView {
   phaseId: string
   phaseName: string
-  /** API phase status, e.g. Completed, NotStarted, OnGoing */
+  /** Raw API phase status string */
   phaseStatus: string
+  /** 0–100 from `phaseData.progress` only; null if no nested phaseData / progress */
   progress: number | null
   phaseStartTime: string | null
   lastUpdatedTime: string | null
@@ -66,11 +69,13 @@ export interface DashboardEquipmentView {
   type: string
   clientName: string
   clientAddress: string
-  projectStartTime: string
+  /** Survey run start — from API start time only (not createdAt) */
+  startTime: string | null
   lastUpdatedTime: string
   endTime: string | null
   woId: string
   phases: DashboardPhaseView[]
+  /** Raw API status string */
   equipmentStatus: string
   reactorId?: string
   tubeSheetId: string | null
@@ -88,11 +93,13 @@ export function getPhaseDisplayName(phaseName: string): string {
   return formatPhaseKeyAsLabel(phaseName)
 }
 
-export function phaseStatusToProgress(phaseStatus: string): number | null {
-  const s = phaseStatus.toLowerCase().replace(/\s+/g, '')
-  if (s === 'completed') return 100
-  if (s === 'notstarted') return null
-  if (s === 'ongoing' || s === 'inprogress') return 50
+export function parseProgressValue(v: unknown): number | null {
+  if (v === null || v === undefined) return null
+  if (typeof v === 'number' && !Number.isNaN(v)) return v
+  if (typeof v === 'string' && v.trim() !== '') {
+    const n = Number(v)
+    if (!Number.isNaN(n)) return n
+  }
   return null
 }
 
@@ -103,18 +110,20 @@ export function mapDashboardApiToView(rows: DashboardApiRow[]): DashboardEquipme
       const ts = row.tubeSheet
       const phases: DashboardPhaseView[] = (row.phaseData ?? []).map(p => {
         const nested = p.phaseData
-        const progress = phaseStatusToProgress(p.phaseStatus)
+        const progress = nested ? parseProgressValue(nested.progress) : null
         return {
           phaseId: p._id,
           phaseName: getPhaseDisplayName(p.phaseName),
           phaseStatus: p.phaseStatus,
           progress,
           phaseStartTime: p.phaseStartTimeStamp ?? null,
-          lastUpdatedTime: (nested?.updatedAt as string | undefined) ?? p.phaseEndTimeStamp ?? null,
+          lastUpdatedTime: (nested?.updatedAt as string | undefined) ?? null,
           endTime: p.phaseEndTimeStamp ?? (nested?.endTimeStamp as string | undefined) ?? null,
           surveyID: nested?._id ?? null
         }
       })
+
+      const startTime = row.startTimeStamp ?? null
 
       return {
         id: row._id,
@@ -122,7 +131,7 @@ export function mapDashboardApiToView(rows: DashboardApiRow[]): DashboardEquipme
         type: ts?.type ?? 'UNKNOWN',
         clientName: ts?.clientName?.trim() ? ts.clientName : '—',
         clientAddress: ts?.clientAddress?.trim() ? ts.clientAddress : '—',
-        projectStartTime: ts?.projectStartDate ?? row.startTimeStamp ?? row.createdAt,
+        startTime,
         lastUpdatedTime: row.updatedAt,
         endTime: row.endTimeStamp ?? null,
         woId: row.workOrderId,
@@ -150,12 +159,3 @@ export function resolveReportSurveyId(equipment: DashboardEquipmentView): string
   return best?.id ?? null
 }
 
-export function formatEquipmentStatus(status: string): string {
-  const map: Record<string, string> = {
-    OnGoing: 'Ongoing',
-    NotStarted: 'Not started',
-    Completed: 'Completed'
-  }
-  if (map[status]) return map[status]
-  return status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
-}

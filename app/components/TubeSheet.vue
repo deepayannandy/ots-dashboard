@@ -26,6 +26,17 @@
         </UFieldGroup>
         <UFieldGroup class="grid grid-cols-2  w-full">
           <div variant="outline" class="text-xl">
+            WO — Work order <span class="text-error">*</span>
+          </div>
+          <UInput
+            v-model="localState.workOrder"
+            placeholder="e.g. OT/2526/1236"
+            required
+            autocomplete="off"
+          />
+        </UFieldGroup>
+        <UFieldGroup class="grid grid-cols-2  w-full">
+          <div variant="outline" class="text-xl">
             Equipment Type
           </div>
           <USelect v-model="localState.type" :items="tubeSheetTypeItems" :disabled="isCloneing" />
@@ -145,6 +156,7 @@
     <!-- Info -->
     <div class="space-y-1 text-xs text-neutral-600 dark:text-neutral-400">
       <p><span class="font-medium">Equipment ID:</span> {{ localState.equipmentId || 'N/A' }}</p>
+      <p><span class="font-medium">WO:</span> {{ localState.workOrder || 'N/A' }}</p>
       <p><span class="font-medium">Type:</span> {{ getEquipmentTypeLabel(localState.type as string | undefined) }}</p>
       <p><span class="font-medium">Site:</span> {{ localState.clientAddress }}</p>
       <p><span class="font-medium">Material:</span> {{ localState.material || 'N/A' }}</p>
@@ -383,7 +395,24 @@ const handleCardClick = () => {
 }
 
 const handleSubmit = () => {
-  if (!localState.clientName || !localState.clientAddress) return alert('Enter all fields')
+  const wo = (localState.workOrder ?? '').trim()
+  if (!localState.clientName?.trim() || !localState.clientAddress?.trim()) {
+    useToast().add({
+      title: 'Missing fields',
+      description: 'Client name and address are required.',
+      color: 'error'
+    })
+    return
+  }
+  if (!wo) {
+    useToast().add({
+      title: 'Work order required',
+      description: 'Enter a work order (WO).',
+      color: 'error'
+    })
+    return
+  }
+  localState.workOrder = wo
 
   // Create a clean payload with valid dates in ISO format
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -428,12 +457,14 @@ const primaryActionLabel = (status?: string) => {
 const handleReset = () => {
   if (isCloneing.value) {
     localState.equipmentId = ''
+    localState.workOrder = ''
     localState.clientName = ''
     localState.clientAddress = ''
     localState.projectStartDate = undefined
     return
   }
   localState.equipmentId = ''
+  localState.workOrder = ''
   localState.type = ''
   localState.typeOfPhases = []
   localState.clientName = ''
