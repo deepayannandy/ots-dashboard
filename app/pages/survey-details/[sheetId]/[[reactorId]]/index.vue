@@ -743,6 +743,50 @@
               <UTabs :items="tabs" class="w-full">
                 <template #content="{ item }">
                   <UTable
+                    v-if="item.label === 'Error logs'"
+                    :data="displayedErrorLogs"
+                    :columns="errorLogColumns"
+                    class="flex-1 max-h-[312px]"
+                    :rows="10"
+                    sticky="header"
+                  >
+                    <template #activity-cell="{ row }">
+                      <span
+                        class="block max-w-[200px] whitespace-normal break-words text-xs"
+                      >
+                        {{ row.original?.activity }}
+                      </span>
+                    </template>
+                    <template #action-cell="{ row }">
+                      <UFieldGroup>
+                        <UButton
+                          v-if="searchValue !== row.original?.tube"
+                          size="xs"
+                          color="primary"
+                          variant="outline"
+                          label="Locate"
+                          @click="
+                            searchValue = row.original?.tube;
+                            searchTubes();
+                          "
+                        />
+                        <UButton
+                          v-if="searchValue === row.original?.tube"
+                          size="xs"
+                          color="error"
+                          variant="outline"
+                          label="Reset"
+                          @click="
+                            searchValue = '';
+                            deselectAll();
+                            resetView();
+                          "
+                        />
+                      </UFieldGroup>
+                    </template>
+                  </UTable>
+                  <UTable
+                    v-else
                     :data="
                       item.label === 'Progress'
                         ? viewDisplay === 'Back View'
@@ -892,6 +936,7 @@ import {
 } from "chart.js";
 import type { TooltipItem } from "chart.js";
 import { SURVEY_POLLING_INTERVAL } from "@/types/constants";
+import type { TableColumn } from "@nuxt/ui";
 
 type TubeDataTable = {
   tube: string;
@@ -1053,6 +1098,47 @@ const tabs = [
     label: "Repeat",
     icon: "i-lucide-refresh-ccw",
   },
+  {
+    label: "Error logs",
+    icon: "i-lucide-alert-triangle",
+  },
+];
+
+type SurveyErrorLogApi = {
+  tubeId: number;
+  tubeIdAsperLayout: string;
+  activity: string;
+  color: string;
+  timeStamp: string;
+  isDetected?: boolean;
+  face?: string;
+};
+
+type ErrorLogTableRow = {
+  tube: string;
+  activity: string;
+  time: string;
+  face: string;
+  color: string;
+};
+
+const errorLogsRows = ref<ErrorLogTableRow[]>([]);
+
+const displayedErrorLogs = computed(() => {
+  const rows = errorLogsRows.value;
+  if (viewDisplay.value === "Back View") {
+    return rows.filter((r) => r.face === "back");
+  }
+  return rows.filter((r) => r.face !== "back");
+});
+
+const errorLogColumns: TableColumn<ErrorLogTableRow>[] = [
+  { accessorKey: "tube", header: "Tube" },
+  { accessorKey: "activity", header: "Activity" },
+  { accessorKey: "time", header: "Time" },
+  { accessorKey: "face", header: "Face" },
+  { accessorKey: "color", header: "Color" },
+  { id: "action", header: "Action" },
 ];
 
 const pageUi = computed(() => ({
@@ -2108,6 +2194,10 @@ watch(viewDisplay, () => {
 async function fetchUpdatedTubeColors(surveyId: string) {
   try {
     const idToUse = surveyId || activeSurveyId.value;
+    const surveyPayload =
+      (idToUse
+        ? await useSurveyStore().getSurveyUpdates(idToUse)
+        : await useSurveyStore().getSurveyUpdates()) ?? {};
     const {
       data,
       surveyType,
@@ -2116,10 +2206,36 @@ async function fetchUpdatedTubeColors(surveyId: string) {
       progress,
       endTimeStamp,
       comments,
-    } = idToUse
-      ? await useSurveyStore().getSurveyUpdates(idToUse)
-      : await useSurveyStore().getSurveyUpdates();
-    repeatCount.value = repeat || 0;
+      errorLogs,
+    } = surveyPayload as Record<string, unknown>;
+    repeatCount.value = (repeat as number) || 0;
+
+    if (Array.isArray(errorLogs)) {
+      errorLogsRows.value = [...errorLogs]
+        .sort((a, b) => {
+          const ta = new Date(
+            (a as SurveyErrorLogApi).timeStamp ?? 0,
+          ).getTime();
+          const tb = new Date(
+            (b as SurveyErrorLogApi).timeStamp ?? 0,
+          ).getTime();
+          return tb - ta;
+        })
+        .map((entry) => {
+          const item = entry as SurveyErrorLogApi;
+          return {
+            tube: item.tubeIdAsperLayout ?? String(item.tubeId),
+            activity: item.activity ?? "",
+            time: item.timeStamp
+              ? new Date(item.timeStamp).toLocaleString()
+              : "",
+            face: (item.face || "front").toLowerCase(),
+            color: item.color ?? "",
+          };
+        });
+    } else {
+      errorLogsRows.value = [];
+    }
 
     // Record API call time
     apiCallTime.value = new Date();
@@ -2151,7 +2267,7 @@ async function fetchUpdatedTubeColors(surveyId: string) {
     let latestTimestamp = 0;
     let latestFace = "front";
 
-    data.forEach(
+    (data ?? []).forEach(
       (element: {
         tubeId: string | number;
         color: string;
