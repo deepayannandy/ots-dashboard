@@ -30,7 +30,7 @@
       <div v-else class="space-y-6 p-4">
         <UCard
           v-for="equipment in dashboardData"
-          :key="equipment.equipmentId"
+          :key="equipment.id"
           variant="outline"
           class="overflow-hidden"
         >
@@ -41,12 +41,15 @@
                   <UIcon name="i-lucide-cylinder" class="size-5" />
                 </div>
                 <div>
-                  <div class="flex items-center gap-2">
+                  <div class="flex flex-wrap items-center gap-2">
                     <h3 class="font-semibold text-lg">
                       {{ equipment.equipmentId }}
                     </h3>
                     <UBadge :color="getEquipmentTypeColor(equipment.type)" variant="soft" size="sm">
-                      {{ formatEquipmentType(equipment.type) }}
+                      {{ formatEquipmentTypeLabel(equipment.type) }}
+                    </UBadge>
+                    <UBadge :color="getSurveyRunStatusColor(equipment.equipmentStatus)" variant="subtle" size="sm">
+                      {{ formatEquipmentStatus(equipment.equipmentStatus) }}
                     </UBadge>
                   </div>
                   <p class="text-sm text-neutral-500">
@@ -54,18 +57,58 @@
                   </p>
                 </div>
               </div>
-              <div class="flex flex-col items-end gap-1 text-sm text-neutral-500">
-                <div class="flex items-center gap-1.5">
-                  <UIcon name="i-lucide-file-text" class="size-4" />
-                  <span>WO: {{ equipment.woId }}</span>
+              <div class="flex flex-col items-end gap-2 text-sm text-neutral-500">
+                <div
+                  v-if="equipment.tubeSheetId && equipment.reactorId"
+                  class="flex flex-wrap items-center justify-end gap-2"
+                >
+                  <NuxtLink
+                    :to="`/survey-details/${equipment.tubeSheetId}/${equipment.reactorId}`"
+                    class="inline-flex"
+                  >
+                    <UButton
+                      icon="i-lucide-external-link"
+                      color="primary"
+                      variant="soft"
+                      size="xs"
+                    >
+                      Open survey
+                    </UButton>
+                  </NuxtLink>
+                  <UButton
+                    icon="i-lucide-download"
+                    color="neutral"
+                    variant="soft"
+                    size="xs"
+                    @click="downloadReport(equipment)"
+                  >
+                    Download report
+                  </UButton>
                 </div>
-                <div class="flex items-center gap-1.5">
-                  <UIcon name="i-lucide-clock" class="size-4" />
-                  <span>Started: {{ formatDateTime(equipment.projectStartTime) }}</span>
-                </div>
-                <div class="flex items-center gap-1.5">
-                  <UIcon name="i-lucide-activity" class="size-4" />
-                  <span>Last Update: {{ formatDateTime(equipment.lastUpdatedTime) }}</span>
+                <UButton
+                  v-else
+                  icon="i-lucide-download"
+                  color="neutral"
+                  variant="soft"
+                  size="xs"
+                  disabled
+                  title="Tube sheet and reactor are required to build a report"
+                >
+                  Download report
+                </UButton>
+                <div class="flex flex-col items-end gap-1">
+                  <div class="flex items-center gap-1.5">
+                    <UIcon name="i-lucide-file-text" class="size-4" />
+                    <span>WO: {{ equipment.woId }}</span>
+                  </div>
+                  <div class="flex items-center gap-1.5">
+                    <UIcon name="i-lucide-clock" class="size-4" />
+                    <span>Started: {{ formatDateTime(equipment.projectStartTime) }}</span>
+                  </div>
+                  <div class="flex items-center gap-1.5">
+                    <UIcon name="i-lucide-activity" class="size-4" />
+                    <span>Last Update: {{ formatDateTime(equipment.lastUpdatedTime) }}</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -77,13 +120,24 @@
               <h4 class="text-sm font-medium text-neutral-700 dark:text-neutral-300">
                 Process Flow Status
               </h4>
-              <UBadge :color="getOverallStatusColor(equipment.phases)" variant="subtle">
+              <UBadge
+                v-if="equipment.phases.length"
+                :color="getOverallStatusColor(equipment.phases)"
+                variant="subtle"
+              >
                 {{ getOverallStatus(equipment.phases) }}
               </UBadge>
             </div>
 
+            <p
+              v-if="equipment.phases.length === 0"
+              class="text-sm text-neutral-500 py-4"
+            >
+              No phases configured for this run.
+            </p>
+
             <!-- Horizontal Timeline -->
-            <div class="relative">
+            <div v-else class="relative">
               <!-- Timeline Line -->
               <div class="absolute top-5 left-0 right-0 h-0.5 bg-neutral-200 dark:bg-neutral-700" />
 
@@ -96,8 +150,8 @@
               <!-- Timeline Points -->
               <div class="relative flex justify-between">
                 <div
-                  v-for="(phase, index) in equipment.phases"
-                  :key="index"
+                  v-for="phase in equipment.phases"
+                  :key="phase.phaseId"
                   class="flex flex-col items-center"
                   :style="{ width: 100 / equipment.phases.length + '%' }"
                 >
@@ -120,8 +174,12 @@
                         </p>
                         <div class="space-y-1.5 text-xs">
                           <div class="flex justify-between gap-4">
+                            <span class="text-neutral-500 dark:text-neutral-400">Status:</span>
+                            <span class="font-medium text-neutral-900 dark:text-white">{{ formatPhaseStatus(phase.phaseStatus) }}</span>
+                          </div>
+                          <div class="flex justify-between gap-4">
                             <span class="text-neutral-500 dark:text-neutral-400">Progress:</span>
-                            <span class="font-medium text-neutral-900 dark:text-white">{{ phase.progress !== null ? phase.progress + '%' : 'Not Started' }}</span>
+                            <span class="font-medium text-neutral-900 dark:text-white">{{ phase.progress !== null ? phase.progress + '%' : '—' }}</span>
                           </div>
                           <div class="flex justify-between gap-4">
                             <span class="text-neutral-500 dark:text-neutral-400">Started:</span>
@@ -179,39 +237,27 @@
 </template>
 
 <script setup lang="ts">
-interface Phase {
-  phaseName: string
-  progress: number | null
-  phaseStartTime: string | null
-  lastUpdatedTime: string | null
-  endTime: string | null
-  surveyID?: string | null
-}
-
-interface DashboardEquipment {
-  equipmentId: string
-  type: string
-  clientName: string
-  clientAddress: string
-  projectStartTime: string
-  lastUpdatedTime: string
-  endTime: string | null
-  woId: string
-  phases: Phase[]
-}
+import {
+  mapDashboardApiToView,
+  formatEquipmentStatus,
+  resolveReportSurveyId,
+  type DashboardEquipmentView,
+  type DashboardPhaseView
+} from '@/utils/dashboardApi'
 
 const axios = useAxios()
 const toast = useToast()
+const { openReportFromDashboard } = usePdfReport()
 
-const dashboardData = ref<DashboardEquipment[]>([])
+const dashboardData = ref<DashboardEquipmentView[]>([])
 const isLoading = ref(false)
 
 async function fetchDashboardData() {
   isLoading.value = true
   try {
     const response = await axios.get('/api/v2/dashboard/getDashboardData')
-    if (response.data?.Success) {
-      dashboardData.value = response.data.data
+    if (response.data?.Success && Array.isArray(response.data.data)) {
+      dashboardData.value = mapDashboardApiToView(response.data.data)
     }
   } catch (error: unknown) {
     toast.add({
@@ -224,19 +270,64 @@ async function fetchDashboardData() {
   }
 }
 
-// Format equipment type for display
-function formatEquipmentType(type: string): string {
+function downloadReport(equipment: DashboardEquipmentView) {
+  if (!equipment.tubeSheetId || !equipment.reactorId) {
+    toast.add({
+      title: 'Cannot open report',
+      description: 'This run needs a tube sheet and reactor.',
+      color: 'warning'
+    })
+    return
+  }
+  const surveyId = resolveReportSurveyId(equipment)
+  openReportFromDashboard({
+    sheetId: equipment.tubeSheetId,
+    reactorId: equipment.reactorId,
+    surveyId
+  })
+  toast.add({
+    title: 'Report opened',
+    description: surveyId
+      ? 'Use Print / Save as PDF in the new tab to download.'
+      : 'Condensed report — use Print / Save as PDF in the new tab.',
+    color: 'success'
+  })
+}
+
+// Format equipment type for display (tube sheet type)
+function formatEquipmentTypeLabel(type: string): string {
+  if (type === 'UNKNOWN') return 'No tube sheet'
   return type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
 }
 
 // Get color based on equipment type
 function getEquipmentTypeColor(type: string): 'primary' | 'info' | 'warning' | 'neutral' {
+  if (type === 'UNKNOWN') return 'neutral'
   const colors: Record<string, 'primary' | 'info' | 'warning' | 'neutral'> = {
     HEAT_EXCHANGER: 'primary',
     REACTOR: 'info',
     VESSEL: 'warning'
   }
   return colors[type] || 'neutral'
+}
+
+function getSurveyRunStatusColor(status: string): 'success' | 'primary' | 'neutral' | 'warning' {
+  const s = status.toLowerCase()
+  if (s === 'ongoing') return 'primary'
+  if (s === 'notstarted') return 'neutral'
+  if (s === 'completed') return 'success'
+  return 'warning'
+}
+
+function formatPhaseStatus(status: string): string {
+  const map: Record<string, string> = {
+    NotStarted: 'Not started',
+    Completed: 'Completed',
+    OnGoing: 'Ongoing',
+    InProgress: 'In progress'
+  }
+  if (map[status]) return map[status]
+  return status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
 }
 
 // Format date time
@@ -252,7 +343,7 @@ function formatDateTime(dateStr: string | null): string {
 }
 
 // Get phase icon based on status
-function getPhaseIcon(phase: Phase): string {
+function getPhaseIcon(phase: DashboardPhaseView): string {
   if (phase.progress === 100) return 'i-lucide-check'
   if (phase.progress !== null && phase.progress > 0) return 'i-lucide-loader-2'
   if (phase.phaseName === 'Idle Time') return 'i-lucide-pause'
@@ -260,7 +351,7 @@ function getPhaseIcon(phase: Phase): string {
 }
 
 // Get phase icon classes based on status
-function getPhaseIconClasses(phase: Phase): string {
+function getPhaseIconClasses(phase: DashboardPhaseView): string {
   if (phase.progress === 100) {
     return 'bg-green-500 border-green-500 text-white'
   }
@@ -281,7 +372,7 @@ function getProgressColor(progress: number): 'primary' | 'success' | 'warning' {
 }
 
 // Calculate timeline progress percentage
-function getTimelineProgress(phases: Phase[]): number {
+function getTimelineProgress(phases: DashboardPhaseView[]): number {
   if (!phases.length) return 0
 
   let completedSteps = 0
@@ -302,7 +393,7 @@ function getTimelineProgress(phases: Phase[]): number {
 }
 
 // Get overall status text
-function getOverallStatus(phases: Phase[]): string {
+function getOverallStatus(phases: DashboardPhaseView[]): string {
   const allComplete = phases.every(p => p.progress === 100 || (p.phaseName === 'Idle Time' && p.endTime))
   if (allComplete) return 'Completed'
 
@@ -316,7 +407,7 @@ function getOverallStatus(phases: Phase[]): string {
 }
 
 // Get overall status color
-function getOverallStatusColor(phases: Phase[]): 'success' | 'primary' | 'neutral' {
+function getOverallStatusColor(phases: DashboardPhaseView[]): 'success' | 'primary' | 'neutral' {
   const status = getOverallStatus(phases)
   if (status === 'Completed') return 'success'
   if (status === 'In Progress') return 'primary'
