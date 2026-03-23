@@ -164,13 +164,15 @@
             <div v-else class="relative">
               <!-- Timeline Line -->
               <div
-                class="absolute top-5 left-0 right-0 h-0.5 bg-neutral-200 dark:bg-neutral-700"
+                class="absolute top-5 left-0 right-0 h-0.5 bg-neutral-300 dark:bg-neutral-600"
               />
 
               <!-- Timeline Progress -->
               <div
-                class="absolute top-5 left-0 h-0.5 bg-primary transition-all duration-500"
-                :style="{ width: getTimelineProgress(equipment) + '%' }"
+                class="absolute top-5 left-0 h-0.5 bg-green-500 transition-all duration-500"
+                :style="{
+                  width: getTimelineProgressPercentage(equipment.phases) + '%',
+                }"
               />
 
               <!-- Timeline Points -->
@@ -295,7 +297,9 @@
                     </p>
                     <div
                       v-if="
-                        phase.progress !== null && phase.progress !== undefined
+                        phase.phaseStatus !== 'NotStarted' &&
+                        phase.progress !== null &&
+                        phase.progress !== undefined
                       "
                       class="mt-1.5"
                     >
@@ -324,6 +328,7 @@
 import {
   mapDashboardApiToView,
   resolveReportSurveyId,
+  getTimelineProgressPercentage,
   type DashboardEquipmentView,
   type DashboardPhaseView,
 } from "@/utils/dashboardApi";
@@ -410,6 +415,7 @@ function formatDateTime(dateStr: string | null): string {
 
 // Get phase icon from effective progress
 function getPhaseIcon(phase: DashboardPhaseView): string {
+  if (phase.phaseStatus === "NotStarted") return "i-lucide-circle";
   const p = phase.effectiveProgress;
   if (p !== null && p !== undefined && p >= 100) return "i-lucide-check";
   if (p !== null && p !== undefined && p > 0) return "i-lucide-loader-2";
@@ -417,6 +423,9 @@ function getPhaseIcon(phase: DashboardPhaseView): string {
 }
 
 function getPhaseIconClasses(phase: DashboardPhaseView): string {
+  if (phase.phaseStatus === "NotStarted") {
+    return "bg-white dark:bg-neutral-800 border-neutral-300 dark:border-neutral-600 text-neutral-400";
+  }
   const p = phase.effectiveProgress;
   if (p !== null && p !== undefined && p >= 100) {
     return "bg-green-500 border-green-500 text-white";
@@ -432,19 +441,6 @@ function getProgressColor(progress: number): "primary" | "success" | "warning" {
   if (progress >= 80) return "success";
   if (progress >= 40) return "primary";
   return "warning";
-}
-
-/** Timeline bar: average of each phase's effective progress (accounts for Completed/OnGoing status). */
-function getTimelineProgress(equipment: DashboardEquipmentView): number {
-  const phases = equipment.phases;
-  if (!phases.length) return 0;
-  const nums = phases
-    .map((p) => p.effectiveProgress)
-    .filter(
-      (n): n is number => n !== null && n !== undefined && !Number.isNaN(n),
-    );
-  if (!nums.length) return 0;
-  return nums.reduce((a, b) => a + b, 0) / nums.length;
 }
 
 onMounted(() => {

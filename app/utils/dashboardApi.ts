@@ -119,6 +119,35 @@ export function getEffectiveProgress(
   }
   return numericProgress;
 }
+
+/**
+ * Calculate timeline progress as the position of the last active (Completed/OnGoing) phase.
+ * Returns percentage of completion based on phase sequence, not average progress.
+ */
+export function getTimelineProgressPercentage(
+  phases: DashboardPhaseView[],
+): number {
+  if (!phases.length) return 0;
+
+  // Find the last phase that is Completed or OnGoing
+  let lastActiveIndex = -1;
+  for (let i = phases.length - 1; i >= 0; i--) {
+    if (
+      phases[i].phaseStatus === "Completed" ||
+      phases[i].phaseStatus === "OnGoing"
+    ) {
+      lastActiveIndex = i;
+      break;
+    }
+  }
+
+  // If no active phase, return 0
+  if (lastActiveIndex === -1) return 0;
+
+  // Progress extends to the last active phase (as a full segment)
+  // If on last phase, could show partial progress; for now show full segment
+  return ((lastActiveIndex + 1) / phases.length) * 100;
+}
 export function mapDashboardApiToView(
   rows: DashboardApiRow[],
 ): DashboardEquipmentView[] {
