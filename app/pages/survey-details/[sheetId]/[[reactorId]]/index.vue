@@ -868,7 +868,9 @@
         <p>The phase has been completed successfully.</p>
         <template v-if="typeOfPhasesItems.length">
           <div class="space-y-2">
-            <span class="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+            <span
+              class="text-sm font-medium text-neutral-700 dark:text-neutral-300"
+            >
               Start next phase
             </span>
             <USelectMenu
@@ -880,10 +882,7 @@
             />
           </div>
         </template>
-        <p
-          v-else
-          class="text-sm text-neutral-500 dark:text-neutral-400"
-        >
+        <p v-else class="text-sm text-neutral-500 dark:text-neutral-400">
           All phases for this tube sheet have been completed.
         </p>
       </div>
@@ -2146,9 +2145,12 @@ onMounted(async () => {
     const querySurveyId = (useRoute().query.surveyId ||
       useSurveyStore().currentSurveyId) as string | undefined;
     const resumedJourney = useRoute().query.resumedJourney;
-    // alert(querySurveyId)
-    if (querySurveyId) {
-      activeSurveyId.value = querySurveyId;
+    // Only use the survey ID if it came from the current navigation (query param) or is explicitly a resume
+    // Don't use the stored currentSurveyId to prevent cross-project survey loading
+    const effectiveSurveyId = useRoute().query.surveyId as string | undefined;
+
+    if (effectiveSurveyId) {
+      activeSurveyId.value = effectiveSurveyId;
       if (resumedJourney) {
         loading.value = true;
         await fetchUpdatedTubeColors(activeSurveyId.value);
@@ -2160,6 +2162,10 @@ onMounted(async () => {
         fetchUpdatedTubeColors(activeSurveyId.value);
         viewMode.value = true;
       }
+    } else {
+      // Clear any lingering survey state when starting fresh
+      activeSurveyId.value = "";
+      useSurveyStore().currentSurveyId = "";
     }
   }
 });
@@ -2167,6 +2173,36 @@ onMounted(async () => {
 /* ----------------------------
    WATCH
 ----------------------------- */
+
+// Watch for sheet ID changes and reset survey state to prevent loading old survey data
+watch(
+  () => sheetId,
+  (newSheetId, oldSheetId) => {
+    if (oldSheetId && newSheetId && oldSheetId !== newSheetId) {
+      // Sheet has changed - clear the active survey and related state
+      activeSurveyId.value = "";
+      loading.value = false;
+      viewMode.value = false;
+      selectedPhase.value = "";
+      currentSurvey.value = "";
+      progressData.value = [];
+      tubeRepeatCounts.value = new Map();
+      lastDetectedTubeId.value = "";
+      lastDetectedFace.value = "front";
+      tubeComments.value = [];
+      errorLogsRows.value = [];
+      surveyCreatedAt.value = null;
+      surveyEndTimeStamp.value = null;
+
+      // Clear any polling interval
+      if (interval) clearInterval(interval);
+      interval = null;
+
+      // Clear the Pinia store's currentSurveyId
+      useSurveyStore().currentSurveyId = "";
+    }
+  },
+);
 
 watch(viewDisplay, () => {
   // Re-render everything when switching between front and back view

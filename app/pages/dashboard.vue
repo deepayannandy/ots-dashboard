@@ -178,21 +178,32 @@
               <!-- Timeline Points -->
               <div class="relative flex justify-between">
                 <div
-                  v-for="phase in equipment.phases"
-                  :key="phase.phaseId"
+                  v-for="(item, index) in getTimelineItems(equipment)"
+                  :key="
+                    item.type === 'phase'
+                      ? item.phase!.phaseId
+                      : `idle-${index}`
+                  "
                   class="flex flex-col items-center"
-                  :style="{ width: 100 / equipment.phases.length + '%' }"
+                  :style="{
+                    width: 100 / getTimelineItems(equipment).length + '%',
+                  }"
                 >
+                  <!-- Phase Point -->
                   <UTooltip
+                    v-if="item.type === 'phase'"
                     :delay-duration="0"
                     :content="{ side: 'top', sideOffset: 80 }"
                   >
                     <template #default>
                       <button
                         class="relative z-10 flex items-center justify-center size-10 rounded-full border-2 transition-all duration-300 cursor-pointer hover:scale-110"
-                        :class="getPhaseIconClasses(phase)"
+                        :class="getPhaseIconClasses(item.phase!)"
                       >
-                        <UIcon :name="getPhaseIcon(phase)" class="size-4" />
+                        <UIcon
+                          :name="getPhaseIcon(item.phase!)"
+                          class="size-4"
+                        />
                       </button>
                     </template>
                     <template #content>
@@ -202,7 +213,7 @@
                         <p
                           class="font-semibold mb-2 text-neutral-900 dark:text-white"
                         >
-                          {{ phase.phaseName }}
+                          {{ item.phase!.phaseName }}
                         </p>
                         <div class="space-y-1.5 text-xs">
                           <div class="flex justify-between gap-4">
@@ -211,7 +222,7 @@
                             >
                             <span
                               class="font-medium text-neutral-900 dark:text-white"
-                              >{{ phase.phaseStatus }}</span
+                              >{{ item.phase!.phaseStatus }}</span
                             >
                           </div>
                           <div class="flex justify-between gap-4">
@@ -221,9 +232,9 @@
                             <span
                               class="font-medium text-neutral-900 dark:text-white"
                               >{{
-                                phase.progress !== null &&
-                                phase.progress !== undefined
-                                  ? phase.progress + "%"
+                                item.phase!.progress !== null &&
+                                item.phase!.progress !== undefined
+                                  ? item.phase!.progress + "%"
                                   : "—"
                               }}</span
                             >
@@ -235,14 +246,14 @@
                             <span
                               class="font-medium text-neutral-900 dark:text-white"
                               >{{
-                                phase.phaseStartTime
-                                  ? formatDateTime(phase.phaseStartTime)
+                                item.phase!.phaseStartTime
+                                  ? formatDateTime(item.phase!.phaseStartTime)
                                   : "-"
                               }}</span
                             >
                           </div>
                           <div
-                            v-if="phase.endTime"
+                            v-if="item.phase!.endTime"
                             class="flex justify-between gap-4"
                           >
                             <span class="text-neutral-500 dark:text-neutral-400"
@@ -250,7 +261,7 @@
                             >
                             <span
                               class="font-medium text-neutral-900 dark:text-white"
-                              >{{ formatDateTime(phase.endTime) }}</span
+                              >{{ formatDateTime(item.phase!.endTime) }}</span
                             >
                           </div>
                           <div class="flex justify-between gap-4">
@@ -260,14 +271,14 @@
                             <span
                               class="font-medium text-neutral-900 dark:text-white"
                               >{{
-                                phase.lastUpdatedTime
-                                  ? formatDateTime(phase.lastUpdatedTime)
+                                item.phase!.lastUpdatedTime
+                                  ? formatDateTime(item.phase!.lastUpdatedTime)
                                   : "-"
                               }}</span
                             >
                           </div>
                           <div
-                            v-if="phase.surveyID"
+                            v-if="item.phase!.surveyID"
                             class="pt-2 mt-2 border-t border-neutral-200 dark:border-neutral-700"
                           >
                             <span class="text-neutral-500 dark:text-neutral-400"
@@ -275,7 +286,44 @@
                             >
                             <span
                               class="font-mono text-xs ml-1 text-neutral-900 dark:text-white"
-                              >{{ phase.surveyID.slice(-8) }}</span
+                              >{{ item.phase!.surveyID.slice(-8) }}</span
+                            >
+                          </div>
+                        </div>
+                      </div>
+                    </template>
+                  </UTooltip>
+
+                  <!-- Idle Point -->
+                  <UTooltip
+                    v-else-if="item.type === 'idle'"
+                    :delay-duration="0"
+                    :content="{ side: 'top', sideOffset: 80 }"
+                  >
+                    <template #default>
+                      <div
+                        class="relative z-10 flex items-center justify-center size-10 rounded-full border-2 bg-orange-500 border-orange-500 text-white transition-all duration-300"
+                      >
+                        <UIcon name="i-lucide-clock" class="size-4" />
+                      </div>
+                    </template>
+                    <template #content>
+                      <div
+                        class="p-3 min-w-[180px] bg-white dark:bg-neutral-900 shadow-xl border border-neutral-200 dark:border-neutral-700 rounded-lg"
+                      >
+                        <p
+                          class="font-semibold mb-2 text-neutral-900 dark:text-white"
+                        >
+                          Idle Time
+                        </p>
+                        <div class="space-y-1.5 text-xs">
+                          <div class="flex justify-between gap-4">
+                            <span class="text-neutral-500 dark:text-neutral-400"
+                              >Duration:</span
+                            >
+                            <span
+                              class="font-medium text-neutral-900 dark:text-white"
+                              >{{ item.idleDuration }}</span
                             >
                           </div>
                         </div>
@@ -284,35 +332,55 @@
                   </UTooltip>
 
                   <!-- Phase Label -->
-                  <div class="mt-3 text-center px-1">
+                  <div
+                    v-if="item.type === 'phase'"
+                    class="mt-3 text-center px-1"
+                  >
                     <p
                       class="text-xs font-medium text-neutral-700 dark:text-neutral-300 leading-tight"
                     >
-                      {{ phase.phaseName }}
+                      {{ item.phase!.phaseName }}
                     </p>
                     <p
                       class="text-[10px] text-neutral-500 mt-0.5 leading-tight break-words"
                     >
-                      {{ phase.phaseStatus }}
+                      {{ item.phase!.phaseStatus }}
                     </p>
                     <div
                       v-if="
-                        phase.phaseStatus !== 'NotStarted' &&
-                        phase.progress !== null &&
-                        phase.progress !== undefined
+                        item.phase!.phaseStatus !== 'NotStarted' &&
+                        item.phase!.progress !== null &&
+                        item.phase!.progress !== undefined
                       "
                       class="mt-1.5"
                     >
                       <UProgress
-                        :model-value="phase.progress"
+                        :model-value="item.phase!.progress"
                         size="xs"
-                        :color="getProgressColor(phase.progress)"
+                        :color="getProgressColor(item.phase!.progress)"
                         class="w-16 mx-auto"
                       />
                       <span class="text-xs text-neutral-500 mt-0.5"
-                        >{{ phase.progress }}%</span
+                        >{{ item.phase!.progress }}%</span
                       >
                     </div>
+                  </div>
+
+                  <!-- Idle Label -->
+                  <div
+                    v-else-if="item.type === 'idle'"
+                    class="mt-3 text-center px-1"
+                  >
+                    <p
+                      class="text-xs font-medium text-orange-600 dark:text-orange-400 leading-tight"
+                    >
+                      Idle
+                    </p>
+                    <p
+                      class="text-[10px] text-neutral-500 mt-0.5 leading-tight break-words"
+                    >
+                      {{ item.idleDuration }}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -329,6 +397,7 @@ import {
   mapDashboardApiToView,
   resolveReportSurveyId,
   getTimelineProgressPercentage,
+  generateTimelineItems,
   type DashboardEquipmentView,
   type DashboardPhaseView,
 } from "@/utils/dashboardApi";
@@ -339,6 +408,11 @@ const { openReportFromDashboard } = usePdfReport();
 
 const dashboardData = ref<DashboardEquipmentView[]>([]);
 const isLoading = ref(false);
+
+// Computed property to generate timeline items with idle phases
+const getTimelineItems = (equipment: DashboardEquipmentView) => {
+  return generateTimelineItems(equipment.phases);
+};
 
 async function fetchDashboardData() {
   isLoading.value = true;

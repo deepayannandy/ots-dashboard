@@ -148,6 +148,66 @@ export function getTimelineProgressPercentage(
   // If on last phase, could show partial progress; for now show full segment
   return ((lastActiveIndex + 1) / phases.length) * 100;
 }
+
+/**
+ * Generate timeline items including idle phases between active phases
+ */
+export function generateTimelineItems(phases: DashboardPhaseView[]): Array<{
+  type: "phase" | "idle";
+  phase?: DashboardPhaseView;
+  idleTime?: number; // in milliseconds
+  idleDuration?: string; // formatted duration
+}> {
+  const items: Array<{
+    type: "phase" | "idle";
+    phase?: DashboardPhaseView;
+    idleTime?: number;
+    idleDuration?: string;
+  }> = [];
+
+  for (let i = 0; i < phases.length; i++) {
+    const currentPhase = phases[i];
+    const nextPhase = phases[i + 1];
+
+    // Add the current phase
+    items.push({
+      type: "phase",
+      phase: currentPhase,
+    });
+
+    // Check if there's a gap between this phase and the next
+    if (nextPhase && currentPhase.endTime && nextPhase.phaseStartTime) {
+      const currentEnd = new Date(currentPhase.endTime).getTime();
+      const nextStart = new Date(nextPhase.phaseStartTime).getTime();
+      const gap = nextStart - currentEnd;
+
+      // Only show idle if gap is more than 1 minute
+      if (gap > 60000) {
+        items.push({
+          type: "idle",
+          idleTime: gap,
+          idleDuration: formatIdleDuration(gap),
+        });
+      }
+    }
+  }
+
+  return items;
+}
+
+/**
+ * Format idle duration in a human-readable way
+ */
+function formatIdleDuration(ms: number): string {
+  const minutes = Math.floor(ms / 60000);
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+
+  if (hours > 0) {
+    return `${hours}h ${remainingMinutes}m`;
+  }
+  return `${minutes}m`;
+}
 export function mapDashboardApiToView(
   rows: DashboardApiRow[],
 ): DashboardEquipmentView[] {
