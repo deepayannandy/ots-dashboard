@@ -429,7 +429,16 @@
               }"
             >
               <template #header>
-                <div class="bg-primary w-full">Survey Progress</div>
+                <div
+                  class="bg-primary w-full flex items-center justify-between"
+                >
+                  Survey Progress
+                  <div
+                    class="text-sm w-[120px] text-left text-neutral-700 dark:text-neutral-200"
+                  >
+                    Next Update: {{ timeLeft }}s
+                  </div>
+                </div>
               </template>
               <div class="grid grid-cols-2 p-2">
                 <div>
@@ -560,14 +569,39 @@
                     ).find((t) => t.tube === id)!.Activity
                   }}
                   <br />
-                  Time:
-                  {{
-                    (viewDisplay === "Back View"
-                      ? backTableData
-                      : tableData
-                    ).find((t) => t.tube === id)!.time
-                  }}
-                  <br />
+                  <div class="flex items-center justify-between">
+                    <span
+                      >Time:
+                      {{
+                        (viewDisplay === "Back View"
+                          ? backTableData
+                          : tableData
+                        ).find((t) => t.tube === id)!.time
+                      }}</span
+                    >
+                    <UButton
+                      v-if="
+                        (viewDisplay === 'Back View'
+                          ? backTableData
+                          : tableData
+                        ).find((t) => t.tube === id)?.evidenceImage
+                      "
+                      size="xs"
+                      color="primary"
+                      variant="subtle"
+                      icon="i-lucide-image"
+                      @click="
+                        openImageModal(
+                          (viewDisplay === 'Back View'
+                            ? backTableData
+                            : tableData
+                          ).find((t) => t.tube === id)!,
+                        )
+                      "
+                    >
+                      Show Evidence
+                    </UButton>
+                  </div>
                 </div>
                 <div
                   v-else
@@ -796,6 +830,7 @@
                           ? backRepeatTableData
                           : repeatTableData
                     "
+                    :columns="progressRepeatColumns"
                     class="flex-1 max-h-[312px]"
                     :rows="10"
                     sticky="header"
@@ -909,6 +944,44 @@
       </div>
     </template>
   </UModal>
+
+  <UModal v-model:open="imageModalOpen" title="Evidence Image" size="3xl">
+    <template #body>
+      <div class="space-y-4">
+        <div class="flex justify-between items-center">
+          <p class="text-sm text-neutral-600 dark:text-neutral-400">
+            Tube: <span class="font-medium">{{ currentTubeId }}</span>
+          </p>
+          <p class="text-sm text-neutral-600 dark:text-neutral-400">
+            Log Time: <span class="font-medium">{{ currentLogTime }}</span>
+          </p>
+        </div>
+        <div class="flex justify-center">
+          <img
+            :src="currentImageUrl"
+            alt="Evidence Image"
+            class="max-w-full max-h-96 object-contain"
+          />
+        </div>
+      </div>
+    </template>
+    <template #footer>
+      <div class="w-full flex justify-end gap-2">
+        <UButton
+          label="Download Image"
+          color="primary"
+          variant="outline"
+          @click="downloadImage"
+        />
+        <UButton
+          label="Close"
+          color="neutral"
+          variant="outline"
+          @click="imageModalOpen = false"
+        />
+      </div>
+    </template>
+  </UModal>
 </template>
 
 <script setup lang="ts">
@@ -943,6 +1016,7 @@ type TubeDataTable = {
   Activity: string;
   time: string;
   face: string;
+  evidenceImage?: string;
   comment?: string;
 };
 ChartJS.register(
@@ -960,11 +1034,19 @@ const isRightOpen = ref(true);
 const stopModalOpen = ref(false);
 const successModalOpen = ref(false);
 const successMessage = ref("");
+const imageModalOpen = ref(false);
+const currentImageUrl = ref("");
+const currentLogTime = ref("");
+const currentTubeId = ref("");
 /** Phase values already completed for this visit (toolbar + success modal exclude these). */
 const completedPhasesList = ref<string[]>([]);
 const nextPhaseSelected = ref<string>("");
 const route = useRoute();
 const { setConfig } = useReactorGenerator();
+
+// Countdown timer for next API call
+const timeLeft = ref(60);
+let countdownInterval: ReturnType<typeof setInterval> | null = null;
 
 const reactorId = useRoute().params?.reactorId as string;
 const sheetId = useRoute().params?.sheetId as string;
@@ -1139,6 +1221,14 @@ const errorLogColumns: TableColumn<ErrorLogTableRow>[] = [
   { accessorKey: "face", header: "Face" },
   { accessorKey: "color", header: "Color" },
   { id: "action", header: "Action" },
+];
+
+const progressRepeatColumns: TableColumn<TubeDataTable>[] = [
+  { accessorKey: "tube", header: "Tube" },
+  { accessorKey: "Activity", header: "Activity" },
+  { accessorKey: "time", header: "Time" },
+  { accessorKey: "face", header: "Face" },
+  { id: "Action", header: "Action" },
 ];
 
 const pageUi = computed(() => ({
@@ -1918,6 +2008,12 @@ async function stratSurvey() {
       () => fetchUpdatedTubeColors(data.id),
       SURVEY_POLLING_INTERVAL,
     );
+    // Start countdown timer
+    timeLeft.value = 60;
+    countdownInterval = setInterval(() => {
+      timeLeft.value--;
+      if (timeLeft.value <= 0) timeLeft.value = 60;
+    }, 1000);
     if (data.Success) {
       useToast().add({ title: "Survey Started", color: "success" });
     }
@@ -1947,6 +2043,8 @@ async function stopSurvey() {
     loading.value = false;
     if (interval) clearInterval(interval);
     interval = null;
+    if (countdownInterval) clearInterval(countdownInterval);
+    countdownInterval = null;
     stopModalOpen.value = false;
     if (phaseJustCompleted) addCompletedPhase(phaseJustCompleted);
     await refreshTubeSheetDetails();
@@ -2158,6 +2256,12 @@ onMounted(async () => {
           () => fetchUpdatedTubeColors(activeSurveyId.value as string),
           SURVEY_POLLING_INTERVAL,
         );
+        // Start countdown timer
+        timeLeft.value = 60;
+        countdownInterval = setInterval(() => {
+          timeLeft.value--;
+          if (timeLeft.value <= 0) timeLeft.value = 60;
+        }, 1000);
       } else {
         fetchUpdatedTubeColors(activeSurveyId.value);
         viewMode.value = true;
@@ -2197,6 +2301,8 @@ watch(
       // Clear any polling interval
       if (interval) clearInterval(interval);
       interval = null;
+      if (countdownInterval) clearInterval(countdownInterval);
+      countdownInterval = null;
 
       // Clear the Pinia store's currentSurveyId
       useSurveyStore().currentSurveyId = "";
@@ -2258,6 +2364,8 @@ async function fetchUpdatedTubeColors(surveyId: string) {
 
     // Record API call time
     apiCallTime.value = new Date();
+    // Reset countdown timer
+    timeLeft.value = 60;
 
     // Update comments from API
     if (comments && Array.isArray(comments)) {
@@ -2350,11 +2458,14 @@ async function fetchUpdatedTubeColors(surveyId: string) {
           activity: string;
           timeStamp: string;
           isDuplicate: boolean;
+          evidenceImage?: string;
         }) => {
           return {
             tube: item.tubeIdAsperLayout,
             Activity: item.activity,
             time: new Date(item.timeStamp).toLocaleString(),
+            face: "front",
+            evidenceImage: item.evidenceImage,
             Action: "Locate",
           };
         },
@@ -2369,11 +2480,14 @@ async function fetchUpdatedTubeColors(surveyId: string) {
           activity: string;
           timeStamp: string;
           isDuplicate: boolean;
+          evidenceImage?: string;
         }) => {
           return {
             tube: item.tubeIdAsperLayout,
             Activity: item.activity,
             time: new Date(item.timeStamp).toLocaleString(),
+            face: "front",
+            evidenceImage: item.evidenceImage,
             Action: "Locate",
           };
         },
@@ -2388,11 +2502,14 @@ async function fetchUpdatedTubeColors(surveyId: string) {
           activity: string;
           timeStamp: string;
           isDuplicate: boolean;
+          evidenceImage?: string;
         }) => {
           return {
             tube: item.tubeIdAsperLayout,
             Activity: item.activity,
             time: new Date(item.timeStamp).toLocaleString(),
+            face: "back",
+            evidenceImage: item.evidenceImage,
             Action: "Locate",
           };
         },
@@ -2407,11 +2524,14 @@ async function fetchUpdatedTubeColors(surveyId: string) {
           activity: string;
           timeStamp: string;
           isDuplicate: boolean;
+          evidenceImage?: string;
         }) => {
           return {
             tube: item.tubeIdAsperLayout,
             Activity: item.activity,
             time: new Date(item.timeStamp).toLocaleString(),
+            face: "back",
+            evidenceImage: item.evidenceImage,
             Action: "Locate",
           };
         },
@@ -2420,6 +2540,28 @@ async function fetchUpdatedTubeColors(surveyId: string) {
   } catch (err) {
     console.error("Failed to fetch tube colors:", err);
   }
+}
+
+function openImageModal(row: TubeDataTable) {
+  const {
+    public: {
+      axios: { baseURL },
+    },
+  } = useRuntimeConfig();
+  // Concatenate base URL with the evidenceImage path
+  currentImageUrl.value = baseURL + row.evidenceImage!;
+  currentLogTime.value = row.time;
+  currentTubeId.value = row.tube;
+  imageModalOpen.value = true;
+}
+
+function downloadImage() {
+  const link = document.createElement("a");
+  link.href = currentImageUrl.value;
+  link.download = `evidence_${currentTubeId.value}_${currentLogTime.value.replace(/[^a-zA-Z0-9]/g, "_")}.png`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }
 
 const backendUpdatedCount = computed(

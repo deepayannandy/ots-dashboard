@@ -127,13 +127,12 @@
           <div
             class="flex-1 bg-neutral-900 rounded-lg overflow-hidden relative"
           >
-            <!-- Video Element for HLS Stream -->
-            <video
-              ref="videoElement"
+            <img
+              :src="streamUrl"
+              alt="Live CCTV Stream"
               class="w-full h-full object-contain"
-              autoplay
-              muted
-              playsinline
+              @load="handleImageLoad"
+              @error="handleImageError"
             />
 
             <!-- TV Static Effect when no stream -->
@@ -279,14 +278,34 @@
             </div>
 
             <template #footer>
-              <UButton
-                label="Save Position"
-                icon="i-lucide-save"
-                size="sm"
-                block
-                :loading="saving"
-                @click="saveAngle"
-              />
+              <div class="flex flex-col gap-2">
+                <UButton
+                  label="Self Correct"
+                  icon="i-lucide-rotate-ccw"
+                  size="sm"
+                  block
+                  variant="outline"
+                  @click="resetToCenter"
+                />
+
+                <UButton
+                  label="Save Position"
+                  icon="i-lucide-save"
+                  size="sm"
+                  block
+                  :loading="saving"
+                  @click="saveAngle"
+                />
+
+                <UButton
+                  label="Camera Layout Calibration"
+                  size="sm"
+                  block
+                  color="primary"
+                  variant="outline"
+                  @click="openCalibration"
+                />
+              </div>
             </template>
           </UCard>
 
@@ -340,7 +359,6 @@
 <script setup lang="ts">
 import { useCamera, type Camera } from "@/stores/camera";
 import { useDebounceFn } from "@vueuse/core";
-import Hls from "hls.js";
 
 const route = useRoute();
 const cameraStore = useCamera();
@@ -352,10 +370,8 @@ const camera = ref<Camera | null>(null);
 const loading = ref(true);
 const error = ref<string | null>(null);
 const saving = ref(false);
+const streamUrl = "http://localhost:5000/video_feed";
 const streamActive = ref(false);
-const videoElement = ref<HTMLVideoElement | null>(null);
-const staticCanvas = ref<HTMLCanvasElement | null>(null);
-const hlsInstance = ref<Hls | null>(null);
 const streamError = ref<string | null>(null);
 
 // Angle state
@@ -420,64 +436,20 @@ defineShortcuts({
 // Fetch camera details on mount
 onMounted(async () => {
   await fetchCameraDetails();
-  initializeStream();
 });
 
 onUnmounted(() => {
-  destroyHls();
   cameraStore.clearCamera();
 });
 
-function destroyHls() {
-  if (hlsInstance.value) {
-    hlsInstance.value.destroy();
-    hlsInstance.value = null;
-  }
+function handleImageLoad() {
+  streamActive.value = true;
+  streamError.value = null;
 }
 
-// TV Static noise animation
-let staticAnimationId: number | null = null;
-
-function startStaticNoise() {
-  const canvas = staticCanvas.value;
-  if (!canvas) return;
-
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return;
-
-  // Set canvas size to match container
-  const updateCanvasSize = () => {
-    if (canvas.parentElement) {
-      canvas.width = canvas.parentElement.offsetWidth;
-      canvas.height = canvas.parentElement.offsetHeight;
-    }
-  };
-  updateCanvasSize();
-
-  const drawNoise = () => {
-    const imageData = ctx.createImageData(canvas.width, canvas.height);
-    const data = imageData.data;
-
-    for (let i = 0; i < data.length; i += 4) {
-      const value = Math.random() * 255;
-      data[i] = value; // red
-      data[i + 1] = value; // green
-      data[i + 2] = value; // blue
-      data[i + 3] = 255; // alpha
-    }
-
-    ctx.putImageData(imageData, 0, 0);
-    staticAnimationId = requestAnimationFrame(drawNoise);
-  };
-
-  drawNoise();
-}
-
-function stopStaticNoise() {
-  if (staticAnimationId) {
-    cancelAnimationFrame(staticAnimationId);
-    staticAnimationId = null;
-  }
+function handleImageError() {
+  streamActive.value = false;
+  streamError.value = "Stream not available";
 }
 
 // Watch streamActive to start/stop static noise
@@ -485,9 +457,9 @@ watch(
   streamActive,
   (active) => {
     if (!active) {
-      nextTick(() => startStaticNoise());
-    } else {
-      stopStaticNoise();
+      nextTick(() => {
+        // Keep the static overlay visible when the stream is unavailable
+      });
     }
   },
   { immediate: true },
@@ -512,115 +484,6 @@ async function fetchCameraDetails() {
     console.error(e);
   } finally {
     loading.value = false;
-  }
-}
-
-async function initializeStream() {
-  if (!videoElement.value) {
-    streamActive.value = false;
-    streamError.value = "Video element not ready";
-    return;
-  }
-
-  if (!camera.value?.rtspUrl) {
-    streamActive.value = false;
-    streamError.value = "No RTSP URL configured";
-    return;
-  }
-
-  // Destroy existing HLS instance
-  destroyHls();
-  streamError.value = null;
-  streamActive.value = false;
-
-  try {
-    // Backend converts RTSP to HLS and serves it at this endpoint
-    const hlsUrl = `/api/v2/camera/stream/${cameraId.value}/index.m3u8`;
-
-    if (typeof window !== "undefined") {
-      // Check if HLS is supported natively (Safari)
-      if (videoElement.value.canPlayType("application/vnd.apple.mpegurl")) {
-        // Remove old listeners first
-        const newVideo = videoElement.value.cloneNode(
-          false,
-        ) as HTMLVideoElement;
-        videoElement.value.parentNode?.replaceChild(
-          newVideo,
-          videoElement.value,
-        );
-        videoElement.value = newVideo;
-
-        videoElement.value.src = hlsUrl;
-
-        videoElement.value.addEventListener(
-          "loadedmetadata",
-          () => {
-            streamActive.value = true;
-            streamError.value = null;
-            videoElement.value?.play().catch(console.error);
-          },
-          { once: true },
-        );
-
-        videoElement.value.addEventListener(
-          "error",
-          () => {
-            streamActive.value = false;
-            streamError.value = "Stream not available";
-          },
-          { once: true },
-        );
-      }
-      // Use HLS.js for other browsers
-      else if (Hls.isSupported()) {
-        const hls = new Hls({
-          debug: false,
-          enableWorker: true,
-          lowLatencyMode: true,
-          backBufferLength: 90,
-        });
-
-        hlsInstance.value = hls;
-        hls.loadSource(hlsUrl);
-        hls.attachMedia(videoElement.value);
-
-        hls.on(Hls.Events.MANIFEST_PARSED, () => {
-          streamActive.value = true;
-          streamError.value = null;
-          videoElement.value?.play().catch(console.error);
-        });
-
-        hls.on(Hls.Events.ERROR, (event, data) => {
-          console.error("HLS.js error:", event, data);
-
-          if (data.fatal) {
-            switch (data.type) {
-              case Hls.ErrorTypes.NETWORK_ERROR:
-                streamError.value = "Network error - stream not available";
-                // Try to recover
-                hls.startLoad();
-                break;
-              case Hls.ErrorTypes.MEDIA_ERROR:
-                streamError.value = "Media error - trying to recover";
-                hls.recoverMediaError();
-                break;
-              default:
-                streamError.value = "Fatal streaming error";
-                streamActive.value = false;
-                destroyHls();
-                break;
-            }
-          }
-        });
-      } else {
-        streamError.value = "HLS not supported in this browser";
-        streamActive.value = false;
-      }
-    }
-  } catch (e) {
-    console.error("Failed to initialize stream:", e);
-    streamActive.value = false;
-    streamError.value = "Failed to initialize stream";
   }
 }
 
@@ -666,6 +529,13 @@ function resetToCenter() {
   angleX.value = 90;
   angleY.value = 90;
   debouncedSetAngle();
+}
+
+function openCalibration() {
+  const url = "https://calibrate.dnyindia.in";
+  if (typeof window !== "undefined") {
+    window.open(url, "_blank");
+  }
 }
 </script>
 

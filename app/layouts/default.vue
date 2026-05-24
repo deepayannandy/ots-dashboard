@@ -1,85 +1,97 @@
 <script setup lang="ts">
-import type { NavigationMenuItem } from '@nuxt/ui'
-import { useTubeSheets } from '@/stores/tubesheets'
-import { useCompany } from '@/stores/company'
+import type { NavigationMenuItem } from "@nuxt/ui";
+import { useTubeSheets } from "@/stores/tubesheets";
+import { useCompany } from "@/stores/company";
 
-const route = useRoute()
-const open = ref(false)
-const collapsed = ref(false)
+const route = useRoute();
+const open = ref(false);
+const collapsed = ref(false);
 
-const tubeSheetsStore = useTubeSheets()
-const companyStore = useCompany()
+const tubeSheetsStore = useTubeSheets();
+const companyStore = useCompany();
 
-const companyLogo = computed(() => companyStore.logoUrl)
+const companyLogo = computed(() => companyStore.logoUrl);
 
 // Get sheetId from route params when on create-reactor page
 const sheetId = computed(() => {
-  const params = route.params as { sheetId?: string }
-  return params.sheetId
-})
+  const params = route.params as { sheetId?: string };
+  return params.sheetId;
+});
 
 // Check if tubesheet status is REACTOR_CREATED
 const isReactorCreated = computed(() => {
-  if (!sheetId.value) return false
-  const sheet = tubeSheetsStore.list.find(s => s._id === sheetId.value)
-  return sheet?.status === 'REACTOR_CREATED'
-})
+  if (!sheetId.value) return false;
+  const sheet = tubeSheetsStore.list.find((s) => s._id === sheetId.value);
+  return sheet?.status === "REACTOR_CREATED";
+});
 
 watch(isReactorCreated, (newValue) => {
-  if (newValue) collapsed.value = true
+  if (newValue) collapsed.value = true;
   else {
-    collapsed.value = false
+    collapsed.value = false;
   }
-})
+});
 
 onMounted(async () => {
-  await companyStore.fetchCompanyDetails()
-})
+  await companyStore.fetchCompanyDetails();
+});
 
 const links = [
   [
     {
-      label: 'Dashboard',
-      icon: 'i-lucide-gauge',
-      to: '/dashboard',
+      label: "Dashboard",
+      icon: "i-lucide-gauge",
+      to: "/dashboard",
       onSelect: () => {
-        open.value = false
-      }
+        open.value = false;
+      },
     },
     {
-      label: 'Projects',
-      icon: 'i-lucide-layers-2',
-      to: '/',
+      label: "Projects",
+      icon: "i-lucide-layers-2",
+      to: "/",
       onSelect: () => {
-        open.value = false
-      }
+        open.value = false;
+      },
     },
     {
-      label: 'Rule Board',
-      icon: 'i-lucide-orbit',
-      to: '/ruleboard',
+      label: "Swift Mapping Tool",
+      icon: "i-lucide-globe",
+      // External link - open in new tab
+      to: "#",
       onSelect: () => {
-        open.value = false
-      }
+        open.value = false;
+        if (typeof window !== "undefined") {
+          window.open("https://jsoncircle.dnyindia.in", "_blank");
+        }
+      },
     },
     {
-      label: 'Assets',
-      icon: 'i-lucide-package',
-      to: '/assets',
+      label: "Rule Board",
+      icon: "i-lucide-orbit",
+      to: "/ruleboard",
       onSelect: () => {
-        open.value = false
-      }
+        open.value = false;
+      },
     },
     {
-      label: 'Survey History',
-      icon: 'i-lucide-clock-3',
-      to: '/survey-history',
+      label: "Assets",
+      icon: "i-lucide-package",
+      to: "/assets",
       onSelect: () => {
-        open.value = false
-      }
-    }
-  ]
-] satisfies NavigationMenuItem[][]
+        open.value = false;
+      },
+    },
+    {
+      label: "Survey History",
+      icon: "i-lucide-clock-3",
+      to: "/survey-history",
+      onSelect: () => {
+        open.value = false;
+      },
+    },
+  ],
+] satisfies NavigationMenuItem[][];
 </script>
 
 <template>
@@ -94,7 +106,7 @@ const links = [
       class="gradient-card elevation-3 border-r border-neutral-200/60 dark:border-neutral-800/40"
       :ui="{
         footer:
-          'lg:border-t lg:border-neutral-200/60 dark:lg:border-neutral-800/40'
+          'lg:border-t lg:border-neutral-200/60 dark:lg:border-neutral-800/40',
       }"
     >
       <template #header>
@@ -103,7 +115,7 @@ const links = [
           class="size-12 rounded-lg elevation-1 cursor-pointer"
           :class="collapsed && 'size-8!'"
           @click="useRouter().push('/')"
-        >
+        />
       </template>
 
       <template #default>

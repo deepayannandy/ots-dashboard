@@ -131,6 +131,17 @@
                     <UIcon name="i-lucide-flag" class="size-4" />
                     <span>End: {{ formatDateTime(equipment.endTime) }}</span>
                   </div>
+                  <div
+                    v-if="equipment.totalTime"
+                    class="flex items-center gap-1.5"
+                  >
+                    <UIcon name="i-lucide-timer" class="size-4" />
+                    <span>Total: {{ equipment.totalTime }}</span>
+                  </div>
+                  <div class="flex items-center gap-1.5">
+                    <UIcon name="i-lucide-pause-circle" class="size-4" />
+                    <span>Idle: {{ equipment.totalIdleTime }}</span>
+                  </div>
                   <div class="flex items-center gap-1.5">
                     <UIcon name="i-lucide-activity" class="size-4" />
                     <span

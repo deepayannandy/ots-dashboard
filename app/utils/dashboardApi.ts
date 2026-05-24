@@ -77,6 +77,10 @@ export interface DashboardEquipmentView {
   startTime: string | null;
   lastUpdatedTime: string;
   endTime: string | null;
+  /** Total time for the workorder between start and end timestamps */
+  totalTime: string | null;
+  /** Total accumulated idle time between phase end and next phase start */
+  totalIdleTime: string | null;
   woId: string;
   phases: DashboardPhaseView[];
   /** Raw API status string */
@@ -132,10 +136,8 @@ export function getTimelineProgressPercentage(
   // Find the last phase that is Completed or OnGoing
   let lastActiveIndex = -1;
   for (let i = phases.length - 1; i >= 0; i--) {
-    if (
-      phases[i].phaseStatus === "Completed" ||
-      phases[i].phaseStatus === "OnGoing"
-    ) {
+    const phase = phases[i]!;
+    if (phase.phaseStatus === "Completed" || phase.phaseStatus === "OnGoing") {
       lastActiveIndex = i;
       break;
     }
@@ -198,6 +200,39 @@ export function generateTimelineItems(phases: DashboardPhaseView[]): Array<{
 /**
  * Format idle duration in a human-readable way
  */
+function formatDuration(ms: number): string {
+  const totalSeconds = Math.floor(ms / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+  const remainingSeconds = totalSeconds % 60;
+
+  if (hours > 0) {
+    return `${hours}h ${remainingMinutes}m`;
+  }
+  if (minutes > 0) {
+    return `${minutes}m ${remainingSeconds}s`;
+  }
+  return `${remainingSeconds}s`;
+}
+
+function calculateTotalIdleTime(phases: DashboardApiPhaseRow[]): number {
+  let totalIdle = 0;
+
+  for (let i = 0; i < phases.length - 1; i++) {
+    const current = phases[i]!;
+    const next = phases[i + 1]!;
+    if (current.phaseEndTimeStamp && next.phaseStartTimeStamp) {
+      const currentEnd = new Date(current.phaseEndTimeStamp).getTime();
+      const nextStart = new Date(next.phaseStartTimeStamp).getTime();
+      const gap = nextStart - currentEnd;
+      if (gap > 0) totalIdle += gap;
+    }
+  }
+
+  return totalIdle;
+}
+
 function formatIdleDuration(ms: number): string {
   const minutes = Math.floor(ms / 60000);
   const hours = Math.floor(minutes / 60);
@@ -239,6 +274,14 @@ export function mapDashboardApiToView(
       });
 
       const startTime = row.startTimeStamp ?? null;
+      const totalIdleMs = calculateTotalIdleTime(row.phaseData ?? []);
+      const totalTime =
+        row.startTimeStamp && row.endTimeStamp
+          ? formatDuration(
+              new Date(row.endTimeStamp).getTime() -
+                new Date(row.startTimeStamp).getTime(),
+            )
+          : null;
 
       return {
         id: row._id,
@@ -249,6 +292,8 @@ export function mapDashboardApiToView(
         startTime,
         lastUpdatedTime: row.updatedAt,
         endTime: row.endTimeStamp ?? null,
+        totalTime,
+        totalIdleTime: formatDuration(totalIdleMs),
         woId: row.workOrderId,
         phases,
         equipmentStatus: row.status,
