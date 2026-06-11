@@ -2,6 +2,9 @@
   <UDashboardPanel id="create-tubesheet" :ui="{ body: '!p-0' }">
     <template #header>
       <UDashboardNavbar :ui="{ right: 'gap-3' }">
+        <template #leading>
+          <UDashboardSidebarCollapse />
+        </template>
         <template #title>
           <div class="flex flex-col">
             <span class="font-semibold text-xl text-primary-500">
@@ -11,7 +14,7 @@
           </div>
         </template>
         <template #right>
-          <UFieldGroup>
+          <div class="flex items-center gap-2">
             <UInput
               value="Individual Tube Address"
               disabled
@@ -41,72 +44,78 @@
                 resetView();
               "
             />
-          </UFieldGroup>
+          </div>
         </template>
       </UDashboardNavbar>
 
       <UDashboardToolbar>
-        <template #right>
-          <UFieldGroup>
-            <UInput
-              value="Phases:"
-              disabled
-              class="cursor-grab! font-bold max-w-18"
+        <template #left>
+          <div class="flex items-center gap-2">
+            <UButton
+              color="neutral"
+              variant="subtle"
+              label="Info"
+              @click="showDetails = !showDetails"
             />
+            <div @keydown.stop.prevent>
+              <URadioGroup
+                v-model="viewDisplay"
+                indicator="hidden"
+                variant="card"
+                size="xs"
+                orientation="horizontal"
+                default-value=""
+                :items="items"
+              />
+            </div>
+            <ZoomControls
+              hide-rotation
+              @zoom-in="zoomIn"
+              @zoom-out="zoomOut"
+              @pan="panXY"
+              @reset="resetView"
+              @fit-to-screen="fitToScreenHandler"
+            />
+            <UButton
+              color="neutral"
+              variant="subtle"
+              :label="dualView ? 'Both Views: On' : 'Both Views'"
+              size="sm"
+              @click="toggleDualView"
+            />
+          </div>
+        </template>
+        <template #right>
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-semibold text-neutral-500 dark:text-neutral-400">Phases:</span>
             <USelectMenu
               v-model="selectedPhase"
               placeholder="Select Phase"
               :items="typeOfPhasesItems"
               value-key="value"
-              class="min-w-64"
+              class="min-w-44"
               :disabled="loading"
             />
-          </UFieldGroup>
-          <UButton
-            v-if="!viewMode"
-            :label="loading ? 'Complete Phase' : 'Start Survey'"
-            color="primary"
-            :icon="loading ? 'i-lucide-circle-check' : 'i-lucide-target'"
-            :disabled="!selectedPhase"
-            @click="loading ? openStopModal() : stratSurvey()"
-          />
-          <UButton
-            color="neutral"
-            variant="subtle"
-            :icon="
-              isRightOpen
-                ? 'i-lucide-panel-right-close'
-                : 'i-lucide-panel-right-open'
-            "
-            @click="isRightOpen = !isRightOpen"
-          />
-        </template>
-        <template #left>
-          <UButton
-            color="neutral"
-            variant="subtle"
-            label="Info"
-            @click="showDetails = !showDetails"
-          />
-          <div @keydown.stop.prevent>
-            <URadioGroup
-              v-model="viewDisplay"
-              indicator="hidden"
-              variant="card"
-              size="xs"
-              orientation="horizontal"
-              default-value=""
-              :items="items"
+            <UButton
+              v-if="!viewMode"
+              :label="loading ? 'Complete Phase' : 'Start Survey'"
+              color="primary"
+              class="ml-2"
+              :disabled="!selectedPhase"
+              :icon="loading ? 'i-lucide-circle-check' : 'i-lucide-play'"
+              @click="loading ? openStopModal() : stratSurvey()"
+            />
+            <UButton
+              color="neutral"
+              variant="subtle"
+              :icon="
+                isRightOpen
+                  ? 'i-lucide-panel-right-close'
+                  : 'i-lucide-panel-right-open'
+              "
+              @click="isRightOpen = !isRightOpen"
             />
           </div>
-          <ZoomControls
-            hide-rotation
-            @zoom-in="zoomIn"
-            @zoom-out="zoomOut"
-            @pan="panXY"
-            @reset="resetView"
-            @fit-to-screen="fitToScreenHandler"
-          />
         </template>
       </UDashboardToolbar>
     </template>
@@ -132,130 +141,55 @@
             class="h-full p-10 w-full flex justify-center items-center"
           >
             <!-- SVG Canvas -->
-            <svg
-              ref="svgRef"
-              :viewBox="`0 0 ${svgWidth} ${svgHeight}`"
-              xmlns="http://www.w3.org/2000/svg"
-              preserveAspectRatio="xMidYMid meet"
-              :style="{
-                width: '100%',
-                height: '100%',
-                ...(viewDisplay === 'Back View'
-                  ? {
-                      transform: 'scale(-1,1)',
-                      transformOrigin: 'center',
-                      transformBox: 'fill-box',
-                    }
-                  : {}),
-              }"
-              :class="viewDisplay === 'Back View' ? 'invert' : ''"
-              @wheel.prevent="handleWheel"
-            >
-              <g id="viewport" :transform="transformStr">
-                <!-- Compass overlay on reactor (plus sign lines) - inside viewport to move/zoom with reactor -->
-                <g :transform="`rotate(${rotation} ${centerX} ${centerY})`">
-                  <!-- Vertical line (North-South) -->
-                  <line
-                    :x1="centerX"
-                    :y1="centerY - compassSize.vertical - 40"
-                    :x2="centerX"
-                    :y2="centerY + compassSize.vertical + 40"
-                    stroke="#dc2626"
-                    stroke-width="2"
-                    opacity="0.7"
-                  />
-
-                  <!-- Horizontal line (East-West) -->
-                  <line
-                    :x1="centerX - compassSize.horizontal - 40"
-                    :y1="centerY"
-                    :x2="centerX + compassSize.horizontal + 40"
-                    :y2="centerY"
-                    stroke="#dc2626"
-                    stroke-width="2"
-                    opacity="0.7"
-                  />
-
-                  <!-- North indicator -->
-                  <g
-                    :transform="`translate(${centerX}, ${centerY - compassSize.vertical - 50})`"
-                  >
-                    <polygon points="0,-12 -8,8 0,4 8,8" fill="#dc2626" />
-                    <text
-                      y="-18"
-                      text-anchor="middle"
-                      fill="#dc2626"
-                      font-weight="bold"
-                      font-size="18"
-                    >
-                      N
-                    </text>
-                  </g>
-
-                  <!-- South indicator -->
-                  <g
-                    :transform="`translate(${centerX}, ${centerY + compassSize.vertical + 50})`"
-                  >
-                    <polygon
-                      points="0,12 -8,-8 0,-4 8,-8"
-                      fill="#dc2626"
-                      opacity="0.6"
-                    />
-                    <text
-                      y="32"
-                      text-anchor="middle"
-                      fill="#dc2626"
-                      font-weight="bold"
-                      font-size="18"
-                    >
-                      S
-                    </text>
-                  </g>
-
-                  <!-- East indicator -->
-                  <g
-                    :transform="`translate(${centerX + compassSize.horizontal + 50}, ${centerY})`"
-                  >
-                    <polygon
-                      points="12,0 -8,-8 -4,0 -8,8"
-                      fill="#dc2626"
-                      opacity="0.6"
-                    />
-                    <text
-                      x="22"
-                      text-anchor="start"
-                      dominant-baseline="middle"
-                      fill="#dc2626"
-                      font-weight="bold"
-                      font-size="18"
-                    >
-                      E
-                    </text>
-                  </g>
-
-                  <!-- West indicator -->
-                  <g
-                    :transform="`translate(${centerX - compassSize.horizontal - 50}, ${centerY})`"
-                  >
-                    <polygon
-                      points="-12,0 8,-8 4,0 8,8"
-                      fill="#dc2626"
-                      opacity="0.6"
-                    />
-                    <text
-                      x="-22"
-                      text-anchor="end"
-                      dominant-baseline="middle"
-                      fill="#dc2626"
-                      font-weight="bold"
-                      font-size="18"
-                    >
-                      W
-                    </text>
-                  </g>
-                </g>
-              </g>
-            </svg>
+            <div v-if="!dualView" class="w-full h-full">
+              <svg
+                ref="svgRef"
+                :viewBox="`0 0 ${svgWidth} ${svgHeight}`"
+                xmlns="http://www.w3.org/2000/svg"
+                preserveAspectRatio="xMidYMid meet"
+                :style="{
+                  width: '100%',
+                  height: '100%',
+                  ...(viewDisplay === 'Back View'
+                    ? {
+                        transform: 'scale(-1,1)',
+                        transformOrigin: 'center',
+                        transformBox: 'fill-box',
+                      }
+                    : {}),
+                }"
+                @wheel.prevent="handleWheel"
+              >
+                <g id="viewport" :transform="transformStr"></g>
+              </svg>
+            </div>
+            <div v-else class="w-full h-full flex gap-2">
+              <svg
+                ref="svgFrontRef"
+                :viewBox="`0 0 ${svgWidth} ${svgHeight}`"
+                xmlns="http://www.w3.org/2000/svg"
+                preserveAspectRatio="xMidYMid meet"
+                style="width: 50%; height: 100%"
+                @wheel.prevent="handleWheel"
+              >
+                <g id="viewport" :transform="transformStr"></g>
+              </svg>
+              <svg
+                ref="svgBackRef"
+                :viewBox="`0 0 ${svgWidth} ${svgHeight}`"
+                xmlns="http://www.w3.org/2000/svg"
+                preserveAspectRatio="xMidYMid meet"
+                style="
+                  width: 50%;
+                  height: 100%;
+                  transform: scale(-1, 1);
+                  transform-origin: center;
+                "
+                @wheel.prevent="handleWheel"
+              >
+                <g id="viewport" :transform="transformStr"></g>
+              </svg>
+            </div>
           </div>
           <!-- Backend Progress Indicator -->
           <!-- Tubesheet Details Card -->
@@ -266,79 +200,46 @@
             class="absolute top-6 left-6 z-50 bg-white/90 dark:bg-black/90 p-0 rounded-2xl max-w-sm"
           >
             <div class="space-y-3">
-              <h3
-                class="font-bold text-lg text-neutral-900 dark:text-neutral-100"
-              >
-                {{ tubeSheetDetails.clientName }}
-              </h3>
+              <p>
+                <span class="font-medium">Cameras:</span>
+                {{ tubeSheetDetails.numberOfCameras || 0 }}
+              </p>
               <div
-                class="space-y-2 text-xs text-neutral-600 dark:text-neutral-400"
+                v-if="getPhaseLabels(tubeSheetDetails.typeOfPhases).length > 0"
               >
-                <p>
-                  <span class="font-medium">Equipment ID:</span>
-                  {{ tubeSheetDetails.equipmentId || "N/A" }}
-                </p>
-                <p>
-                  <span class="font-medium">Type:</span>
-                  {{ getEquipmentTypeLabel(tubeSheetDetails.type) }}
-                </p>
-                <p>
-                  <span class="font-medium">Site:</span>
-                  {{ tubeSheetDetails.clientAddress }}
-                </p>
-                <p>
-                  <span class="font-medium">Material:</span>
-                  {{ tubeSheetDetails.material || "N/A" }}
-                </p>
-                <p>
-                  <span class="font-medium">Total Tubes:</span>
-                  {{ tubeSheetDetails.totalNoOfTubes || 0 }}
-                </p>
-                <p>
-                  <span class="font-medium">Cameras:</span>
-                  {{ tubeSheetDetails.numberOfCameras || 0 }}
-                </p>
-                <div
-                  v-if="
-                    getPhaseLabels(tubeSheetDetails.typeOfPhases).length > 0
-                  "
-                >
-                  <p class="font-medium mb-1">Phases:</p>
-                  <ul class="list-disc list-inside space-y-0.5 ml-2">
-                    <li
-                      v-for="(phase, idx) in getPhaseLabels(
-                        tubeSheetDetails.typeOfPhases,
-                      )"
-                      :key="idx"
-                      class="text-[11px]"
-                    >
-                      {{ phase }}
-                    </li>
-                  </ul>
-                </div>
-                <p>
-                  <span class="font-medium">Status:</span>
-                  <span
-                    class="inline-block px-2 py-0.5 rounded-full text-xs font-medium"
-                    :class="{
-                      'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300':
-                        tubeSheetDetails.status === 'TUBE_SHEET_CREATED',
-                      'bg-secondary-100 text-secondary-700 dark:bg-secondary-900/30 dark:text-secondary-300':
-                        tubeSheetDetails.status === 'CAMERA_CONFIGURED',
-                      'bg-success-100 text-success-700 dark:bg-success-900/30 dark:text-success-300':
-                        tubeSheetDetails.status === 'REACTOR_CREATED',
-                      'bg-info-100 text-info-700 dark:bg-info-900/30 dark:text-info-300':
-                        tubeSheetDetails.status === 'CAMERA_CALIBRATED',
-                      'bg-warning-100 text-warning-700 dark:bg-warning-900/30 dark:text-warning-300':
-                        tubeSheetDetails.status === 'UNDER_SURVEY',
-                    }"
+                <p class="font-medium mb-1">Phases:</p>
+                <ul class="list-disc list-inside space-y-0.5 ml-2">
+                  <li
+                    v-for="(phase, idx) in getPhaseLabels(
+                      tubeSheetDetails.typeOfPhases,
+                    )"
+                    :key="idx"
+                    class="text-[11px]"
                   >
-                    {{
-                      tubeSheetStatusLabels[tubeSheetDetails.status] || "N/A"
-                    }}
-                  </span>
-                </p>
+                    {{ phase }}
+                  </li>
+                </ul>
               </div>
+              <p>
+                <span class="font-medium">Status:</span>
+                <span
+                  class="inline-block px-2 py-0.5 rounded-full text-xs font-medium"
+                  :class="{
+                    'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300':
+                      tubeSheetDetails.status === 'TUBE_SHEET_CREATED',
+                    'bg-secondary-100 text-secondary-700 dark:bg-secondary-900/30 dark:text-secondary-300':
+                      tubeSheetDetails.status === 'CAMERA_CONFIGURED',
+                    'bg-success-100 text-success-700 dark:bg-success-900/30 dark:text-success-300':
+                      tubeSheetDetails.status === 'REACTOR_CREATED',
+                    'bg-info-100 text-info-700 dark:bg-info-900/30 dark:text-info-300':
+                      tubeSheetDetails.status === 'CAMERA_CALIBRATED',
+                    'bg-warning-100 text-warning-700 dark:bg-warning-900/30 dark:text-warning-300':
+                      tubeSheetDetails.status === 'UNDER_SURVEY',
+                  }"
+                >
+                  {{ tubeSheetStatusLabels[tubeSheetDetails.status as keyof typeof tubeSheetStatusLabels] || "N/A" }}
+                </span>
+              </p>
             </div>
           </UPageCard>
 
@@ -403,7 +304,7 @@
             </div>
           </div>
         </UPageBody>
-        <template v-if="isRightOpen" #right>
+        <template v-if="isRightOpen && !dualView" #right>
           <div
             ref="rightPanelRef"
             class="w-full max-h-[calc(100dvh-var(--ui-header-height)-49px)] overflow-y-auto p-4 space-y-4 relative"
@@ -935,7 +836,10 @@
     </template>
   </UModal>
 
-  <UModal v-model:open="successModalOpen" :title="successMessage">
+  <UModal
+    v-model:open="successModalOpen"
+    :title="successMessage"
+  >
     <template #body>
       <div class="space-y-4">
         <p>The phase has been completed successfully.</p>
@@ -1099,8 +1003,14 @@ const backTableData = ref<TubeDataTable[]>([]);
 const backRepeatTableData = ref<TubeDataTable[]>([]);
 
 function getTubeHistoryRows(id: string) {
-  const data =
-    viewDisplay.value === "Back View"
+  const data = dualView.value
+    ? [
+        ...tableData.value,
+        ...repeatTableData.value,
+        ...backTableData.value,
+        ...backRepeatTableData.value,
+      ]
+    : viewDisplay.value === "Back View"
       ? [...backTableData.value, ...backRepeatTableData.value]
       : [...tableData.value, ...repeatTableData.value];
   return data
@@ -1289,8 +1199,12 @@ const progressRepeatColumns: TableColumn<TubeDataTable>[] = [
 
 const pageUi = computed(() => ({
   root: "gap-0!",
-  right: isRightOpen.value ? "lg:col-span-4 order-first lg:order-last" : "",
-  center: isRightOpen.value ? "lg:col-span-6" : "lg:col-span-10",
+  right:
+    isRightOpen.value && !dualView.value
+      ? "lg:col-span-4 order-first lg:order-last"
+      : "",
+  center:
+    isRightOpen.value && !dualView.value ? "lg:col-span-6" : "lg:col-span-10",
 }));
 
 const bodyClass = computed(() => {
@@ -1302,6 +1216,9 @@ const bodyClass = computed(() => {
   const bgLight = "bg-white";
   const bgDark = "dark:bg-neutral-950";
 
+  if (dualView.value) {
+    return `${base} ${gridLight} ${gridDark} ${bgLight} ${bgDark}`;
+  }
   if (viewDisplay.value === "Back View") {
     // For back view, use a reddish grid to differentiate
     const gridLightBack =
@@ -1483,6 +1400,9 @@ const transformStr = computed(
     `translate(${tx.value} ${ty.value}) scale(${scale.value}) rotate(${rotation.value} 600 600)`,
 );
 const svgRef = ref<SVGSVGElement | null>(null);
+const svgFrontRef = ref<SVGSVGElement | null>(null);
+const svgBackRef = ref<SVGSVGElement | null>(null);
+const dualView = ref(false);
 const svgWidth = 1200,
   svgHeight = 1200;
 const centerX = svgWidth / 2,
@@ -1524,6 +1444,14 @@ const compassSize = computed(() => {
 
 // Cache DOM elements for fast access
 const elById = new Map<string, SVGCircleElement>();
+const elMaps = {
+  front: new Map<string, SVGCircleElement>(),
+  back: new Map<string, SVGCircleElement>(),
+};
+const iconMaps = {
+  front: new Map<string, SVGGElement>(),
+  back: new Map<string, SVGGElement>(),
+};
 const selectedIds = ref<Set<string>>(new Set());
 // Property options
 const propertiesOptions = [
@@ -1579,26 +1507,58 @@ function updateCircleVisual(
   t: Tube & { backColor?: string; _backendUpdatedBack?: boolean },
   newPropertyColor = "",
 ) {
-  const c = elById.get(t.id);
-  if (!c) return;
+  if (dualView.value) {
+    updateCircleVisualForSvg(
+      t,
+      svgFrontRef.value,
+      elMaps.front,
+      iconMaps.front,
+      false,
+      newPropertyColor,
+    );
+    updateCircleVisualForSvg(
+      t,
+      svgBackRef.value,
+      elMaps.back,
+      iconMaps.back,
+      true,
+      newPropertyColor,
+    );
+    return;
+  }
   const isBackView = viewDisplay.value === "Back View";
-  // Special property color (e.g. CATALYST_TC, COOLANT) always shows on both faces
+  updateCircleVisualForSvg(
+    t,
+    svgRef.value,
+    elById,
+    iconElById,
+    isBackView,
+    newPropertyColor,
+  );
+}
+
+function updateCircleVisualForSvg(
+  t: Tube & { backColor?: string; _backendUpdatedBack?: boolean },
+  svg: SVGSVGElement | null,
+  elMap: Map<string, SVGCircleElement>,
+  iconMap: Map<string, SVGGElement>,
+  isBackView: boolean,
+  newPropertyColor = "",
+) {
+  if (!svg) return;
+  const c = elMap.get(t.id);
+  if (!c) return;
   const specialPropertyColor = propertiesOptions.find(
     (p) => p.value === t.property,
   )?.color;
-  // Detection color only shows on the face it was detected on
-  let propertyColor: string | null | undefined;
-  if (specialPropertyColor) {
-    propertyColor = specialPropertyColor;
-  } else if (isBackView) {
-    // In Back View, only show backColor (from back detection), not front propertyColor
-    propertyColor = t.backColor || undefined;
-  } else {
-    // In Front View, only show propertyColor if it was set by front detection
-    propertyColor = t._backendUpdated ? t.propertyColor : undefined;
-  }
-  const isSelected = selectedIds.value.has(t.id);
+  const surveyColor = isBackView ? t.backColor : t.propertyColor;
+  let fillColor = newPropertyColor || surveyColor || "#fff";
 
+  if (t.property && !surveyColor && !newPropertyColor && specialPropertyColor) {
+    fillColor = specialPropertyColor;
+  }
+
+  const isSelected = selectedIds.value.has(t.id);
   const cx = centerX + t.x * scalePx;
   const cy = centerY + t.y * scalePx;
   const r = t.r * scalePx;
@@ -1606,13 +1566,41 @@ function updateCircleVisual(
   c.setAttribute("cx", String(cx));
   c.setAttribute("cy", String(cy));
   c.setAttribute("r", String(r));
-  c.setAttribute("fill", newPropertyColor || propertyColor || "#fff");
+  c.setAttribute("fill", fillColor);
   c.setAttribute("stroke", isSelected ? "#FF0000" : "#0f172a");
   c.setAttribute("stroke-width", isSelected ? "1.5" : "0.3");
-  c.setAttribute("filter", isBackView ? "invert(1)" : "none");
+  c.setAttribute(
+    "filter",
+    isBackView && t.backColor ? "url(#invert-filter)" : "none",
+  );
 
-  // Update icon overlays
-  updateTubeIcons(t, cx, cy, r);
+  updateTubeIconsForSvg(t, svg, iconMap, isBackView, cx, cy, r);
+}
+
+function ensureInvertFilter(svg: SVGSVGElement) {
+  let defs = svg.querySelector("defs") as SVGDefsElement | null;
+  if (!defs) {
+    defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+    svg.insertBefore(defs, svg.firstChild);
+  }
+  if (!defs.querySelector("#invert-filter")) {
+    const filter = document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "filter",
+    );
+    filter.setAttribute("id", "invert-filter");
+    const feColorMatrix = document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "feColorMatrix",
+    );
+    feColorMatrix.setAttribute("type", "matrix");
+    feColorMatrix.setAttribute(
+      "values",
+      "-1 0 0 0 1  0 -1 0 0 1  0 0 -1 0 1  0 0 0 1 0",
+    );
+    filter.appendChild(feColorMatrix);
+    defs.appendChild(filter);
+  }
 }
 
 function updateTubeIcons(
@@ -1621,16 +1609,46 @@ function updateTubeIcons(
   cy: number,
   r: number,
 ) {
-  let iconGroup = iconElById.get(t.id);
+  if (dualView.value) {
+    updateTubeIconsForSvg(
+      t,
+      svgFrontRef.value,
+      iconMaps.front,
+      false,
+      cx,
+      cy,
+      r,
+    );
+    updateTubeIconsForSvg(t, svgBackRef.value, iconMaps.back, true, cx, cy, r);
+    return;
+  }
+  updateTubeIconsForSvg(
+    t,
+    svgRef.value,
+    iconElById,
+    viewDisplay.value === "Back View",
+    cx,
+    cy,
+    r,
+  );
+}
 
-  // Check what icons are needed
-  const isBackView = viewDisplay.value === "Back View";
+function updateTubeIconsForSvg(
+  t: Tube & { backColor?: string; _backendUpdatedBack?: boolean },
+  svg: SVGSVGElement | null,
+  iconMap: Map<string, SVGGElement>,
+  isBackView: boolean,
+  cx: number,
+  cy: number,
+  r: number,
+) {
+  if (!svg) return;
+  let iconGroup = iconMap.get(t.id);
   const hasComment = !!(
     t.comment ||
     tubeComments.value.find((c) => c.tubeIdAsperLayout === t.id)?.comment
   );
   const repeatCount = tubeRepeatCounts.value.get(t.id) || 0;
-  // Only show arrow if the detection face matches the current view
   const isLastDetected =
     lastDetectedTubeId.value === t.id &&
     ((isBackView && lastDetectedFace.value === "back") ||
@@ -1638,39 +1656,28 @@ function updateTubeIcons(
   const needsIcons = hasComment || repeatCount > 1 || isLastDetected;
 
   if (!needsIcons) {
-    // Remove icon group if present
     if (iconGroup) {
       iconGroup.remove();
-      iconElById.delete(t.id);
+      iconMap.delete(t.id);
     }
     return;
   }
 
-  // Create or reuse icon group
   if (!iconGroup) {
     iconGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
     iconGroup.setAttribute("class", "tube-icons");
     iconGroup.setAttribute("pointer-events", "none");
-    iconElById.set(t.id, iconGroup);
-    // Append to the icons layer (will be created in renderAll)
-    const svg = svgRef.value;
-    if (svg) {
-      const vp = svg.querySelector("#viewport") as SVGGElement;
-      let iconsLayer = vp?.querySelector("#icons-layer") as SVGGElement;
-      if (!iconsLayer) {
-        iconsLayer = document.createElementNS(
-          "http://www.w3.org/2000/svg",
-          "g",
-        );
-        iconsLayer.setAttribute("id", "icons-layer");
-        vp?.appendChild(iconsLayer);
-      }
-      iconsLayer.appendChild(iconGroup);
+    iconMap.set(t.id, iconGroup);
+    const vp = svg.querySelector("#viewport") as SVGGElement;
+    let iconsLayer = vp?.querySelector("#icons-layer") as SVGGElement;
+    if (!iconsLayer) {
+      iconsLayer = document.createElementNS("http://www.w3.org/2000/svg", "g");
+      iconsLayer.setAttribute("id", "icons-layer");
+      vp?.appendChild(iconsLayer);
     }
+    iconsLayer.appendChild(iconGroup);
   }
 
-  // In Back View the SVG is flipped with scale(-1,1), so counter-flip icons
-  // to keep text/icons readable
   if (isBackView) {
     iconGroup.setAttribute(
       "transform",
@@ -1680,8 +1687,45 @@ function updateTubeIcons(
     iconGroup.removeAttribute("transform");
   }
 
-  // Clear existing icons
   iconGroup.innerHTML = "";
+
+  // Helper: choose readable text color (black or white) based on hole fill color
+  const getContrastColor = (colorNameOrHex: string) => {
+    if (!colorNameOrHex) return "#000";
+
+    // Map standard color names to hex
+    const colorMap: Record<string, string> = {
+      red: "#EF4444",
+      orange: "#F97316",
+      yellow: "#FACC15",
+      green: "#22C55E",
+      cyan: "#06B6D4",
+      blue: "#3B82F6",
+      indigo: "#4F46E5",
+      purple: "#7C3AED",
+      pink: "#EC4899",
+      brown: "#92400E",
+      black: "#111827",
+      white: "#F9FAFB",
+    };
+
+    const hex = colorMap[colorNameOrHex.toLowerCase()] || colorNameOrHex;
+
+    let h = hex.replace("#", "").trim();
+    if (h.length === 3)
+      h = h
+        .split("")
+        .map((c) => c + c)
+        .join("");
+    if (h.length !== 6) return "#000";
+    const r = parseInt(h.slice(0, 2), 16) / 255;
+    const g = parseInt(h.slice(2, 4), 16) / 255;
+    const b = parseInt(h.slice(4, 6), 16) / 255;
+    const toLin = (c: number) =>
+      c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    const L = 0.2126 * toLin(r) + 0.7152 * toLin(g) + 0.0722 * toLin(b);
+    return L > 0.5 ? "#000" : "#fff";
+  };
 
   const iconSize = Math.max(r * 0.7, 3);
   /** Lucide overlay icons: solid fill + larger than tube-relative `iconSize`. */
@@ -1695,7 +1739,13 @@ function updateTubeIcons(
     text.setAttribute("y", String(cy));
     text.setAttribute("text-anchor", "middle");
     text.setAttribute("dominant-baseline", "central");
-    text.setAttribute("fill", "#ef4444");
+    // Compute hole fill color similarly to updateCircleVisualForSvg to pick readable font
+    const specialPropertyColor = propertiesOptions.find(
+      (p) => p.value === t.property,
+    )?.color;
+    const surveyColor = isBackView ? t.backColor : t.propertyColor;
+    const holeColor = surveyColor || specialPropertyColor || "#ffffff";
+    text.setAttribute("fill", getContrastColor(holeColor));
     text.setAttribute("font-size", String(Math.max(r * 1.1, 4)));
     text.setAttribute("font-weight", "bold");
     text.setAttribute("font-family", "Arial, sans-serif");
@@ -1743,6 +1793,11 @@ function updateTubeIcons(
     iconGroup.appendChild(commentIcon);
   }
 }
+
+// ensure svg refs for dual view when created in template
+onMounted(() => {
+  // If dualView is enabled later, svgFrontRef and svgBackRef will be bound by template
+});
 
 /* ----------------------------
    SELECTION WITH MIRRORING
@@ -1900,8 +1955,30 @@ async function submitComment() {
    RENDERING
 ----------------------------- */
 function renderAll() {
+  if (dualView.value) {
+    // Render into front and back SVGs separately
+    renderAllForSvg(svgFrontRef.value, elMaps.front, iconMaps.front, false);
+    renderAllForSvg(svgBackRef.value, elMaps.back, iconMaps.back, true);
+    return;
+  }
+
   const svg = svgRef.value;
   if (!svg) return;
+  renderAllForSvg(svg, elById, iconElById, viewDisplay.value === "Back View");
+}
+
+function renderAllForSvg(
+  svg: SVGSVGElement | null,
+  elMap: Map<string, SVGCircleElement>,
+  iconMap: Map<string, SVGGElement>,
+  isBackView: boolean,
+) {
+  if (!svg) return;
+  console.log("renderAllForSvg", {
+    isBackView,
+    svgExists: !!svg,
+    tubeCount: currentTubes.value.length,
+  });
   const vp = svg.querySelector("#viewport") as SVGGElement;
   if (!vp) return;
 
@@ -1911,6 +1988,10 @@ function renderAll() {
     if ((child as Element).id !== "tooltip") child.remove();
   });
 
+  if (isBackView) {
+    ensureInvertFilter(svg);
+  }
+
   // Ensure icons layer exists
   let iconsLayer = vp.querySelector("#icons-layer") as SVGGElement;
   if (!iconsLayer) {
@@ -1919,42 +2000,40 @@ function renderAll() {
     vp.appendChild(iconsLayer);
   }
 
-  drawBoundary(boundary, config.value, centerX, centerY, scalePx);
+  drawBoundary(boundary, config.value, centerX, centerY, scalePx, isBackView);
 
-  const isBackView = viewDisplay.value === "Back View";
   const activeTubes = currentTubes.value.filter((t) => !t.deleted);
   const presentIds = new Set(activeTubes.map((t) => t.id));
 
-  // Remove stale circles and icons
-  for (const [id, el] of Array.from(elById.entries())) {
+  // Remove stale circles and icons for this svg
+  for (const [id, el] of Array.from(elMap.entries())) {
     if (!presentIds.has(id)) {
       el.remove();
-      elById.delete(id);
+      elMap.delete(id);
     }
   }
-  for (const [id, el] of Array.from(iconElById.entries())) {
+  for (const [id, el] of Array.from(iconMap.entries())) {
     if (!presentIds.has(id)) {
       el.remove();
-      iconElById.delete(id);
+      iconMap.delete(id);
     }
   }
 
-  // Render or update existing circles
+  // Render or update existing circles into this svg's tubes layer
   for (const t of activeTubes) {
-    let c = elById.get(t.id);
+    let c = elMap.get(t.id);
     if (!c) {
       c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
       c.dataset.name = t.id;
       c.addEventListener("click", (e) => handleTubeClick(e, t.id));
-      // c.addEventListener('contextmenu', e => handleTubeContextMenu(e, t.id))
-      elById.set(t.id, c);
+      elMap.set(t.id, c);
       tubes.appendChild(c);
     }
 
-    updateCircleVisual(t);
+    updateCircleVisualForSvg(t, svg, elMap, iconMap, isBackView);
   }
 
-  // Render row labels with tube counts
+  // Render row labels with tube counts for this svg
   renderRowLabels(vp, activeTubes, isBackView);
 }
 
@@ -2025,7 +2104,6 @@ function renderRowLabels(
       text.setAttribute("text-anchor", "start");
       text.setAttribute("fill", "#22c55e"); // Green color for back view
       text.setAttribute("font-weight", "900"); // Extra bold
-      text.setAttribute("filter", "invert(1)");
     } else {
       text.setAttribute("text-anchor", "start");
     }
@@ -2156,7 +2234,7 @@ function panXY(dx: number, dy: number) {
 function handleWheel(event: WheelEvent) {
   // Slower zoom factor (1.03 instead of 1.1) for smoother control
   const factor = event.deltaY < 0 ? 1.03 : 1 / 1.03;
-  const svg = svgRef.value;
+  const svg = (event.currentTarget as SVGSVGElement) || svgRef.value;
   if (svg) {
     const rect = svg.getBoundingClientRect();
     const pivotX = ((event.clientX - rect.left) / rect.width) * svgWidth;
@@ -2185,8 +2263,11 @@ function handleKeyDown(event: KeyboardEvent) {
   event.preventDefault();
   const step = 40;
 
-  if (event.shiftKey) {
-    // Shift + Arrow = move reactor
+  // If the right panel is open and visible, arrow keys scroll it unless Shift is held.
+  const rightOpen =
+    !!rightPanelRef.value && isRightOpen.value && !dualView.value;
+  if (event.shiftKey || !rightOpen) {
+    // Shift + Arrow OR when right panel is not open => move reactor
     switch (event.key) {
       case "ArrowUp":
         panXY(0, -step);
@@ -2202,12 +2283,11 @@ function handleKeyDown(event: KeyboardEvent) {
         break;
     }
   } else {
-    // Arrow only (up/down) = scroll right panel
-    if (!rightPanelRef.value) return;
+    // Arrow only (up/down) => scroll right panel
     if (event.key === "ArrowUp") {
-      rightPanelRef.value.scrollBy({ top: -step, behavior: "smooth" });
+      rightPanelRef.value!.scrollBy({ top: -step, behavior: "smooth" });
     } else if (event.key === "ArrowDown") {
-      rightPanelRef.value.scrollBy({ top: step, behavior: "smooth" });
+      rightPanelRef.value!.scrollBy({ top: step, behavior: "smooth" });
     }
   }
 }
@@ -2381,6 +2461,23 @@ watch(viewDisplay, () => {
   renderAll();
 });
 
+watch(dualView, () => {
+  nextTick(() => renderAll());
+});
+
+function toggleDualView() {
+  const was = dualView.value;
+  dualView.value = !dualView.value;
+  // When entering or exiting dual view, wait for DOM update then render.
+  nextTick(() => renderAll());
+
+  // If we just exited Both View (was true, now false), perform a full page refresh
+  // to ensure single-view SVG state and caches fully reset.
+  if (was && !dualView.value) {
+    window.location.reload();
+  }
+}
+
 async function fetchUpdatedTubeColors(surveyId: string) {
   try {
     const idToUse = surveyId || activeSurveyId.value;
@@ -2397,7 +2494,7 @@ async function fetchUpdatedTubeColors(surveyId: string) {
       endTimeStamp,
       comments,
       errorLogs,
-    } = surveyPayload as Record<string, unknown>;
+    } = surveyPayload as Record<string, any>;
     repeatCount.value = (repeat as number) || 0;
 
     if (Array.isArray(errorLogs)) {
@@ -2537,7 +2634,7 @@ async function fetchUpdatedTubeColors(surveyId: string) {
         },
       )
       .sort(
-        (a, b) =>
+        (a: any, b: any) =>
           new Date(b.timeStamp).getTime() - new Date(a.timeStamp).getTime(),
       );
 
@@ -2563,7 +2660,7 @@ async function fetchUpdatedTubeColors(surveyId: string) {
         },
       )
       .sort(
-        (a, b) =>
+        (a: any, b: any) =>
           new Date(b.timeStamp).getTime() - new Date(a.timeStamp).getTime(),
       );
 
@@ -2589,7 +2686,7 @@ async function fetchUpdatedTubeColors(surveyId: string) {
         },
       )
       .sort(
-        (a, b) =>
+        (a: any, b: any) =>
           new Date(b.timeStamp).getTime() - new Date(a.timeStamp).getTime(),
       ); // Sort by time desc
 
@@ -2615,7 +2712,7 @@ async function fetchUpdatedTubeColors(surveyId: string) {
         },
       )
       .sort(
-        (a, b) =>
+        (a: any, b: any) =>
           new Date(b.timeStamp).getTime() - new Date(a.timeStamp).getTime(),
       ); // Sort by time desc
   } catch (err) {
