@@ -57,14 +57,25 @@ const links = [
     {
       label: "Swift Mapping Tool",
       icon: "i-lucide-globe",
-      // External link - open in new tab
-      to: "#",
-      onSelect: () => {
-        open.value = false;
-        if (typeof window !== "undefined") {
-          window.open("https://jsoncircle.dnyindia.in", "_blank");
-        }
-      },
+      type: "trigger",
+      children: [
+        {
+          label: "Circle",
+          to: "https://jsoncircle.dnyindia.in",
+          target: "_blank",
+          onSelect: () => {
+            open.value = false;
+          },
+        },
+        {
+          label: "Line",
+          to: "https://jsonline.dnyindia.in",
+          target: "_blank",
+          onSelect: () => {
+            open.value = false;
+          },
+        },
+      ],
     },
     {
       label: "Rule Board",
@@ -121,6 +132,7 @@ const links = [
       <template #default>
         <UNavigationMenu
           v-if="!useRoute().path.startsWith('/create-reactor')"
+          class="sidebar-menu"
           :collapsed="collapsed"
           :items="links"
           orientation="vertical"

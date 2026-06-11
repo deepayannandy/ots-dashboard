@@ -551,78 +551,116 @@
               :title="`Tube History: ${[...selectedIds].join(', ')}`"
               :ui="{ container: 'sm:p-2 gap-y-2' }"
             >
-              <div v-for="id in [...selectedIds]" :key="id">
+              <template v-if="selectedPhase === 'CATALYST_OUTAGE_TRACKING'">
                 <div
-                  v-if="
-                    (viewDisplay === 'Back View'
-                      ? backTableData
-                      : tableData
-                    ).find((t) => t.tube === id)
-                  "
-                  class="text-sm text-neutral-700 dark:text-neutral-200"
+                  class="grid grid-cols-1 gap-4 p-4 bg-neutral-50 dark:bg-neutral-900 rounded-b-lg"
                 >
-                  Activity:
-                  {{
-                    (viewDisplay === "Back View"
-                      ? backTableData
-                      : tableData
-                    ).find((t) => t.tube === id)!.Activity
-                  }}
-                  <br />
-                  <div class="flex items-center justify-between">
-                    <span
-                      >Time:
-                      {{
-                        (viewDisplay === "Back View"
-                          ? backTableData
-                          : tableData
-                        ).find((t) => t.tube === id)!.time
-                      }}</span
+                  <div
+                    class="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm text-neutral-800 dark:text-neutral-200"
+                  >
+                    <div
+                      class="rounded-md border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 p-3 shadow-sm"
                     >
-                    <UButton
-                      v-if="
-                        (viewDisplay === 'Back View'
-                          ? backTableData
-                          : tableData
-                        ).find((t) => t.tube === id)?.evidenceImage
-                      "
-                      size="xs"
-                      color="primary"
-                      variant="subtle"
-                      icon="i-lucide-image"
-                      @click="
-                        openImageModal(
-                          (viewDisplay === 'Back View'
-                            ? backTableData
-                            : tableData
-                          ).find((t) => t.tube === id)!,
-                        )
-                      "
+                      <div
+                        class="text-xs uppercase tracking-[0.15em] text-neutral-500 dark:text-neutral-400"
+                      >
+                        Start Time
+                      </div>
+                      <div class="mt-2 font-semibold text-sm">
+                        {{ catalystOutageStartTime }}
+                      </div>
+                    </div>
+                    <div
+                      class="rounded-md border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 p-3 shadow-sm"
                     >
-                      Show Evidence
-                    </UButton>
+                      <div
+                        class="text-xs uppercase tracking-[0.15em] text-neutral-500 dark:text-neutral-400"
+                      >
+                        Drop Time
+                      </div>
+                      <div class="mt-2 font-semibold text-sm">
+                        {{ catalystOutageDropTime }}
+                      </div>
+                    </div>
+                    <div
+                      class="rounded-md border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 p-3 shadow-sm"
+                    >
+                      <div
+                        class="text-xs uppercase tracking-[0.15em] text-neutral-500 dark:text-neutral-400"
+                      >
+                        Max Pressure
+                      </div>
+                      <div class="mt-2 font-semibold text-sm">
+                        {{ catalystOutageMaxPressure }}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div
+                    class="rounded-md border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 p-3 shadow-sm"
+                  >
+                    <div
+                      class="mb-2 text-sm font-medium text-neutral-700 dark:text-neutral-200"
+                    >
+                      Pressure Trend
+                    </div>
+                    <div class="h-48">
+                      <Line
+                        :data="catalystOutageChartData"
+                        :options="catalystOutageChartOptions"
+                      />
+                    </div>
                   </div>
                 </div>
-                <div
-                  v-else
-                  class="text-sm text-neutral-700 dark:text-neutral-200"
-                >
-                  Tube not detected yet.
+              </template>
+
+              <template v-else>
+                <div v-for="id in [...selectedIds]" :key="id">
+                  <div v-if="getTubeHistoryRows(id).length" class="space-y-2">
+                    <div
+                      v-for="(row, index) in getTubeHistoryRows(id)"
+                      :key="`${id}-${row.face}-${row.time}-${index}`"
+                      class="rounded-md border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 p-3 shadow-sm text-sm text-neutral-700 dark:text-neutral-200"
+                    >
+                      <div class="font-semibold">
+                        Activity: {{ row.Activity }}
+                      </div>
+                      <div class="mt-1 flex items-center justify-between gap-3">
+                        <span>Time: {{ row.time }}</span>
+                        <UButton
+                          v-if="row.evidenceImage"
+                          size="xs"
+                          color="primary"
+                          variant="subtle"
+                          icon="i-lucide-image"
+                          @click="openImageModal(row)"
+                        >
+                          Show Evidence
+                        </UButton>
+                      </div>
+                    </div>
+                  </div>
+                  <div
+                    v-else
+                    class="text-sm text-neutral-700 dark:text-neutral-200"
+                  >
+                    Tube not detected yet.
+                  </div>
+                  <div
+                    v-if="
+                      tubeComments.find((c) => c.tubeIdAsperLayout === id)
+                        ?.comment
+                    "
+                    class="text-amber-600 dark:text-amber-400 mt-1"
+                  >
+                    <span class="font-medium">Comment:</span>
+                    {{
+                      tubeComments.find((c) => c.tubeIdAsperLayout === id)
+                        ?.comment
+                    }}
+                  </div>
                 </div>
-                <div
-                  v-if="
-                    tubeComments.find((c) => c.tubeIdAsperLayout === id)
-                      ?.comment
-                  "
-                  class="text-amber-600 dark:text-amber-400 mt-1"
-                >
-                  <span class="font-medium">Comment:</span>
-                  {{
-                    tubeComments.find((c) => c.tubeIdAsperLayout === id)
-                      ?.comment
-                  }}
-                </div>
-              </div>
+              </template>
             </UPageCard>
             <!-- Color Cap Tracking Grid - Only visible for COLOR_CAP_TRACKING phase -->
             <UPageCard
@@ -995,7 +1033,7 @@ import {
   tubeSheetStatusLabels,
 } from "@/utils/tubesheetOptions";
 import { UFieldGroup } from "#components";
-import { Pie, Bar } from "vue-chartjs";
+import { Pie, Bar, Line } from "vue-chartjs";
 import {
   Chart as ChartJS,
   ArcElement,
@@ -1004,6 +1042,8 @@ import {
   CategoryScale,
   LinearScale,
   BarElement,
+  LineElement,
+  PointElement,
   Title,
 } from "chart.js";
 import type { TooltipItem } from "chart.js";
@@ -1015,6 +1055,7 @@ type TubeDataTable = {
   tube: string;
   Activity: string;
   time: string;
+  timeStamp: string;
   face: string;
   evidenceImage?: string;
   comment?: string;
@@ -1026,6 +1067,8 @@ ChartJS.register(
   CategoryScale,
   LinearScale,
   BarElement,
+  LineElement,
+  PointElement,
   Title,
 );
 
@@ -1045,7 +1088,7 @@ const route = useRoute();
 const { setConfig } = useReactorGenerator();
 
 // Countdown timer for next API call
-const timeLeft = ref(60);
+const timeLeft = ref(SURVEY_POLLING_INTERVAL / 1000);
 let countdownInterval: ReturnType<typeof setInterval> | null = null;
 
 const reactorId = useRoute().params?.reactorId as string;
@@ -1054,6 +1097,19 @@ const tableData = ref<TubeDataTable[]>([]);
 const repeatTableData = ref<TubeDataTable[]>([]);
 const backTableData = ref<TubeDataTable[]>([]);
 const backRepeatTableData = ref<TubeDataTable[]>([]);
+
+function getTubeHistoryRows(id: string) {
+  const data =
+    viewDisplay.value === "Back View"
+      ? [...backTableData.value, ...backRepeatTableData.value]
+      : [...tableData.value, ...repeatTableData.value];
+  return data
+    .filter((row) => row.tube === id)
+    .sort(
+      (a, b) =>
+        new Date(b.timeStamp).getTime() - new Date(a.timeStamp).getTime(),
+    );
+}
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const tubeSheetDetails = ref<any>(null);
@@ -2087,10 +2143,10 @@ function goHome() {
    ZOOM HANDLERS
 ----------------------------- */
 function zoomIn() {
-  zoom(1.15);
+  zoom(1.15, centerX, centerY);
 }
 function zoomOut() {
-  zoom(1 / 1.15);
+  zoom(1 / 1.15, centerX, centerY);
 }
 function panXY(dx: number, dy: number) {
   // Invert X direction when in Back View (mirrored) mode
@@ -2100,7 +2156,15 @@ function panXY(dx: number, dy: number) {
 function handleWheel(event: WheelEvent) {
   // Slower zoom factor (1.03 instead of 1.1) for smoother control
   const factor = event.deltaY < 0 ? 1.03 : 1 / 1.03;
-  zoom(factor);
+  const svg = svgRef.value;
+  if (svg) {
+    const rect = svg.getBoundingClientRect();
+    const pivotX = ((event.clientX - rect.left) / rect.width) * svgWidth;
+    const pivotY = ((event.clientY - rect.top) / rect.height) * svgHeight;
+    zoom(factor, pivotX, pivotY);
+  } else {
+    zoom(factor, centerX, centerY);
+  }
 }
 function resetView() {
   if (initialViewportState.value) {
@@ -2257,10 +2321,11 @@ onMounted(async () => {
           SURVEY_POLLING_INTERVAL,
         );
         // Start countdown timer
-        timeLeft.value = 60;
+        timeLeft.value = SURVEY_POLLING_INTERVAL / 1000;
         countdownInterval = setInterval(() => {
           timeLeft.value--;
-          if (timeLeft.value <= 0) timeLeft.value = 60;
+          if (timeLeft.value <= 0)
+            timeLeft.value = SURVEY_POLLING_INTERVAL / 1000;
         }, 1000);
       } else {
         fetchUpdatedTubeColors(activeSurveyId.value);
@@ -2365,7 +2430,7 @@ async function fetchUpdatedTubeColors(surveyId: string) {
     // Record API call time
     apiCallTime.value = new Date();
     // Reset countdown timer
-    timeLeft.value = 60;
+    timeLeft.value = SURVEY_POLLING_INTERVAL / 1000;
 
     // Update comments from API
     if (comments && Array.isArray(comments)) {
@@ -2464,13 +2529,17 @@ async function fetchUpdatedTubeColors(surveyId: string) {
             tube: item.tubeIdAsperLayout,
             Activity: item.activity,
             time: new Date(item.timeStamp).toLocaleString(),
+            timeStamp: item.timeStamp,
             face: "front",
             evidenceImage: item.evidenceImage,
             Action: "Locate",
           };
         },
       )
-      .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+      .sort(
+        (a, b) =>
+          new Date(b.timeStamp).getTime() - new Date(a.timeStamp).getTime(),
+      );
 
     repeatTableData.value = frontData
       ?.filter((e: { isDuplicate: boolean }) => e?.isDuplicate)
@@ -2486,13 +2555,17 @@ async function fetchUpdatedTubeColors(surveyId: string) {
             tube: item.tubeIdAsperLayout,
             Activity: item.activity,
             time: new Date(item.timeStamp).toLocaleString(),
+            timeStamp: item.timeStamp,
             face: "front",
             evidenceImage: item.evidenceImage,
             Action: "Locate",
           };
         },
       )
-      .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+      .sort(
+        (a, b) =>
+          new Date(b.timeStamp).getTime() - new Date(a.timeStamp).getTime(),
+      );
 
     backTableData.value = backData
       ?.filter((e: { isDuplicate: boolean }) => !e?.isDuplicate)
@@ -2508,13 +2581,17 @@ async function fetchUpdatedTubeColors(surveyId: string) {
             tube: item.tubeIdAsperLayout,
             Activity: item.activity,
             time: new Date(item.timeStamp).toLocaleString(),
+            timeStamp: item.timeStamp,
             face: "back",
             evidenceImage: item.evidenceImage,
             Action: "Locate",
           };
         },
       )
-      .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()); // Sort by time desc
+      .sort(
+        (a, b) =>
+          new Date(b.timeStamp).getTime() - new Date(a.timeStamp).getTime(),
+      ); // Sort by time desc
 
     backRepeatTableData.value = backData
       ?.filter((e: { isDuplicate: boolean }) => e?.isDuplicate)
@@ -2530,13 +2607,17 @@ async function fetchUpdatedTubeColors(surveyId: string) {
             tube: item.tubeIdAsperLayout,
             Activity: item.activity,
             time: new Date(item.timeStamp).toLocaleString(),
+            timeStamp: item.timeStamp,
             face: "back",
             evidenceImage: item.evidenceImage,
             Action: "Locate",
           };
         },
       )
-      .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()); // Sort by time desc
+      .sort(
+        (a, b) =>
+          new Date(b.timeStamp).getTime() - new Date(a.timeStamp).getTime(),
+      ); // Sort by time desc
   } catch (err) {
     console.error("Failed to fetch tube colors:", err);
   }
@@ -2792,6 +2873,121 @@ const progressChartOptions = {
         display: true,
         text: "Tubes",
         font: { size: 10 },
+      },
+      ticks: {
+        font: { size: 9 },
+      },
+    },
+  },
+};
+
+const catalystOutageSeries = computed(() => {
+  const now = Date.now();
+  const base = new Date(now - 30 * 60 * 1000); // 30 minutes ago
+  return [
+    { time: new Date(base.getTime() + 0 * 60 * 1000).toISOString(), value: 0 },
+    { time: new Date(base.getTime() + 5 * 60 * 1000).toISOString(), value: 8 },
+    {
+      time: new Date(base.getTime() + 10 * 60 * 1000).toISOString(),
+      value: 16,
+    },
+    {
+      time: new Date(base.getTime() + 15 * 60 * 1000).toISOString(),
+      value: 24,
+    },
+    {
+      time: new Date(base.getTime() + 20 * 60 * 1000).toISOString(),
+      value: 31,
+    },
+    {
+      time: new Date(base.getTime() + 25 * 60 * 1000).toISOString(),
+      value: 39,
+    },
+    {
+      time: new Date(base.getTime() + 28 * 60 * 1000).toISOString(),
+      value: 12,
+    },
+    { time: new Date(base.getTime() + 30 * 60 * 1000).toISOString(), value: 0 },
+  ];
+});
+
+const catalystOutageStartTime = computed(() => {
+  const first = catalystOutageSeries.value[0];
+  return first ? new Date(first.time).toLocaleString() : "N/A";
+});
+
+const catalystOutageDropTime = computed(() => {
+  const last =
+    catalystOutageSeries.value[catalystOutageSeries.value.length - 1];
+  return last ? new Date(last.time).toLocaleString() : "N/A";
+});
+
+const catalystOutageMaxPressure = computed(() => {
+  if (!catalystOutageSeries.value.length) return "N/A";
+  const maxValue = Math.max(
+    ...catalystOutageSeries.value.map((entry) => Number(entry.value) || 0),
+  );
+  return Number.isFinite(maxValue) ? `${maxValue}` : "N/A";
+});
+
+const catalystOutageChartData = computed(() => ({
+  labels: catalystOutageSeries.value.map((point) => {
+    const date = new Date(point.time);
+    return date.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }),
+  datasets: [
+    {
+      label: "Pressure",
+      data: catalystOutageSeries.value.map((point) => point.value),
+      borderColor: "#EF4444",
+      backgroundColor: "rgba(239, 68, 68, 0.2)",
+      tension: 0.4,
+      fill: true,
+      pointRadius: 3,
+      pointHoverRadius: 5,
+    },
+  ],
+}));
+
+const catalystOutageChartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: {
+      display: false,
+    },
+    title: {
+      display: false,
+    },
+    tooltip: {
+      callbacks: {
+        label: function (context: TooltipItem<"line">) {
+          return `Pressure: ${context.parsed.y}`;
+        },
+      },
+    },
+  },
+  scales: {
+    x: {
+      display: true,
+      title: {
+        display: true,
+        text: "Time",
+      },
+      ticks: {
+        maxRotation: 45,
+        font: { size: 9 },
+      },
+    },
+    y: {
+      display: true,
+      beginAtZero: true,
+      title: {
+        display: true,
+        text: "Pressure",
       },
       ticks: {
         font: { size: 9 },

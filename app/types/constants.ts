@@ -7,5 +7,5 @@ export const PAGE_SIZES: Record<PageSize, { w: number; h: number }> = {
 
 export const DEFAULT_PADDING = 40;
 
-// Survey polling interval in milliseconds (1 minute)
-export const SURVEY_POLLING_INTERVAL = 60000;
+// Survey polling interval in milliseconds (15 seconds)
+export const SURVEY_POLLING_INTERVAL = 15000;
