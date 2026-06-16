@@ -1,6 +1,6 @@
 import type { ReactorConfig } from "@/types";
 
-function darkenHex(color: string, amount = 0.12) {
+function darkenHex(color: string, amount = 0.25) {
   const hex = color.replace("#", "");
   const normalized =
     hex.length === 3

@@ -163,32 +163,42 @@
                 <g id="viewport" :transform="transformStr"></g>
               </svg>
             </div>
-            <div v-else class="w-full h-full flex gap-2">
-              <svg
-                ref="svgFrontRef"
-                :viewBox="`0 0 ${svgWidth} ${svgHeight}`"
-                xmlns="http://www.w3.org/2000/svg"
-                preserveAspectRatio="xMidYMid meet"
-                style="width: 50%; height: 100%"
-                @wheel.prevent="handleWheel"
-              >
-                <g id="viewport" :transform="transformStr"></g>
-              </svg>
-              <svg
-                ref="svgBackRef"
-                :viewBox="`0 0 ${svgWidth} ${svgHeight}`"
-                xmlns="http://www.w3.org/2000/svg"
-                preserveAspectRatio="xMidYMid meet"
-                style="
-                  width: 50%;
-                  height: 100%;
-                  transform: scale(-1, 1);
-                  transform-origin: center;
-                "
-                @wheel.prevent="handleWheel"
-              >
-                <g id="viewport" :transform="transformStr"></g>
-              </svg>
+            <div v-else class="w-full h-full flex gap-4">
+              <div class="flex-1 flex flex-col items-center justify-center h-full relative">
+                <svg
+                  ref="svgFrontRef"
+                  :viewBox="`0 0 ${svgWidth} ${svgHeight}`"
+                  xmlns="http://www.w3.org/2000/svg"
+                  preserveAspectRatio="xMidYMid meet"
+                  style="width: 100%; height: calc(100% - 40px)"
+                  @wheel.prevent="handleWheel"
+                >
+                  <g id="viewport" :transform="transformStr"></g>
+                </svg>
+                <div class="h-8 flex items-center justify-center text-xs font-bold text-neutral-600 dark:text-neutral-300 uppercase tracking-wider bg-neutral-100/80 dark:bg-neutral-900/80 px-4 py-1 rounded-full border border-neutral-200/50 dark:border-neutral-800/50 shadow-sm mt-2 select-none">
+                  Top / Front View
+                </div>
+              </div>
+              <div class="flex-1 flex flex-col items-center justify-center h-full relative">
+                <svg
+                  ref="svgBackRef"
+                  :viewBox="`0 0 ${svgWidth} ${svgHeight}`"
+                  xmlns="http://www.w3.org/2000/svg"
+                  preserveAspectRatio="xMidYMid meet"
+                  style="
+                    width: 100%;
+                    height: calc(100% - 40px);
+                    transform: scale(-1, 1);
+                    transform-origin: center;
+                  "
+                  @wheel.prevent="handleWheel"
+                >
+                  <g id="viewport" :transform="transformStr"></g>
+                </svg>
+                <div class="h-8 flex items-center justify-center text-xs font-bold text-neutral-600 dark:text-neutral-300 uppercase tracking-wider bg-neutral-100/80 dark:bg-neutral-900/80 px-4 py-1 rounded-full border border-neutral-200/50 dark:border-neutral-800/50 shadow-sm mt-2 select-none">
+                  Back / Bottom View
+                </div>
+              </div>
             </div>
           </div>
           <!-- Backend Progress Indicator -->
@@ -447,11 +457,20 @@
             <UPageCard
               v-if="selectedIds.size"
               spotlight
-              spotlight-color="secondary"
+              spotlight-color="warning"
               class="h-fit p-0"
-              :title="`Tube History: ${[...selectedIds].join(', ')}`"
-              :ui="{ container: 'sm:p-2 gap-y-2' }"
+              :ui="{
+                root: 'overflow-hidden shadow-md border-2 border-amber-500/60 dark:border-amber-400/40',
+                container: 'sm:p-0 gap-0!',
+                header: 'w-full p-3 bg-amber-500 dark:bg-amber-600 text-white font-semibold',
+              }"
             >
+              <template #header>
+                <div class="w-full flex items-center justify-between text-white">
+                  <span class="font-bold">Tube History: {{ [...selectedIds].join(', ') }}</span>
+                  <UIcon name="i-lucide-history" class="size-4" />
+                </div>
+              </template>
               <template v-if="selectedPhase === 'CATALYST_OUTAGE_TRACKING'">
                 <div
                   class="grid grid-cols-1 gap-4 p-4 bg-neutral-50 dark:bg-neutral-900 rounded-b-lg"
@@ -516,7 +535,8 @@
               </template>
 
               <template v-else>
-                <div v-for="id in [...selectedIds]" :key="id">
+                <div class="p-4 space-y-4">
+                  <div v-for="id in [...selectedIds]" :key="id">
                   <div v-if="getTubeHistoryRows(id).length" class="space-y-2">
                     <div
                       v-for="(row, index) in getTubeHistoryRows(id)"
@@ -545,28 +565,36 @@
                     v-else
                     class="text-sm text-neutral-700 dark:text-neutral-200"
                   >
-                    Tube not detected yet.
+                    Not detected.
                   </div>
                   <div
-                    v-if="
-                      tubeComments.find((c) => c.tubeIdAsperLayout === id)
-                        ?.comment
-                    "
-                    class="text-amber-600 dark:text-amber-400 mt-1"
+                    v-if="tubeComments.some((c) => c.tubeIdAsperLayout === id)"
+                    class="mt-3 space-y-2 border-t border-neutral-200 dark:border-neutral-800 pt-2"
                   >
-                    <span class="font-medium">Comment:</span>
-                    {{
-                      tubeComments.find((c) => c.tubeIdAsperLayout === id)
-                        ?.comment
-                    }}
+                    <div class="text-[11px] font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+                      Comments & Messages
+                    </div>
+                    <div
+                      v-for="c in tubeComments.filter((c) => c.tubeIdAsperLayout === id)"
+                      :key="c._id"
+                      class="text-sm bg-neutral-100/50 dark:bg-neutral-900/50 p-2 rounded-md border border-neutral-200/60 dark:border-neutral-800/80"
+                    >
+                      <p class="text-amber-600 dark:text-amber-400 font-medium break-words whitespace-pre-wrap">
+                        {{ c.comment }}
+                      </p>
+                      <p class="text-[10px] text-neutral-400 dark:text-neutral-500 mt-1 font-mono text-right">
+                        {{ c.timeStamp ? new Date(c.timeStamp).toLocaleString() : 'N/A' }}
+                      </p>
+                    </div>
+                  </div>
                   </div>
                 </div>
               </template>
             </UPageCard>
-            <!-- Color Cap Tracking Grid - Only visible for COLOR_CAP_TRACKING phase -->
+            <!-- Active Phase Legend Grid - Visible when selected phase has configs -->
             <UPageCard
               v-if="
-                selectedPhase === 'COLOR_CAP_TRACKING' &&
+                selectedPhase &&
                 colorCapLegend.length > 0
               "
               spotlight
@@ -579,9 +607,19 @@
               }"
             >
               <template #header>
-                <div class="bg-primary w-full">Color Cap Tracking</div>
+                <div class="bg-primary w-full">{{ currentPhaseLabel || 'Phase' }} Legend</div>
               </template>
-              <div class="grid grid-cols-5 p-0 h-full">
+              <div
+                class="grid p-0 h-full"
+                :class="{
+                  'grid-cols-1': colorCapLegend.length === 1,
+                  'grid-cols-2': colorCapLegend.length === 2,
+                  'grid-cols-3': colorCapLegend.length === 3,
+                  'grid-cols-4': colorCapLegend.length === 4,
+                  'grid-cols-5': colorCapLegend.length === 5,
+                  'grid-cols-6': colorCapLegend.length >= 6
+                }"
+              >
                 <div
                   v-for="item in colorCapLegend"
                   :key="item.key"
@@ -1029,8 +1067,8 @@ const selectedPhase = ref<string>("");
 const currentSurvey = ref("");
 
 const showDetails = ref(false);
-const items = ref(["Front View", "Back View"]);
-const viewDisplay = ref("Front View");
+const items = ref(["Top / Front View", "Bottom / Back View"]);
+const viewDisplay = ref("Top / Front View");
 const repeatCount = ref(0);
 const viewMode = ref(false);
 const activeSurveyId = ref<string | undefined>(undefined);
@@ -2792,67 +2830,63 @@ const specialTubes = computed(() =>
   propertyLegend.value.reduce((sum, item) => sum + item.count, 0),
 );
 
-// Color Cap Tracking Legend - counts tubes by color for COLOR_CAP_TRACKING phase
+function formatConfigKey(key: string): string {
+  if (key === "fsdEntry") return "FSD Entry";
+  if (key === "bsd") return "BSD";
+  if (key === "bsdExit") return "BSD Exit";
+  if (key === "baseColor") return "Base Color";
+  if (key.startsWith("color") && key.length > 5) {
+    return "Color " + key.slice(5).toUpperCase();
+  }
+  const result = key.replace(/([A-Z])/g, " $1");
+  return result.charAt(0).toUpperCase() + result.slice(1);
+}
+
+const currentPhaseLabel = computed(() => {
+  if (!selectedPhase.value) return "";
+  const item = allTypeOfPhasesItems.find((p) => p.value === selectedPhase.value);
+  return item ? item.label : selectedPhase.value;
+});
+
+// Active Phase Legend - counts tubes by color for the selected phase
 const colorCapLegend = computed(() => {
-  // Only compute for COLOR_CAP_TRACKING phase
-  if (selectedPhase.value !== "COLOR_CAP_TRACKING") return [];
+  if (!selectedPhase.value) return [];
 
-  // Find the COLOR_CAP_TRACKING phase config
-  const colorCapPhase = phasesData.value.find(
-    (p: { phaseName: string }) => p.phaseName === "COLOR_CAP_TRACKING",
+  // Find the selected phase config
+  const phaseConfig = phasesData.value.find(
+    (p: { phaseName: string }) => p.phaseName === selectedPhase.value,
   );
-  if (!colorCapPhase?.configs) return [];
+  if (!phaseConfig?.configs) return [];
 
-  const configs = colorCapPhase.configs;
+  const configs = phaseConfig.configs;
   const isBackView = viewDisplay.value === "Back View";
 
-  // Build color name to config mapping
-  const colorConfigMap = new Map<
-    string,
-    { color: string; abbreviation: string; key: string }
-  >();
-  for (const [key, value] of Object.entries(configs)) {
-    const config = value as { color: string; abbreviation: string };
-    if (config.color && config.abbreviation) {
-      // Normalize color name for matching (lowercase)
-      colorConfigMap.set(config.color.toLowerCase(), {
-        color: config.color,
-        abbreviation: config.abbreviation,
-        key,
-      });
-    }
-  }
+  // Build legend items from configs, handling fallbacks for empty abbreviations
+  const legend = Object.entries(configs).map(([key, val]) => {
+    const config = val as { color: string; abbreviation: string };
+    const label = config.abbreviation && config.abbreviation.trim() !== ""
+      ? config.abbreviation
+      : formatConfigKey(key);
+    return {
+      key,
+      color: config.color || "",
+      abbreviation: label,
+      count: 0,
+    };
+  }).filter(item => item.color !== "");
 
-  // Count tubes by their propertyColor (which contains color names from survey)
-  const counts = new Map<string, number>();
+  // Count tubes by their propertyColor / backColor
   const activeTubes = currentTubes.value.filter((t) => !t.deleted);
-
   for (const tube of activeTubes) {
-    // Get the color based on view
-    const tubeColor = isBackView ? tube.backColor : tube.propertyColor;
+    const tubeColor = (isBackView ? tube.backColor : tube.propertyColor) || "";
     if (!tubeColor) continue;
+    const normalizedTubeColor = tubeColor.toLowerCase();
 
-    // Try to match the color
-    const normalizedColor = tubeColor.toLowerCase();
-    if (colorConfigMap.has(normalizedColor)) {
-      counts.set(normalizedColor, (counts.get(normalizedColor) || 0) + 1);
+    // Find matching config item by color name
+    const match = legend.find(item => item.color.toLowerCase() === normalizedTubeColor);
+    if (match) {
+      match.count++;
     }
-  }
-
-  // Build legend items from configs
-  const legend: {
-    key: string;
-    color: string;
-    abbreviation: string;
-    count: number;
-  }[] = [];
-  for (const [colorName, config] of colorConfigMap) {
-    legend.push({
-      key: config.key,
-      color: config.color,
-      abbreviation: config.abbreviation,
-      count: counts.get(colorName) || 0,
-    });
   }
 
   return legend;

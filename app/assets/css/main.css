@@ -238,6 +238,43 @@
     background-color: rgba(0, 193, 106, 0.08);
   }
 
+  .sidebar-menu [data-slot="linkLeadingIcon"] {
+    color: var(--color-green-700) !important;
+  }
+
+  .dark .sidebar-menu [data-slot="linkLeadingIcon"] {
+    color: var(--color-green-500) !important;
+  }
+
+  .project-card {
+    border: 1.5px solid var(--color-green-700) !important;
+    box-shadow: 0 4px 20px rgba(0, 127, 69, 0.1) !important;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease !important;
+  }
+
+  .dark .project-card {
+    border-color: var(--color-green-600) !important;
+    box-shadow: 0 4px 24px rgba(0, 193, 106, 0.15) !important;
+  }
+
+  .project-card:hover {
+    border-color: var(--color-green-600) !important;
+    box-shadow: 0 6px 24px rgba(0, 127, 69, 0.18) !important;
+  }
+
+  .dark .project-card:hover {
+    border-color: var(--color-green-500) !important;
+    box-shadow: 0 6px 28px rgba(0, 193, 106, 0.22) !important;
+  }
+
+  .project-card [data-slot="leadingIcon"] {
+    color: var(--color-green-700) !important;
+  }
+
+  .dark .project-card [data-slot="leadingIcon"] {
+    color: var(--color-green-500) !important;
+  }
+
   .dark .gradient-card {
     background: linear-gradient(180deg, rgb(28 28 32) 0%, rgb(24 24 28) 100%);
   }

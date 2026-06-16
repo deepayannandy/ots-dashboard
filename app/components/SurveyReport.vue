@@ -226,7 +226,7 @@
       class="flex flex-col items-center justify-center h-full p-4"
     >
       <h2 class="text-xl font-bold text-gray-800 mb-4 text-center shrink-0">
-        {{ getEquipmentTypeLabel(tubeSheetDetails?.type) }}  Front View
+        {{ getEquipmentTypeLabel(tubeSheetDetails?.type) }}  Top / Front View
       </h2>
       <div class="flex-1 flex items-center justify-center w-full min-h-0">
         <svg
@@ -240,7 +240,7 @@
         </svg>
       </div>
       <p class="text-xs text-gray-500 mt-2 shrink-0">
-        Front view
+        Top / Front View
       </p>
     </div>
 
@@ -253,7 +253,7 @@
       class="flex flex-col items-center justify-center h-full p-4"
     >
       <h2 class="text-xl font-bold text-gray-800 mb-4 text-center shrink-0">
-        {{ getEquipmentTypeLabel(tubeSheetDetails?.type) }}  Back View
+        {{ getEquipmentTypeLabel(tubeSheetDetails?.type) }}  Bottom / Back View
       </h2>
       <div class="flex-1 flex items-center justify-center w-full min-h-0">
         <svg
@@ -267,7 +267,7 @@
         </svg>
       </div>
       <p class="text-xs text-gray-500 mt-2 shrink-0">
-        Back view
+        Bottom / Back View
       </p>
     </div>
 
@@ -382,10 +382,10 @@
         </table>
       </div>
 
-      <!-- Color Cap Tracking Details -->
-      <div v-if="isColorCapTrackingSurvey && colorCapLegend.length > 0" class="mb-6" data-no-break>
+      <!-- Survey Phase Details -->
+      <div v-if="colorCapLegend.length > 0" class="mb-6" data-no-break>
         <h2 class="text-xl font-bold text-gray-800 mb-4 border-b-2 border-primary-500 pb-2">
-          Color Cap Tracking Details
+          {{ surveyTypeLabel }} Details
         </h2>
         <table class="w-full text-sm border-collapse border border-gray-200">
           <thead class="bg-gray-50">
@@ -682,66 +682,65 @@ const specialTubeData = computed(() => {
     })
 })
 
-// Color Cap Tracking Legend - counts tubes by color for COLOR_CAP_TRACKING phase
-const isColorCapTrackingSurvey = computed(() => {
-  return props.surveyData?.surveyType === 'COLOR_CAP_TRACKING'
-})
-
-const colorCapLegend = computed(() => {
-  // Only compute for COLOR_CAP_TRACKING surveys
-  if (!isColorCapTrackingSurvey.value) return []
-
-  // Find the COLOR_CAP_TRACKING phase config
-  const colorCapPhase = props.phasesData?.find(
-    (p: PhaseData) => p.phaseName === 'COLOR_CAP_TRACKING'
-  )
-  if (!colorCapPhase?.configs) return []
-
-  const configs = colorCapPhase.configs
-
-  // Build color name to config mapping
-  const colorConfigMap = new Map<string, { color: string, abbreviation: string, key: string }>()
-  for (const [key, value] of Object.entries(configs)) {
-    const config = value as { color: string, abbreviation: string }
-    if (config.color && config.abbreviation) {
-      // Normalize color name for matching (lowercase)
-      colorConfigMap.set(config.color.toLowerCase(), {
-        color: config.color,
-        abbreviation: config.abbreviation,
-        key
-      })
-    }
+function formatConfigKey(key: string): string {
+  if (key === 'fsdEntry') return 'FSD Entry'
+  if (key === 'bsd') return 'BSD'
+  if (key === 'bsdExit') return 'BSD Exit'
+  if (key === 'baseColor') return 'Base Color'
+  if (key.startsWith('color') && key.length > 5) {
+    return 'Color ' + key.slice(5).toUpperCase()
   }
+  const result = key.replace(/([A-Z])/g, ' $1')
+  return result.charAt(0).toUpperCase() + result.slice(1)
+}
+
+// Active Phase Legend - counts tubes by color for the selected phase
+const colorCapLegend = computed(() => {
+  const surveyType = props.surveyData?.surveyType
+  if (!surveyType) return []
+
+  // Find the selected phase config
+  const phaseConfig = props.phasesData?.find(
+    (p: PhaseData) => p.phaseName === surveyType
+  )
+  if (!phaseConfig?.configs) return []
+
+  const configs = phaseConfig.configs
+
+  // Build legend items from configs, handling fallbacks for empty abbreviations
+  const legend = Object.entries(configs).map(([key, val]) => {
+    const config = val as { color: string, abbreviation: string }
+    const label = config.abbreviation && config.abbreviation.trim() !== ''
+      ? config.abbreviation
+      : formatConfigKey(key)
+    return {
+      key,
+      color: config.color || '',
+      abbreviation: label,
+      frontCount: 0,
+      backCount: 0
+    }
+  }).filter(item => item.color !== '')
 
   // Count colors from survey data items (not tube properties)
-  const frontCounts = new Map<string, number>()
-  const backCounts = new Map<string, number>()
   const surveyDataItems = props.surveyData?.data || []
-
   for (const item of surveyDataItems) {
     // Skip duplicates to avoid double counting
     if (item.isDuplicate) continue
 
-    const normalizedColor = item.color?.toLowerCase()
-    if (!normalizedColor || !colorConfigMap.has(normalizedColor)) continue
+    const tubeColor = item.color || ''
+    if (!tubeColor) continue
+    const normalizedTubeColor = tubeColor.toLowerCase()
 
-    if (item.face === 'back') {
-      backCounts.set(normalizedColor, (backCounts.get(normalizedColor) || 0) + 1)
-    } else {
-      frontCounts.set(normalizedColor, (frontCounts.get(normalizedColor) || 0) + 1)
+    // Find matching config item by color name
+    const match = legend.find(item => item.color.toLowerCase() === normalizedTubeColor)
+    if (match) {
+      if (item.face === 'back') {
+        match.backCount++
+      } else {
+        match.frontCount++
+      }
     }
-  }
-
-  // Build legend items from configs
-  const legend: { key: string, color: string, abbreviation: string, frontCount: number, backCount: number }[] = []
-  for (const [colorName, config] of colorConfigMap) {
-    legend.push({
-      key: config.key,
-      color: config.color,
-      abbreviation: config.abbreviation,
-      frontCount: frontCounts.get(colorName) || 0,
-      backCount: backCounts.get(colorName) || 0
-    })
   }
 
   return legend
@@ -974,7 +973,7 @@ function renderReactorSvg(svgEl: SVGSVGElement | null, isBackView: boolean = fal
   const { boundary, tubes: tubesLayer } = ensureLayers(vp)
 
   // Draw boundary with calculated scale
-  drawBoundary(boundary, config, centerX, centerY, fitScale)
+  drawBoundary(boundary, config, centerX, centerY, fitScale, isBackView)
 
   // Get survey data for coloring
   const surveyDataItems = props.surveyData?.data || []

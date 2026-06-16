@@ -28,7 +28,11 @@
 
         <!-- SKELETON -->
         <template v-if="isFetchingRules">
-          <UPageCard v-for="i in 3" :key="i">
+          <UPageCard
+            v-for="i in 3"
+            :key="i"
+            class="project-card"
+          >
             <USkeleton class="h-6 w-2/3 mb-2" />
             <USkeleton class="h-4 w-full" />
           </UPageCard>
@@ -39,7 +43,7 @@
           <UPageCard
             v-for="rule in phaseRules"
             :key="rule._id"
-            class="space-y-4"
+            class="space-y-4 project-card interactive-lift"
           >
             <div class="flex justify-between">
               <div>
@@ -226,8 +230,8 @@ const modalTitle = computed(() =>
 )
 const modalDescription = computed(() =>
   editingRuleId.value
-    ? 'Update this phase palette before start the survey.'
-    : 'Create phase palette before starting the survey.'
+    ? 'Update this phase palette before project starts.'
+    : 'Create phase palette before starting the project.'
 )
 const submitLabel = computed(() =>
   editingRuleId.value ? 'Update rule' : 'Save rule'
@@ -242,9 +246,9 @@ const colorTrackingSchema = [
 ]
 
 const detectionSchema = [
-  { key: 'fsdEntry', label: 'Front side detection entry' },
-  { key: 'bsd', label: 'Back side detection' },
-  { key: 'bsdExit', label: 'Front side detection exit' },
+  { key: 'fsdEntry', label: 'Top/Front side detection' },
+  { key: 'bsd', label: 'Bottom/Back side detection' },
+  { key: 'bsdExit', label: 'Top/Front side detection' },
   { key: 'baseColor', label: 'Not detected / idle' }
 ]
 

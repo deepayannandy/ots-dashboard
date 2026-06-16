@@ -848,8 +848,8 @@ const centerX = svgWidth / 2,
   scalePx = 2;
 const searchValue = ref<string[]>([]);
 const searchRow = ref<string>("R1");
-const items = ref(["Front View", "Back View"]);
-const viewDisplay = ref("Front View");
+const items = ref(["Top / Front View", "Bottom / Back View"]);
+const viewDisplay = ref("Top / Front View");
 
 // Computed compass dimensions based on shape type
 const compassSize = computed(() => {

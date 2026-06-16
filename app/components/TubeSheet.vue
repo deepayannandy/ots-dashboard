@@ -124,7 +124,7 @@
     v-else
     :spotlight-color="statusColor(localState.status)"
     spotlight
-    class="cursor-pointer interactive-lift"
+    class="cursor-pointer interactive-lift project-card"
     :ui="{
       root: 'h-full',
     }"
@@ -225,6 +225,7 @@
         color="neutral"
         variant="soft"
         icon="i-lucide-edit"
+        class="border border-neutral-300 dark:border-neutral-700"
         @click.stop="open = true"
       />
       <UButton
@@ -235,6 +236,7 @@
         color="neutral"
         variant="soft"
         icon="i-lucide-box"
+        class="border border-neutral-300 dark:border-neutral-700"
         @click.stop="
           navigateTo(
             `/create-reactor/${localState._id}/${localState.reactorId ?? ''}`,
@@ -248,6 +250,7 @@
         color="neutral"
         variant="soft"
         icon="i-lucide-book-copy"
+        class="border border-neutral-300 dark:border-neutral-700"
         @click="clone"
       />
     </div>
