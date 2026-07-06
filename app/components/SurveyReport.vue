@@ -370,7 +370,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="(camera, index) in tubeSheetDetails?.cameras || []" :key="index" class="hover:bg-gray-50">
+            <tr v-for="(camera, index) in Array.from(new Set(tubeSheetDetails?.cameras?.filter(Boolean) || []))" :key="index" class="hover:bg-gray-50">
               <td class="border border-gray-200 px-3 py-2">
                 {{ index + 1 }}
               </td>

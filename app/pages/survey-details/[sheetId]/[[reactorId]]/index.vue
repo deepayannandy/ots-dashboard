@@ -83,11 +83,22 @@
               size="sm"
               @click="toggleDualView"
             />
+            <UButton
+              :color="showBirdEyeView ? 'primary' : 'neutral'"
+              variant="subtle"
+              size="sm"
+              @click="toggleBirdEyeView"
+            >
+              Bird eye view
+            </UButton>
           </div>
         </template>
         <template #right>
           <div class="flex items-center gap-2">
-            <span class="text-xs font-semibold text-neutral-500 dark:text-neutral-400">Phases:</span>
+            <span
+              class="text-xs font-semibold text-neutral-500 dark:text-neutral-400"
+              >Phases:</span
+            >
             <USelectMenu
               v-model="selectedPhase"
               placeholder="Select Phase"
@@ -135,6 +146,153 @@
               background-position: center;
             "
           />
+          <!-- Pie View Legend Card -->
+          <div
+            v-if="showBirdEyeView"
+            class="absolute top-4 right-4 bg-white dark:bg-neutral-900 shadow-lg border border-neutral-200 dark:border-neutral-800 rounded-lg p-4 z-50 min-w-[260px] max-w-[340px]"
+          >
+            <!-- Read-only Legend Mode -->
+            <template v-if="!isEditingCameras">
+              <div class="flex items-center justify-between mb-3 border-b border-neutral-100 dark:border-neutral-800 pb-2">
+                <h3 class="text-sm font-semibold text-neutral-800 dark:text-neutral-200 flex items-center gap-2">
+                  <UIcon name="i-lucide-pie-chart" class="text-primary-500 size-4" />
+                  Pie View Legend
+                </h3>
+                <UButton
+                  v-if="!viewMode"
+                  icon="i-lucide-pencil"
+                  color="neutral"
+                  variant="subtle"
+                  size="xs"
+                  square
+                  @click="startEditingCameras"
+                />
+              </div>
+              <div class="space-y-2.5">
+                <div
+                  class="flex justify-between items-center text-xs text-neutral-500 dark:text-neutral-400 border-b border-neutral-100 dark:border-neutral-800 pb-2"
+                >
+                  <span>Total Slices / Pies:</span>
+                  <span
+                    class="font-semibold text-neutral-800 dark:text-neutral-200"
+                    >{{ config.totalPieSlice || 0 }}</span
+                  >
+                </div>
+                <div class="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+                  <div
+                    v-for="idx in config.totalPieSlice || 0"
+                    :key="idx"
+                    class="flex items-center justify-between text-xs py-0.5"
+                  >
+                    <div class="flex items-center gap-2">
+                      <span
+                        class="size-3.5 rounded-full border border-neutral-300 dark:border-neutral-700"
+                        :style="{
+                          backgroundColor:
+                            pieColors[(idx - 1) % pieColors.length],
+                        }"
+                      />
+                      <span
+                        class="font-medium text-neutral-700 dark:text-neutral-300"
+                        >Slice {{ idx }}</span
+                      >
+                    </div>
+                    <span class="text-neutral-500 dark:text-neutral-400 italic">
+                      {{ getCameraNameForSlice(idx - 1) }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </template>
+
+            <!-- Edit Configuration Mode -->
+            <template v-else>
+              <div class="flex items-center justify-between mb-3 border-b border-neutral-100 dark:border-neutral-800 pb-2">
+                <h3 class="text-sm font-semibold text-neutral-800 dark:text-neutral-200 flex items-center gap-2">
+                  <UIcon name="i-lucide-settings" class="text-primary-500 size-4" />
+                  Configure Cameras
+                </h3>
+              </div>
+              
+              <div class="space-y-3 max-h-[400px] overflow-y-auto pr-1">
+                <div class="flex justify-between items-center text-xs py-1 border-b border-neutral-100 dark:border-neutral-800 pb-2">
+                  <span class="text-neutral-500 dark:text-neutral-400 font-medium">Number of Cameras:</span>
+                  <USelect
+                    v-model="editNumberOfCameras"
+                    :items="[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(n => ({ label: String(n) + (n === 1 ? ' Camera' : ' Cameras'), value: n }))"
+                    class="w-28"
+                  />
+                </div>
+
+                <!-- Configured Camera Devices -->
+                <div class="space-y-2">
+                  <div
+                    v-for="camIdx in editNumberOfCameras"
+                    :key="camIdx"
+                    class="flex flex-col gap-1 text-xs"
+                  >
+                    <div class="flex items-center gap-1 font-medium text-neutral-600 dark:text-neutral-300">
+                      <span class="size-2 rounded-full bg-primary-500" />
+                      <span>Camera {{ camIdx }} Device:</span>
+                    </div>
+                    <USelect
+                      v-model="selectedCameras[camIdx - 1]"
+                      :items="availableCamerasItems"
+                      placeholder="Select Camera Device"
+                      class="w-full"
+                    />
+                  </div>
+                </div>
+
+                <!-- Slice Assignments -->
+                <div class="space-y-2 border-t border-neutral-100 dark:border-neutral-800 pt-3">
+                  <span class="text-xs font-semibold text-neutral-800 dark:text-neutral-200">
+                    Assign Slices to Cameras:
+                  </span>
+                  <div class="space-y-1.5 max-h-[200px] overflow-y-auto pr-1">
+                    <div
+                      v-for="idx in config.totalPieSlice || 0"
+                      :key="idx"
+                      class="flex items-center justify-between text-xs py-0.5"
+                    >
+                      <div class="flex items-center gap-1.5">
+                        <span
+                          class="size-3 rounded-full border border-neutral-300 dark:border-neutral-700"
+                          :style="{
+                            backgroundColor: pieColors[(idx - 1) % pieColors.length],
+                          }"
+                        />
+                        <span class="font-medium text-neutral-700 dark:text-neutral-300">Slice {{ idx }}</span>
+                      </div>
+                      <USelect
+                        v-model="sliceAssignments[idx - 1]"
+                        :items="configuredCameraItems"
+                        class="w-36"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Action Buttons -->
+              <div class="flex justify-end gap-2 mt-3 pt-3 border-t border-neutral-100 dark:border-neutral-800">
+                <UButton
+                  label="Cancel"
+                  color="neutral"
+                  variant="subtle"
+                  size="xs"
+                  @click="cancelEditingCameras"
+                />
+                <UButton
+                  label="Save"
+                  color="primary"
+                  size="xs"
+                  :loading="savingCameras"
+                  @click="saveCameraConfig"
+                />
+              </div>
+            </template>
+          </div>
 
           <div
             ref="containerRef"
@@ -164,7 +322,9 @@
               </svg>
             </div>
             <div v-else class="w-full h-full flex gap-4">
-              <div class="flex-1 flex flex-col items-center justify-center h-full relative">
+              <div
+                class="flex-1 flex flex-col items-center justify-center h-full relative"
+              >
                 <svg
                   ref="svgFrontRef"
                   :viewBox="`0 0 ${svgWidth} ${svgHeight}`"
@@ -175,11 +335,15 @@
                 >
                   <g id="viewport" :transform="transformStr"></g>
                 </svg>
-                <div class="h-8 flex items-center justify-center text-xs font-bold text-neutral-600 dark:text-neutral-300 uppercase tracking-wider bg-neutral-100/80 dark:bg-neutral-900/80 px-4 py-1 rounded-full border border-neutral-200/50 dark:border-neutral-800/50 shadow-sm mt-2 select-none">
+                <div
+                  class="h-8 flex items-center justify-center text-xs font-bold text-neutral-600 dark:text-neutral-300 uppercase tracking-wider bg-neutral-100/80 dark:bg-neutral-900/80 px-4 py-1 rounded-full border border-neutral-200/50 dark:border-neutral-800/50 shadow-sm mt-2 select-none"
+                >
                   Top / Front View
                 </div>
               </div>
-              <div class="flex-1 flex flex-col items-center justify-center h-full relative">
+              <div
+                class="flex-1 flex flex-col items-center justify-center h-full relative"
+              >
                 <svg
                   ref="svgBackRef"
                   :viewBox="`0 0 ${svgWidth} ${svgHeight}`"
@@ -195,7 +359,9 @@
                 >
                   <g id="viewport" :transform="transformStr"></g>
                 </svg>
-                <div class="h-8 flex items-center justify-center text-xs font-bold text-neutral-600 dark:text-neutral-300 uppercase tracking-wider bg-neutral-100/80 dark:bg-neutral-900/80 px-4 py-1 rounded-full border border-neutral-200/50 dark:border-neutral-800/50 shadow-sm mt-2 select-none">
+                <div
+                  class="h-8 flex items-center justify-center text-xs font-bold text-neutral-600 dark:text-neutral-300 uppercase tracking-wider bg-neutral-100/80 dark:bg-neutral-900/80 px-4 py-1 rounded-full border border-neutral-200/50 dark:border-neutral-800/50 shadow-sm mt-2 select-none"
+                >
                   Back / Bottom View
                 </div>
               </div>
@@ -247,7 +413,11 @@
                       tubeSheetDetails.status === 'UNDER_SURVEY',
                   }"
                 >
-                  {{ tubeSheetStatusLabels[tubeSheetDetails.status as keyof typeof tubeSheetStatusLabels] || "N/A" }}
+                  {{
+                    tubeSheetStatusLabels[
+                      tubeSheetDetails.status as keyof typeof tubeSheetStatusLabels
+                    ] || "N/A"
+                  }}
                 </span>
               </p>
             </div>
@@ -462,12 +632,17 @@
               :ui="{
                 root: 'overflow-hidden shadow-md border-2 border-amber-500/60 dark:border-amber-400/40',
                 container: 'sm:p-0 gap-0!',
-                header: 'w-full p-3 bg-amber-500 dark:bg-amber-600 text-white font-semibold',
+                header:
+                  'w-full p-3 bg-amber-500 dark:bg-amber-600 text-white font-semibold',
               }"
             >
               <template #header>
-                <div class="w-full flex items-center justify-between text-white">
-                  <span class="font-bold">Tube History: {{ [...selectedIds].join(', ') }}</span>
+                <div
+                  class="w-full flex items-center justify-between text-white"
+                >
+                  <span class="font-bold"
+                    >Tube History: {{ [...selectedIds].join(", ") }}</span
+                  >
                   <UIcon name="i-lucide-history" class="size-4" />
                 </div>
               </template>
@@ -537,66 +712,91 @@
               <template v-else>
                 <div class="p-4 space-y-4">
                   <div v-for="id in [...selectedIds]" :key="id">
-                  <div v-if="getTubeHistoryRows(id).length" class="space-y-2">
-                    <div
-                      v-for="(row, index) in getTubeHistoryRows(id)"
-                      :key="`${id}-${row.face}-${row.time}-${index}`"
-                      class="rounded-md border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 p-3 shadow-sm text-sm text-neutral-700 dark:text-neutral-200"
-                    >
-                      <div class="font-semibold">
-                        Activity: {{ row.Activity }}
-                      </div>
-                      <div class="mt-1 flex items-center justify-between gap-3">
-                        <span>Time: {{ row.time }}</span>
-                        <UButton
-                          v-if="row.evidenceImage"
-                          size="xs"
-                          color="primary"
-                          variant="subtle"
-                          icon="i-lucide-image"
-                          @click="openImageModal(row)"
+                    <div v-if="getTubeHistoryRows(id).length" class="space-y-2">
+                      <div
+                        v-for="(row, index) in getTubeHistoryRows(id)"
+                        :key="`${id}-${row.face}-${row.time}-${index}`"
+                        class="rounded-md border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 p-3 shadow-sm text-sm text-neutral-700 dark:text-neutral-200"
+                      >
+                        <div class="font-semibold">
+                          Activity: {{ row.Activity }}
+                        </div>
+                        <div
+                          class="mt-1 flex items-center justify-between gap-3"
                         >
-                          Show Evidence
-                        </UButton>
+                          <span>Time: {{ row.time }}</span>
+                          <div class="flex gap-2">
+                            <UButton
+                              v-if="row.evidenceImage"
+                              size="xs"
+                              color="primary"
+                              variant="subtle"
+                              icon="i-lucide-image"
+                              @click="openImageModal(row)"
+                            >
+                              Show Evidence
+                            </UButton>
+                            <UButton
+                              v-if="index === 0"
+                              size="xs"
+                              color="error"
+                              variant="subtle"
+                              icon="i-lucide-trash-2"
+                              @click="removeFalseDetection(row)"
+                            >
+                              False Evidence
+                            </UButton>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <div
-                    v-else
-                    class="text-sm text-neutral-700 dark:text-neutral-200"
-                  >
-                    Not detected.
-                  </div>
-                  <div
-                    v-if="tubeComments.some((c) => c.tubeIdAsperLayout === id)"
-                    class="mt-3 space-y-2 border-t border-neutral-200 dark:border-neutral-800 pt-2"
-                  >
-                    <div class="text-[11px] font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-                      Comments & Messages
+                    <div
+                      v-else
+                      class="text-sm text-neutral-700 dark:text-neutral-200"
+                    >
+                      Not detected.
                     </div>
                     <div
-                      v-for="c in tubeComments.filter((c) => c.tubeIdAsperLayout === id)"
-                      :key="c._id"
-                      class="text-sm bg-neutral-100/50 dark:bg-neutral-900/50 p-2 rounded-md border border-neutral-200/60 dark:border-neutral-800/80"
+                      v-if="
+                        tubeComments.some((c) => c.tubeIdAsperLayout === id)
+                      "
+                      class="mt-3 space-y-2 border-t border-neutral-200 dark:border-neutral-800 pt-2"
                     >
-                      <p class="text-amber-600 dark:text-amber-400 font-medium break-words whitespace-pre-wrap">
-                        {{ c.comment }}
-                      </p>
-                      <p class="text-[10px] text-neutral-400 dark:text-neutral-500 mt-1 font-mono text-right">
-                        {{ c.timeStamp ? new Date(c.timeStamp).toLocaleString() : 'N/A' }}
-                      </p>
+                      <div
+                        class="text-[11px] font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider"
+                      >
+                        Comments & Messages
+                      </div>
+                      <div
+                        v-for="c in tubeComments.filter(
+                          (c) => c.tubeIdAsperLayout === id,
+                        )"
+                        :key="c._id"
+                        class="text-sm bg-neutral-100/50 dark:bg-neutral-900/50 p-2 rounded-md border border-neutral-200/60 dark:border-neutral-800/80"
+                      >
+                        <p
+                          class="text-amber-600 dark:text-amber-400 font-medium break-words whitespace-pre-wrap"
+                        >
+                          {{ c.comment }}
+                        </p>
+                        <p
+                          class="text-[10px] text-neutral-400 dark:text-neutral-500 mt-1 font-mono text-right"
+                        >
+                          {{
+                            c.timeStamp
+                              ? new Date(c.timeStamp).toLocaleString()
+                              : "N/A"
+                          }}
+                        </p>
+                      </div>
                     </div>
-                  </div>
                   </div>
                 </div>
               </template>
             </UPageCard>
             <!-- Active Phase Legend Grid - Visible when selected phase has configs -->
             <UPageCard
-              v-if="
-                selectedPhase &&
-                colorCapLegend.length > 0
-              "
+              v-if="selectedPhase && colorCapLegend.length > 0"
               spotlight
               spotlight-color="info"
               class="p-0 w-full"
@@ -607,7 +807,9 @@
               }"
             >
               <template #header>
-                <div class="bg-primary w-full">{{ currentPhaseLabel || 'Phase' }} Legend</div>
+                <div class="bg-primary w-full">
+                  {{ currentPhaseLabel || "Phase" }} Legend
+                </div>
               </template>
               <div
                 class="grid p-0 h-full"
@@ -617,7 +819,7 @@
                   'grid-cols-3': colorCapLegend.length === 3,
                   'grid-cols-4': colorCapLegend.length === 4,
                   'grid-cols-5': colorCapLegend.length === 5,
-                  'grid-cols-6': colorCapLegend.length >= 6
+                  'grid-cols-6': colorCapLegend.length >= 6,
                 }"
               >
                 <div
@@ -874,10 +1076,7 @@
     </template>
   </UModal>
 
-  <UModal
-    v-model:open="successModalOpen"
-    :title="successMessage"
-  >
+  <UModal v-model:open="successModalOpen" :title="successMessage">
     <template #body>
       <div class="space-y-4">
         <p>The phase has been completed successfully.</p>
@@ -994,6 +1193,7 @@ import type { TableColumn } from "@nuxt/ui";
 import { appendLucideIconToSvgGroup } from "@/utils/lucideSvgInline";
 
 type TubeDataTable = {
+  id?: string;
   tube: string;
   Activity: string;
   time: string;
@@ -1069,6 +1269,157 @@ const currentSurvey = ref("");
 const showDetails = ref(false);
 const items = ref(["Top / Front View", "Bottom / Back View"]);
 const viewDisplay = ref("Top / Front View");
+const showBirdEyeView = ref(false);
+const pieColors = [
+  "#3B82F6",
+  "#10B981",
+  "#EC4899",
+  "#8B5CF6",
+  "#F59E0B",
+  "#EF4444",
+  "#06B6D4",
+];
+
+function toggleBirdEyeView() {
+  showBirdEyeView.value = !showBirdEyeView.value;
+  renderAll();
+}
+
+const availableCamerasList = ref<any[]>([]);
+
+async function fetchCameras() {
+  try {
+    const res = await useAxios().$get<{ data?: any[] }>(
+      "/api/v2/camera/getAvailableCameras",
+    );
+    availableCamerasList.value = res?.data || [];
+  } catch (err) {
+    console.error("Failed to fetch cameras:", err);
+  }
+}
+
+function getCameraNameForSlice(sliceIdx: number): string {
+  if (!tubeSheetDetails.value?.cameras) return "No Camera";
+  const cameraId = tubeSheetDetails.value.cameras[sliceIdx];
+  if (!cameraId) return "No Camera";
+  const cam = availableCamerasList.value.find((c) => c._id === cameraId);
+  if (cam) return `${cam.name} (${cam.ipAddress})`;
+
+  const existingCams = tubeSheetDetails.value.cameras.filter(Boolean);
+  const uniqueCams = Array.from(new Set(existingCams));
+  const camIndex = uniqueCams.indexOf(cameraId);
+  return camIndex !== -1 ? `Camera ${camIndex + 1}` : `Camera ${sliceIdx + 1}`;
+}
+
+const isEditingCameras = ref(false);
+const editNumberOfCameras = ref(1);
+const selectedCameras = ref<string[]>([]);
+const sliceAssignments = ref<number[]>([]);
+const savingCameras = ref(false);
+
+const availableCamerasItems = computed(() => {
+  return availableCamerasList.value.map((cam) => ({
+    label: `${cam.name} (${cam.ipAddress})`,
+    value: cam._id,
+  }));
+});
+
+const configuredCameraItems = computed(() => {
+  const items = [];
+  for (let i = 0; i < editNumberOfCameras.value; i++) {
+    const physicalCamId = selectedCameras.value[i];
+    const physicalCam = availableCamerasList.value.find((c) => c._id === physicalCamId);
+    const camLabel = physicalCam ? physicalCam.name : `Camera ${i + 1}`;
+    items.push({
+      label: `Cam ${i + 1} (${camLabel})`,
+      value: i,
+    });
+  }
+  return items;
+});
+
+watch(editNumberOfCameras, (newVal) => {
+  const num = Number(newVal) || 1;
+  selectedCameras.value = selectedCameras.value.slice(0, num);
+  while (selectedCameras.value.length < num) {
+    selectedCameras.value.push("");
+  }
+  for (let i = 0; i < sliceAssignments.value.length; i++) {
+    const val = sliceAssignments.value[i];
+    if (val !== undefined && val >= num) {
+      sliceAssignments.value[i] = 0;
+    }
+  }
+});
+
+function startEditingCameras() {
+  if (!tubeSheetDetails.value) return;
+  editNumberOfCameras.value = tubeSheetDetails.value.numberOfCameras || 1;
+
+  const existingCams = tubeSheetDetails.value.cameras?.filter(Boolean) || [];
+  const uniqueCams = Array.from(new Set(existingCams));
+
+  selectedCameras.value = [];
+  for (let i = 0; i < editNumberOfCameras.value; i++) {
+    selectedCameras.value.push((uniqueCams[i] as string) || "");
+  }
+
+  sliceAssignments.value = [];
+  const totalSlices = config.value.totalPieSlice || 0;
+  for (let idx = 0; idx < totalSlices; idx++) {
+    const camId = tubeSheetDetails.value.cameras?.[idx];
+    const foundIndex = camId ? selectedCameras.value.indexOf(camId) : -1;
+    sliceAssignments.value.push(foundIndex !== -1 ? foundIndex : 0);
+  }
+
+  isEditingCameras.value = true;
+}
+
+function cancelEditingCameras() {
+  isEditingCameras.value = false;
+}
+
+async function saveCameraConfig() {
+  if (!tubeSheetDetails.value?._id) return;
+  savingCameras.value = true;
+  try {
+    const totalSlices = config.value.totalPieSlice || 0;
+    const finalCamerasArray: string[] = [];
+    for (let idx = 0; idx < totalSlices; idx++) {
+      const assignedCamIdx = sliceAssignments.value[idx] ?? 0;
+      const physicalCamId = selectedCameras.value[assignedCamIdx] || "";
+      finalCamerasArray.push(physicalCamId);
+    }
+
+    const payload = {
+      numberOfCameras: editNumberOfCameras.value,
+      cameras: finalCamerasArray,
+    };
+
+    sessionStorage.setItem(
+      `camera_config_${tubeSheetDetails.value._id}`,
+      JSON.stringify(payload)
+    );
+
+    await refreshTubeSheetDetails();
+    isEditingCameras.value = false;
+    useToast().add({
+      title: "Success",
+      description: "Camera configuration saved successfully.",
+      color: "success",
+    });
+    renderAll();
+  } catch (err) {
+    console.error("Failed to save camera config:", err);
+    useToast().add({
+      title: "Error",
+      description: "Failed to save camera configuration.",
+      color: "error",
+    });
+  } finally {
+    savingCameras.value = false;
+  }
+}
 const repeatCount = ref(0);
 const viewMode = ref(false);
 const activeSurveyId = ref<string | undefined>(undefined);
@@ -1307,7 +1658,24 @@ async function refreshTubeSheetDetails() {
     const response = await useAxios().$get(
       `/api/v2/tubeSheet/getSpecificTubeSheet/${sheetId}`,
     );
-    tubeSheetDetails.value = response.data;
+    const localData = response.data;
+    if (localData) {
+      const localConfig = sessionStorage.getItem(`camera_config_${sheetId}`);
+      if (localConfig) {
+        try {
+          const parsed = JSON.parse(localConfig);
+          if (parsed.numberOfCameras !== undefined) {
+            localData.numberOfCameras = parsed.numberOfCameras;
+          }
+          if (parsed.cameras !== undefined) {
+            localData.cameras = parsed.cameras;
+          }
+        } catch (e) {
+          console.error("Failed to parse local camera config:", e);
+        }
+      }
+    }
+    tubeSheetDetails.value = localData;
     phasesData.value = response.phasesData || [];
     mergeCompletedPhasesFromTubeSheetPayload(
       response.data as Record<string, unknown>,
@@ -1592,7 +1960,14 @@ function updateCircleVisualForSvg(
   const surveyColor = isBackView ? t.backColor : t.propertyColor;
   let fillColor = newPropertyColor || surveyColor || "#fff";
 
-  if (t.property && !surveyColor && !newPropertyColor && specialPropertyColor) {
+  if (showBirdEyeView.value && t.pieSlice !== undefined) {
+    fillColor = pieColors[t.pieSlice % pieColors.length] || "#fff";
+  } else if (
+    t.property &&
+    !surveyColor &&
+    !newPropertyColor &&
+    specialPropertyColor
+  ) {
     fillColor = specialPropertyColor;
   }
 
@@ -2071,83 +2446,164 @@ function renderAllForSvg(
     updateCircleVisualForSvg(t, svg, elMap, iconMap, isBackView);
   }
 
+  // Render cameras pointing to slices if Bird eye view is active
+  let camerasLayer = vp.querySelector("#cameras-layer") as SVGGElement;
+  if (camerasLayer) {
+    camerasLayer.innerHTML = "";
+  } else {
+    camerasLayer = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    camerasLayer.setAttribute("id", "cameras-layer");
+    vp.appendChild(camerasLayer);
+  }
+
+  if (showBirdEyeView.value && config.value.totalPieSlice) {
+    const totalSlices = config.value.totalPieSlice;
+    const assignedCameras = tubeSheetDetails.value?.cameras || [];
+    const visitedSlices = new Set<number>();
+
+    const cameraGroups: {
+      cameraId: string;
+      label: string;
+      fullName: string;
+      slices: number[];
+      color: string;
+    }[] = [];
+
+    for (let idx = 0; idx < totalSlices; idx++) {
+      if (visitedSlices.has(idx)) continue;
+      const cameraId = assignedCameras[idx];
+
+      if (cameraId) {
+        const slices = [];
+        for (let s = 0; s < totalSlices; s++) {
+          if (assignedCameras[s] === cameraId) {
+            slices.push(s);
+            visitedSlices.add(s);
+          }
+        }
+
+        const existingCams = assignedCameras.filter(Boolean);
+        const uniqueCams = Array.from(new Set(existingCams));
+        const camIndex = uniqueCams.indexOf(cameraId);
+        const camDevice = availableCamerasList.value.find((c) => c._id === cameraId);
+        const label = camDevice ? camDevice.name : `Cam ${camIndex + 1}`;
+        const fullName = camDevice ? `${camDevice.name} (${camDevice.ipAddress})` : `Camera ${camIndex + 1}`;
+        const color = pieColors[idx % pieColors.length] || "#3B82F6";
+
+        cameraGroups.push({
+          cameraId,
+          label,
+          fullName,
+          slices,
+          color,
+        });
+      } else {
+        visitedSlices.add(idx);
+        cameraGroups.push({
+          cameraId: "",
+          label: `Camera ${idx + 1}`,
+          fullName: "No Camera Configured",
+          slices: [idx],
+          color: pieColors[idx % pieColors.length] || "#3B82F6",
+        });
+      }
+    }
+
+    cameraGroups.forEach((group) => {
+      const groupTubes = activeTubes.filter(t => t.pieSlice !== undefined && group.slices.includes(t.pieSlice));
+      if (groupTubes.length === 0) return;
+
+      let sumX = 0;
+      let sumY = 0;
+      for (const t of groupTubes) {
+        sumX += t.x;
+        sumY += t.y;
+      }
+      const avgX = sumX / groupTubes.length;
+      const avgY = sumY / groupTubes.length;
+
+      const angle = Math.atan2(avgY, avgX);
+      const boundaryRadius = config.value.outerDimension * scalePx;
+      const distance = boundaryRadius + 60;
+      const camX = centerX + Math.cos(angle) * distance;
+      const camY = centerY + Math.sin(angle) * distance;
+
+      const angleDegrees = (angle * 180 / Math.PI) + 270;
+
+      const camGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+      camGroup.setAttribute("transform", `translate(${camX}, ${camY}) rotate(${angleDegrees})`);
+
+      const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+      rect.setAttribute("x", "-12");
+      rect.setAttribute("y", "-8");
+      rect.setAttribute("width", "24");
+      rect.setAttribute("height", "16");
+      rect.setAttribute("rx", "3");
+      rect.setAttribute("fill", group.color);
+      rect.setAttribute("stroke", "#0f172a");
+      rect.setAttribute("stroke-width", "1.5");
+
+      const flash = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+      flash.setAttribute("x", "-4");
+      flash.setAttribute("y", "-11");
+      flash.setAttribute("width", "8");
+      flash.setAttribute("height", "3");
+      flash.setAttribute("fill", "#fff");
+      flash.setAttribute("stroke", "#0f172a");
+      flash.setAttribute("stroke-width", "1.5");
+
+      const lens = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      lens.setAttribute("d", "M-6,-8 L-10,-13 L10,-13 L6,-8 Z");
+      lens.setAttribute("fill", group.color);
+      lens.setAttribute("stroke", "#0f172a");
+      lens.setAttribute("stroke-width", "1.5");
+
+      const viewFinder = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      viewFinder.setAttribute("cx", "0");
+      viewFinder.setAttribute("cy", "0");
+      viewFinder.setAttribute("r", "4");
+      viewFinder.setAttribute("fill", "#fff");
+      viewFinder.setAttribute("stroke", "#0f172a");
+      viewFinder.setAttribute("stroke-width", "1.5");
+
+      const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      text.setAttribute("x", "0");
+      text.setAttribute("y", "24");
+      text.setAttribute("text-anchor", "middle");
+      text.setAttribute("font-size", "10");
+      text.setAttribute("font-weight", "bold");
+      text.setAttribute("fill", "#333");
+      text.setAttribute("class", "dark:fill-white");
+      text.setAttribute("transform", `rotate(${-angleDegrees})`);
+      text.textContent = group.label;
+
+      const title = document.createElementNS("http://www.w3.org/2000/svg", "title");
+      title.textContent = group.fullName;
+      camGroup.appendChild(title);
+
+      camGroup.appendChild(rect);
+      camGroup.appendChild(flash);
+      camGroup.appendChild(lens);
+      camGroup.appendChild(viewFinder);
+      camGroup.appendChild(text);
+
+      camerasLayer.appendChild(camGroup);
+    });
+  }
+
   // Render row labels with tube counts for this svg
   renderRowLabels(vp, activeTubes, isBackView);
 }
 
 function renderRowLabels(
   vp: SVGGElement,
-  activeTubes: Tube[],
-  isBackView: boolean,
+  _activeTubes: Tube[],
+  _isBackView: boolean,
 ) {
   // Remove existing row labels
-  let labelsLayer = vp.querySelector("#row-labels") as SVGGElement;
-  if (labelsLayer) {
-    labelsLayer.innerHTML = "";
-  } else {
-    labelsLayer = document.createElementNS("http://www.w3.org/2000/svg", "g");
-    labelsLayer.setAttribute("id", "row-labels");
-    vp.appendChild(labelsLayer);
-  }
-
-  // Group tubes by row
-  const rowData = new Map<
-    number,
-    { count: number; maxX: number; avgY: number }
-  >();
-
-  for (const t of activeTubes) {
-    // Extract row number from tube ID (e.g., "R1C2" -> 1)
-    const match = t.id.match(/^R(\d+)C/);
-    if (!match || !match[1]) continue;
-
-    const rowNum = parseInt(match[1], 10);
-    const tubeX = centerX + t.x * scalePx;
-    const tubeY = centerY + t.y * scalePx;
-
-    if (!rowData.has(rowNum)) {
-      rowData.set(rowNum, { count: 0, maxX: tubeX, avgY: tubeY });
-    }
-
-    const row = rowData.get(rowNum)!;
-    row.count++;
-    row.maxX = Math.max(row.maxX, tubeX + t.r * scalePx);
-    // Calculate running average Y position
-    row.avgY = (row.avgY * (row.count - 1) + tubeY) / row.count;
-  }
-
-  // Sort rows by row number and add labels
-  const sortedRows = Array.from(rowData.entries()).sort((a, b) => a[0] - b[0]);
-  const labelOffset = 25; // Offset from the rightmost tube
-
-  for (const [rowNum, data] of sortedRows) {
-    const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
-    // Position label to the right of the rightmost tube in the row
-    // For back view, we need to position on the left side (which appears on right after flip)
-    const xPos = isBackView
-      ? centerX - (data.maxX - centerX) - labelOffset
-      : data.maxX + labelOffset;
-    text.setAttribute("x", String(xPos));
-    text.setAttribute("y", String(data.avgY));
-    text.setAttribute("font-size", "12");
-    text.setAttribute("font-family", "Arial, sans-serif");
-    text.setAttribute("font-weight", "bold");
-    text.setAttribute("fill", "#374151");
-    text.setAttribute("dominant-baseline", "middle");
-
-    // For back view, flip the text horizontally so it's readable after the SVG scaleX(-1)
-    // Also apply filter invert to counteract the SVG-level invert and keep text visible
-    if (isBackView) {
-      text.setAttribute("transform", `scale(-1, 1) translate(${-2 * xPos}, 0)`);
-      text.setAttribute("text-anchor", "start");
-      text.setAttribute("fill", "#22c55e"); // Green color for back view
-      text.setAttribute("font-weight", "900"); // Extra bold
-    } else {
-      text.setAttribute("text-anchor", "start");
-    }
-    text.textContent = `R${rowNum}: ${data.count}`;
-
-    labelsLayer.appendChild(text);
+  const existingLabels = vp.querySelector("#row-labels") as SVGGElement;
+  if (existingLabels) {
+    existingLabels.remove();
   }
 }
 let interval: ReturnType<typeof setInterval> | null = null;
@@ -2376,6 +2832,7 @@ onMounted(async () => {
   window.addEventListener("keydown", handleKeyDown);
 
   loadViewportState();
+  await fetchCameras();
   watch(
     () => [scale.value, tx.value, ty.value, rotation.value],
     persistViewportState,
@@ -2654,15 +3111,24 @@ async function fetchUpdatedTubeColors(surveyId: string) {
       ?.filter((e: { isDuplicate: boolean }) => !e?.isDuplicate)
       .map(
         (item: {
+          _id?: string;
           tubeIdAsperLayout: string;
           activity: string;
           timeStamp: string;
           isDuplicate: boolean;
           evidenceImage?: string;
+          color?: string;
         }) => {
+          const isColorCapTracking = selectedPhase.value === "COLOR_CAP_TRACKING";
+          const isWhiteColor = item.color === "white";
+          const activityName = (!isColorCapTracking && isWhiteColor)
+            ? "Removed false detection for front view."
+            : item.activity;
+
           return {
+            id: item._id,
             tube: item.tubeIdAsperLayout,
-            Activity: item.activity,
+            Activity: activityName,
             time: new Date(item.timeStamp).toLocaleString(),
             timeStamp: item.timeStamp,
             face: "front",
@@ -2680,15 +3146,24 @@ async function fetchUpdatedTubeColors(surveyId: string) {
       ?.filter((e: { isDuplicate: boolean }) => e?.isDuplicate)
       .map(
         (item: {
+          _id?: string;
           tubeIdAsperLayout: string;
           activity: string;
           timeStamp: string;
           isDuplicate: boolean;
           evidenceImage?: string;
+          color?: string;
         }) => {
+          const isColorCapTracking = selectedPhase.value === "COLOR_CAP_TRACKING";
+          const isWhiteColor = item.color === "white";
+          const activityName = (!isColorCapTracking && isWhiteColor)
+            ? "Removed false detection for front view."
+            : item.activity;
+
           return {
+            id: item._id,
             tube: item.tubeIdAsperLayout,
-            Activity: item.activity,
+            Activity: activityName,
             time: new Date(item.timeStamp).toLocaleString(),
             timeStamp: item.timeStamp,
             face: "front",
@@ -2706,15 +3181,24 @@ async function fetchUpdatedTubeColors(surveyId: string) {
       ?.filter((e: { isDuplicate: boolean }) => !e?.isDuplicate)
       .map(
         (item: {
+          _id?: string;
           tubeIdAsperLayout: string;
           activity: string;
           timeStamp: string;
           isDuplicate: boolean;
           evidenceImage?: string;
+          color?: string;
         }) => {
+          const isColorCapTracking = selectedPhase.value === "COLOR_CAP_TRACKING";
+          const isWhiteColor = item.color === "white";
+          const activityName = (!isColorCapTracking && isWhiteColor)
+            ? "Removed false detection for back view."
+            : item.activity;
+
           return {
+            id: item._id,
             tube: item.tubeIdAsperLayout,
-            Activity: item.activity,
+            Activity: activityName,
             time: new Date(item.timeStamp).toLocaleString(),
             timeStamp: item.timeStamp,
             face: "back",
@@ -2732,15 +3216,24 @@ async function fetchUpdatedTubeColors(surveyId: string) {
       ?.filter((e: { isDuplicate: boolean }) => e?.isDuplicate)
       .map(
         (item: {
+          _id?: string;
           tubeIdAsperLayout: string;
           activity: string;
           timeStamp: string;
           isDuplicate: boolean;
           evidenceImage?: string;
+          color?: string;
         }) => {
+          const isColorCapTracking = selectedPhase.value === "COLOR_CAP_TRACKING";
+          const isWhiteColor = item.color === "white";
+          const activityName = (!isColorCapTracking && isWhiteColor)
+            ? "Removed false detection for back view."
+            : item.activity;
+
           return {
+            id: item._id,
             tube: item.tubeIdAsperLayout,
-            Activity: item.activity,
+            Activity: activityName,
             time: new Date(item.timeStamp).toLocaleString(),
             timeStamp: item.timeStamp,
             face: "back",
@@ -2769,6 +3262,57 @@ function openImageModal(row: TubeDataTable) {
   currentLogTime.value = row.time;
   currentTubeId.value = row.tube;
   imageModalOpen.value = true;
+}
+
+async function removeFalseDetection(row: TubeDataTable) {
+  if (!activeSurveyId.value) {
+    useToast().add({
+      title: "Error",
+      description: "No active survey ID found.",
+      color: "error",
+    });
+    return;
+  }
+
+  const tubeIdx = currentTubes.value.findIndex((t) => t.id === row.tube);
+  if (tubeIdx === -1) {
+    useToast().add({
+      title: "Error",
+      description: "Unable to locate tube in layout.",
+      color: "error",
+    });
+    return;
+  }
+
+  try {
+    const payload = {
+      detection: {
+        tubeId: tubeIdx + 1,
+        color: "white",
+        isDetected: true,
+        face: "front",
+      },
+    };
+
+    await useAxios().$patch(
+      "https://apiots.dnyindia.in/api/v2/survey/updateSurvey/OT187",
+      payload,
+    );
+
+    useToast().add({
+      title: "Success",
+      description: "False detection removed successfully.",
+      color: "success",
+    });
+    await fetchUpdatedTubeColors(activeSurveyId.value);
+  } catch (err) {
+    console.error("Failed to remove false detection:", err);
+    useToast().add({
+      title: "Error",
+      description: "Failed to remove false detection.",
+      color: "error",
+    });
+  }
 }
 
 function downloadImage() {
@@ -2844,7 +3388,9 @@ function formatConfigKey(key: string): string {
 
 const currentPhaseLabel = computed(() => {
   if (!selectedPhase.value) return "";
-  const item = allTypeOfPhasesItems.find((p) => p.value === selectedPhase.value);
+  const item = allTypeOfPhasesItems.find(
+    (p) => p.value === selectedPhase.value,
+  );
   return item ? item.label : selectedPhase.value;
 });
 
@@ -2862,18 +3408,21 @@ const colorCapLegend = computed(() => {
   const isBackView = viewDisplay.value === "Back View";
 
   // Build legend items from configs, handling fallbacks for empty abbreviations
-  const legend = Object.entries(configs).map(([key, val]) => {
-    const config = val as { color: string; abbreviation: string };
-    const label = config.abbreviation && config.abbreviation.trim() !== ""
-      ? config.abbreviation
-      : formatConfigKey(key);
-    return {
-      key,
-      color: config.color || "",
-      abbreviation: label,
-      count: 0,
-    };
-  }).filter(item => item.color !== "");
+  const legend = Object.entries(configs)
+    .map(([key, val]) => {
+      const config = val as { color: string; abbreviation: string };
+      const label =
+        config.abbreviation && config.abbreviation.trim() !== ""
+          ? config.abbreviation
+          : formatConfigKey(key);
+      return {
+        key,
+        color: config.color || "",
+        abbreviation: label,
+        count: 0,
+      };
+    })
+    .filter((item) => item.color !== "");
 
   // Count tubes by their propertyColor / backColor
   const activeTubes = currentTubes.value.filter((t) => !t.deleted);
@@ -2883,7 +3432,9 @@ const colorCapLegend = computed(() => {
     const normalizedTubeColor = tubeColor.toLowerCase();
 
     // Find matching config item by color name
-    const match = legend.find(item => item.color.toLowerCase() === normalizedTubeColor);
+    const match = legend.find(
+      (item) => item.color.toLowerCase() === normalizedTubeColor,
+    );
     if (match) {
       match.count++;
     }

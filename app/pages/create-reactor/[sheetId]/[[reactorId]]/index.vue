@@ -118,7 +118,7 @@
             label="Multiselect"
             size="xs"
           />
-          <div @keydown.stop.prevent>
+          <div @keydown.stop.prevent class="flex items-center gap-2">
             <URadioGroup
               v-model="viewDisplay"
               indicator="hidden"
@@ -128,6 +128,14 @@
               default-value=""
               :items="items"
             />
+            <UButton
+              :color="showPieView ? 'primary' : 'neutral'"
+              variant="subtle"
+              size="xs"
+              @click="togglePieView"
+            >
+              Show Pie View
+            </UButton>
           </div>
           <ZoomControls
             @zoom-in="zoomIn"
@@ -155,6 +163,41 @@
               background-position: center;
             "
           />
+          <!-- Pie View Legend Card -->
+          <div
+            v-if="showPieView"
+            class="absolute top-4 right-4 bg-white dark:bg-neutral-900 shadow-lg border border-neutral-200 dark:border-neutral-800 rounded-lg p-4 z-50 min-w-[240px] max-w-[320px]"
+          >
+            <h3 class="text-sm font-semibold text-neutral-800 dark:text-neutral-200 mb-3 flex items-center gap-2">
+              <UIcon name="i-lucide-pie-chart" class="text-primary-500" />
+              Pie View Legend
+            </h3>
+            <div class="space-y-2.5">
+              <div class="flex justify-between items-center text-xs text-neutral-500 dark:text-neutral-400 border-b border-neutral-100 dark:border-neutral-800 pb-2">
+                <span>Total Slices / Pies:</span>
+                <span class="font-semibold text-neutral-800 dark:text-neutral-200">{{ config.totalPieSlice || 0 }}</span>
+              </div>
+              <div class="space-y-2">
+                <div
+                  v-for="idx in (config.totalPieSlice || 0)"
+                  :key="idx"
+                  class="flex items-center justify-between text-xs"
+                >
+                  <div class="flex items-center gap-2">
+                    <span
+                      class="size-3.5 rounded-full border border-neutral-300 dark:border-neutral-700"
+                      :style="{ backgroundColor: pieColors[(idx - 1) % pieColors.length] }"
+                    />
+                    <span class="font-medium text-neutral-700 dark:text-neutral-300">Slice {{ idx }}</span>
+                  </div>
+                  <span class="text-neutral-500 dark:text-neutral-400 italic">
+                    {{ getCameraNameForSlice(idx - 1) }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!--  @click="deselectAll"
             @contextmenu.prevent -->
           <div
@@ -596,6 +639,7 @@ interface ReactorJsonTube {
   radius: number;
   diameter?: number;
   is_overlapping?: boolean;
+  pie_slice?: string | number;
 }
 
 interface ReactorJsonRow {
@@ -609,6 +653,9 @@ interface ReactorJson {
     total_rows: number;
     total_tubes: number;
   };
+  pie?: {
+    slices: number;
+  };
   outer_circle?: {
     center_x: number;
     center_y: number;
@@ -619,7 +666,7 @@ interface ReactorJson {
     total_count: number;
     circles: ReactorJsonTube[];
   };
-  rows: ReactorJsonRow[];
+  rows?: ReactorJsonRow[];
 }
 
 interface ReactorLayoutItem {
@@ -730,9 +777,57 @@ function generateReactorFromJson(jsonData: ReactorJson) {
   const targetOuterDimension = 100;
   const scaleFactor = jsonOuterRadius / targetOuterDimension;
 
+  // Group inner_circles.circles into rows if rows is not provided
+  let rows = jsonData.rows;
+  if (!rows && jsonData.inner_circles?.circles) {
+    const circles = [...jsonData.inner_circles.circles];
+    // Sort circles by center_y
+    circles.sort((a, b) => a.center_y - b.center_y);
+
+    let totalRadius = 0;
+    for (const c of circles) {
+      totalRadius += c.radius || 0;
+    }
+    const avgRadius = circles.length > 0 ? totalRadius / circles.length : 24;
+    const threshold = avgRadius * 1.2;
+
+    const groupedRows: { y: number; tubes: ReactorJsonTube[] }[] = [];
+    for (const c of circles) {
+      const cy = c.center_y;
+      const foundRow = groupedRows.find(r => Math.abs(r.y - cy) < threshold);
+      if (foundRow) {
+        foundRow.tubes.push(c);
+        foundRow.y = foundRow.tubes.reduce((sum, t) => sum + t.center_y, 0) / foundRow.tubes.length;
+      } else {
+        groupedRows.push({
+          y: cy,
+          tubes: [c]
+        });
+      }
+    }
+
+    // Sort rows by average y
+    groupedRows.sort((a, b) => a.y - b.y);
+
+    rows = groupedRows.map((gr, idx) => {
+      const rowId = idx + 1;
+      const sortedTubes = [...gr.tubes].sort((a, b) => a.center_x - b.center_x);
+      return {
+        row_id: rowId,
+        tube_count: sortedTubes.length,
+        tubes: sortedTubes.map((t, tIdx) => ({
+          ...t,
+          tube_id: tIdx + 1
+        }))
+      };
+    });
+  }
+
+  const activeRows = rows || [];
+
   let totalJsonRadius = 0;
   let tubeCount = 0;
-  for (const row of jsonData.rows) {
+  for (const row of activeRows) {
     for (const tube of row.tubes) {
       totalJsonRadius += tube.radius;
       tubeCount++;
@@ -743,17 +838,20 @@ function generateReactorFromJson(jsonData: ReactorJson) {
   const scaledTubeRadius = avgJsonTubeRadius / scaleFactor;
 
   let estimatedPitch = 15;
-  for (const row of jsonData.rows) {
-    if (row.tubes.length >= 2) {
-      const [t1, t2] = row.tubes;
-      const distance = Math.sqrt(
-        Math.pow(t2.center_x - t1.center_x, 2) +
-          Math.pow(t2.center_y - t1.center_y, 2),
-      );
-      estimatedPitch = distance / scaleFactor;
-      break;
-    }
+  for (const row of activeRows) {
+      const t1 = row.tubes[0];
+      const t2 = row.tubes[1];
+      if (t1 && t2) {
+        const distance = Math.sqrt(
+          Math.pow(t2.center_x - t1.center_x, 2) +
+            Math.pow(t2.center_y - t1.center_y, 2),
+        );
+        estimatedPitch = distance / scaleFactor;
+        break;
+      }
   }
+
+  const totalPieSlice = jsonData.pie?.slices;
 
   setConfig({
     shape: "CIRCLE",
@@ -762,15 +860,29 @@ function generateReactorFromJson(jsonData: ReactorJson) {
     padding: 5,
     pitch: estimatedPitch,
     angle: 60,
+    totalPieSlice: totalPieSlice,
   });
 
   const tubes: Tube[] = [];
-  for (const row of jsonData.rows) {
+  for (const row of activeRows) {
     for (const tube of row.tubes) {
       const tubeId = `R${row.row_id}C${tube.tube_id || tubes.filter((t) => t.id.startsWith(`R${row.row_id}C`)).length + 1}`;
       const relativeX = (tube.center_x - jsonCenterX) / scaleFactor;
       const relativeY = (tube.center_y - jsonCenterY) / scaleFactor;
       const scaledRadius = tube.radius / scaleFactor;
+
+      let pieSliceVal = tube.pie_slice;
+      if ((pieSliceVal === undefined || pieSliceVal === null) && jsonData.inner_circles?.circles) {
+        const match = jsonData.inner_circles.circles.find(
+          (c) => Math.abs(c.center_x - tube.center_x) < 0.1 && Math.abs(c.center_y - tube.center_y) < 0.1
+        );
+        if (match) {
+          pieSliceVal = match.pie_slice;
+        }
+      }
+
+      const pieSliceMatch = pieSliceVal ? String(pieSliceVal).match(/\d+/) : null;
+      const parsedPieSlice = pieSliceMatch ? parseInt(pieSliceMatch[0], 10) : undefined;
 
       tubes.push({
         id: tubeId,
@@ -784,6 +896,7 @@ function generateReactorFromJson(jsonData: ReactorJson) {
         property: null,
         propertyColor: null,
         comment: null,
+        pieSlice: parsedPieSlice,
       });
     }
   }
@@ -850,6 +963,32 @@ const searchValue = ref<string[]>([]);
 const searchRow = ref<string>("R1");
 const items = ref(["Top / Front View", "Bottom / Back View"]);
 const viewDisplay = ref("Top / Front View");
+const showPieView = ref(false);
+const pieColors = ["#3B82F6", "#10B981", "#EC4899", "#8B5CF6", "#F59E0B", "#EF4444", "#06B6D4"];
+
+function togglePieView() {
+  showPieView.value = !showPieView.value;
+  renderAll();
+}
+
+const availableCamerasList = ref<any[]>([]);
+
+async function fetchCameras() {
+  try {
+    const res = await useAxios().$get<{ data?: any[] }>("https://apiots.dnyindia.in/api/v2/camera/getAvailableCameras");
+    availableCamerasList.value = res?.data || [];
+  } catch (err) {
+    console.error("Failed to fetch cameras:", err);
+  }
+}
+
+function getCameraNameForSlice(sliceIdx: number): string {
+  if (!tubeSheetDetails.value?.cameras) return "No Camera";
+  const cameraId = tubeSheetDetails.value.cameras[sliceIdx];
+  if (!cameraId) return "No Camera";
+  const cam = availableCamerasList.value.find((c) => c._id === cameraId);
+  return cam ? `${cam.name} (${cam.ipAddress})` : `Camera ${sliceIdx + 1}`;
+}
 
 // Computed compass dimensions based on shape type
 const compassSize = computed(() => {
@@ -1020,10 +1159,17 @@ function updateCircleVisual(t: Tube) {
   c.setAttribute("cx", String(cx));
   c.setAttribute("cy", String(cy));
   c.setAttribute("r", String(r));
-  c.setAttribute(
-    "fill",
-    propertyColor ? propertyColor : isSelected ? "#FFA500" : "#fff",
-  );
+
+  let fill = "#fff";
+  if (showPieView.value && t.pieSlice !== undefined) {
+    fill = pieColors[t.pieSlice % pieColors.length] || "#fff";
+  } else if (propertyColor) {
+    fill = propertyColor;
+  } else if (isSelected) {
+    fill = "#FFA500";
+  }
+
+  c.setAttribute("fill", fill);
   c.setAttribute("stroke", isSelected ? "#FFA500" : "#0f172a");
   c.setAttribute("stroke-width", isSelected ? "1.5" : "0.3");
 
@@ -1465,6 +1611,7 @@ onMounted(async () => {
 
   loadViewportState();
   await loadReactorLayouts();
+  await fetchCameras();
 
   watch(
     () => [scale.value, tx.value, ty.value, rotation.value],

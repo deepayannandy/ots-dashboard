@@ -19,6 +19,7 @@ export interface ReactorConfig {
   pitch: number
   lattice: LatticeType
   angle: 30 | 45 | 60 | 90
+  totalPieSlice?: number
   positions?: {
     scale: number
     tx: number
@@ -42,6 +43,7 @@ export interface Tube {
   _backendUpdated?: boolean
   _backendUpdatedBack?: boolean
   backColor?: string
+  pieSlice?: number
 }
 
 export interface Survey {
