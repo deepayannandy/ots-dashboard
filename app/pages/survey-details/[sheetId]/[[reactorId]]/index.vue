@@ -117,6 +117,15 @@
               @click="loading ? openStopModal() : stratSurvey()"
             />
             <UButton
+              v-if="loading"
+              label="Export Report"
+              color="neutral"
+              variant="subtle"
+              icon="i-lucide-printer"
+              class="ml-2"
+              @click="downloadReport"
+            />
+            <UButton
               color="neutral"
               variant="subtle"
               :icon="
