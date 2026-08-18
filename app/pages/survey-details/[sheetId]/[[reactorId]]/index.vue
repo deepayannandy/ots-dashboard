@@ -1,7 +1,7 @@
 <template>
   <UDashboardPanel id="create-tubesheet" :ui="{ body: '!p-0' }">
     <template #header>
-      <UDashboardNavbar :ui="{ right: 'gap-3' }">
+      <UDashboardNavbar v-if="!isFocusMode" :ui="{ right: 'gap-3' }">
         <template #leading>
           <UDashboardSidebarCollapse />
         </template>
@@ -48,7 +48,7 @@
         </template>
       </UDashboardNavbar>
 
-      <UDashboardToolbar>
+      <UDashboardToolbar v-if="!isFocusMode">
         <template #left>
           <div class="flex items-center gap-2">
             <UButton
@@ -135,11 +135,27 @@
               "
               @click="isRightOpen = !isRightOpen"
             />
+            <UButton
+              color="neutral"
+              variant="subtle"
+              icon="i-lucide-maximize"
+              title="Big Screen View"
+              @click="enterFocusMode"
+            />
           </div>
         </template>
       </UDashboardToolbar>
     </template>
     <template #body>
+      <UButton
+        v-if="isFocusMode"
+        color="neutral"
+        variant="solid"
+        icon="i-lucide-minimize"
+        label="Exit Full Screen"
+        class="fixed top-4 right-4 z-[60] shadow-lg"
+        @click="exitFocusMode"
+      />
       <UPage class="flex gap-0" :ui="pageUi">
         <UPageBody
           class="select-none bg-[linear-gradient(to_right,#e5e7eb_.5px,transparent_.5px),linear-gradient(to_bottom,#e5e7eb_.5px,transparent_.5px)] bg-size-[20px_20px] dark:bg-[linear-gradient(to_right,#2d2d2d_.5px,transparent_.5px),linear-gradient(to_bottom,#2d2d2d_.5px,transparent_.5px)] dark:bg-size-[20px_20px] dark:bg-neutral-950 bg-white max-h-[calc(100dvh-var(--ui-header-height)-49px)] min-h-[calc(100dvh-var(--ui-header-height)-49px)] w-full flex justify-center items-center z-10"
@@ -317,6 +333,8 @@
                 :style="{
                   width: '100%',
                   height: '100%',
+                  touchAction: 'none',
+                  cursor: isPanning ? 'grabbing' : 'grab',
                   ...(viewDisplay === 'Back View'
                     ? {
                         transform: 'scale(-1,1)',
@@ -326,6 +344,10 @@
                     : {}),
                 }"
                 @wheel.prevent="handleWheel"
+                @pointerdown="startPan"
+                @pointermove="movePan"
+                @pointerup="endPan"
+                @pointercancel="endPan"
               >
                 <g id="viewport" :transform="transformStr"></g>
               </svg>
@@ -339,8 +361,17 @@
                   :viewBox="`0 0 ${svgWidth} ${svgHeight}`"
                   xmlns="http://www.w3.org/2000/svg"
                   preserveAspectRatio="xMidYMid meet"
-                  style="width: 100%; height: calc(100% - 40px)"
+                  :style="{
+                    width: '100%',
+                    height: 'calc(100% - 40px)',
+                    touchAction: 'none',
+                    cursor: isPanning ? 'grabbing' : 'grab',
+                  }"
                   @wheel.prevent="handleWheel"
+                  @pointerdown="startPan"
+                  @pointermove="movePan"
+                  @pointerup="endPan"
+                  @pointercancel="endPan"
                 >
                   <g id="viewport" :transform="transformStr"></g>
                 </svg>
@@ -358,13 +389,19 @@
                   :viewBox="`0 0 ${svgWidth} ${svgHeight}`"
                   xmlns="http://www.w3.org/2000/svg"
                   preserveAspectRatio="xMidYMid meet"
-                  style="
-                    width: 100%;
-                    height: calc(100% - 40px);
-                    transform: scale(-1, 1);
-                    transform-origin: center;
-                  "
+                  :style="{
+                    width: '100%',
+                    height: 'calc(100% - 40px)',
+                    transform: 'scale(-1, 1)',
+                    transformOrigin: 'center',
+                    touchAction: 'none',
+                    cursor: isPanning ? 'grabbing' : 'grab',
+                  }"
                   @wheel.prevent="handleWheel"
+                  @pointerdown="startPan"
+                  @pointermove="movePan"
+                  @pointerup="endPan"
+                  @pointercancel="endPan"
                 >
                   <g id="viewport" :transform="transformStr"></g>
                 </svg>
@@ -500,6 +537,7 @@
             :class="{
               'opacity-30 pointer-events-none bg-gray-200 dark:bg-gray-700':
                 !loading && !viewMode,
+              'max-h-dvh! min-h-dvh! bg-white dark:bg-neutral-950': isFocusMode,
             }"
           >
             <div
@@ -507,132 +545,69 @@
               class="absolute inset-0 bg-gray-200 dark:bg-gray-700 opacity-50 z-10 flex items-center justify-center"
             />
 
-            <!-- Survey Progress Card with Pie Chart and Stats -->
-            <UPageCard
-              spotlight
-              spotlight-color="primary"
-              class="h-fit"
-              :ui="{
-                root: 'overflow-hidden shadow-md',
-                container: 'sm:p-0 gap-2!',
-                header: 'w-full p-3 bg-primary',
-              }"
-            >
-              <template #header>
-                <div
-                  class="bg-primary w-full flex items-center justify-between"
-                >
-                  Survey Progress
-                  <div
-                    class="text-sm w-[120px] text-left text-neutral-700 dark:text-neutral-200"
-                  >
-                    Next Update: {{ timeLeft }}s
-                  </div>
-                </div>
-              </template>
-              <div class="grid grid-cols-2 p-2">
-                <div>
-                  <Pie
-                    :data="chartData"
-                    :options="chartOptions"
-                    class="max-h-40"
-                  />
-                </div>
-                <div class="w-full grid grid-cols-2 gap-2 text-center">
-                  <div
-                    class="text-sm text-neutral-700 dark:text-neutral-200 flex justify-center"
-                  >
-                    <div>
-                      <h1>Total Tube Count</h1>
-                      <span class="font-semibold">{{ totalCount }}</span>
-                    </div>
-                  </div>
-                  <div
-                    class="text-sm text-neutral-700 dark:text-neutral-200 flex justify-center"
-                  >
-                    <div>
-                      <h1>Special Tubes</h1>
-                      <span class="font-semibold">{{ specialTubes }}</span>
-                    </div>
-                  </div>
-                  <div
-                    class="text-sm text-neutral-700 dark:text-neutral-200 flex justify-center"
-                  >
-                    <div>
-                      <h1>Progress</h1>
-                      <span class="font-semibold">{{
-                        viewDisplay === "Back View"
-                          ? backBackendUpdatedCount
-                          : backendUpdatedCount
-                      }}</span>
-                      /
-                      <span class="font-semibold">{{
-                        totalCount - specialTubes
-                      }}</span>
-                    </div>
-                  </div>
-                  <div
-                    class="flex justify-center text-center text-sm text-neutral-700 dark:text-neutral-200"
-                  >
-                    <div>
-                      Repeat
-                      <br />
-                      {{ repeatCount }}
-                    </div>
-                  </div>
-                  <div
-                    class="flex justify-center text-center text-sm text-neutral-700 dark:text-neutral-200"
-                  >
-                    <div>
-                      Start Time
-                      <br />
-                      {{ surveyStartTime }}
-                    </div>
-                  </div>
-                  <div
-                    class="flex justify-center text-center text-sm text-neutral-700 dark:text-neutral-200"
-                  >
-                    <div>
-                      {{ surveyEndTimeStamp ? "Survey End" : "Last Updated" }}
-                      <br />
-                      {{ surveyEndTimeStamp ? surveyEndTime : lastUpdateTime }}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </UPageCard>
-
-            <!-- Progress Line Chart Card -->
-
-            <UPageCard
-              v-if="progressData.length > 0"
-              spotlight
-              spotlight-color="success"
-              class="h-fit col-span-2"
-              :ui="{
-                root: 'overflow-hidden shadow-md',
-                container: 'sm:p-0 gap-2!',
-                header: 'w-full p-3 bg-primary mb-0',
-              }"
-            >
-              <template #header>
-                <div
-                  class="bg-primary w-full flex items-center justify-between"
-                >
-                  <span>Total Survey Time</span>
-                  <span
-                    class="text-lg font-bold text-amber-600 dark:text-amber-400 font-mono"
-                    >{{ totalSurveyTime }}</span
-                  >
-                </div>
-              </template>
-              <div class="h-40">
-                <Bar
-                  :data="progressChartData"
-                  :options="progressChartOptions"
+            <!-- Add Comment Section -->
+            <div v-if="selectedIds.size > 0" class="space-y-2">
+              <div v-if="!showCommentInput" class="flex justify-end">
+                <UButton
+                  label="Add Comment"
+                  color="primary"
+                  variant="outline"
+                  icon="i-lucide-message-square-plus"
+                  size="sm"
+                  @click="showCommentInput = true"
                 />
               </div>
-            </UPageCard>
+              <UPageCard
+                v-if="showCommentInput"
+                spotlight
+                spotlight-color="info"
+                class="h-fit"
+                :ui="{
+                  root: 'overflow-hidden shadow-md',
+                  container: 'sm:p-0 gap-0! h-full',
+                  header: 'w-full p-3 bg-primary mb-0',
+                }"
+              >
+                <template #header>
+                  <div class="bg-primary w-full">
+                    <div
+                      class="text-sm font-medium text-neutral-700 dark:text-neutral-200"
+                    >
+                      Add comment for tube: {{ [...selectedIds].join(", ") }}
+                    </div>
+                  </div>
+                </template>
+                <div class="p-4">
+                  <UTextarea
+                    v-model="commentText"
+                    placeholder="Enter your comment..."
+                    :rows="3"
+                    class="w-full"
+                  />
+                  <div class="flex justify-end gap-2 mt-2">
+                    <UButton
+                      label="Cancel"
+                      color="neutral"
+                      variant="outline"
+                      size="sm"
+                      @click="
+                        showCommentInput = false;
+                        commentText = '';
+                      "
+                    />
+                    <UButton
+                      label="Add Comment"
+                      color="primary"
+                      size="sm"
+                      :loading="addingComment"
+                      :disabled="!commentText.trim()"
+                      @click="submitComment"
+                    />
+                  </div>
+                </div>
+              </UPageCard>
+            </div>
+
             <UPageCard
               v-if="selectedIds.size"
               spotlight
@@ -803,6 +778,133 @@
                 </div>
               </template>
             </UPageCard>
+
+            <!-- Survey Progress Card with Pie Chart and Stats -->
+            <UPageCard
+              spotlight
+              spotlight-color="primary"
+              class="h-fit"
+              :ui="{
+                root: 'overflow-hidden shadow-md',
+                container: 'sm:p-0 gap-2!',
+                header: 'w-full p-3 bg-primary',
+              }"
+            >
+              <template #header>
+                <div
+                  class="bg-primary w-full flex items-center justify-between"
+                >
+                  Survey Progress
+                  <div
+                    class="text-sm w-[120px] text-left text-neutral-700 dark:text-neutral-200"
+                  >
+                    Next Update: {{ timeLeft }}s
+                  </div>
+                </div>
+              </template>
+              <div class="grid grid-cols-2 p-2">
+                <div>
+                  <Pie
+                    :data="chartData"
+                    :options="chartOptions"
+                    class="max-h-40"
+                  />
+                </div>
+                <div class="w-full grid grid-cols-2 gap-2 text-center">
+                  <div
+                    class="text-sm text-neutral-700 dark:text-neutral-200 flex justify-center"
+                  >
+                    <div>
+                      <h1>Total Tube Count</h1>
+                      <span class="font-semibold">{{ totalCount }}</span>
+                    </div>
+                  </div>
+                  <div
+                    class="text-sm text-neutral-700 dark:text-neutral-200 flex justify-center"
+                  >
+                    <div>
+                      <h1>Special Tubes</h1>
+                      <span class="font-semibold">{{ specialTubes }}</span>
+                    </div>
+                  </div>
+                  <div
+                    class="text-sm text-neutral-700 dark:text-neutral-200 flex justify-center"
+                  >
+                    <div>
+                      <h1>Progress</h1>
+                      <span class="font-semibold">{{
+                        viewDisplay === "Back View"
+                          ? backBackendUpdatedCount
+                          : backendUpdatedCount
+                      }}</span>
+                      /
+                      <span class="font-semibold">{{
+                        totalCount - specialTubes
+                      }}</span>
+                    </div>
+                  </div>
+                  <div
+                    class="flex justify-center text-center text-sm text-neutral-700 dark:text-neutral-200"
+                  >
+                    <div>
+                      Repeat
+                      <br />
+                      {{ repeatCount }}
+                    </div>
+                  </div>
+                  <div
+                    class="flex justify-center text-center text-sm text-neutral-700 dark:text-neutral-200"
+                  >
+                    <div>
+                      Start Time
+                      <br />
+                      {{ surveyStartTime }}
+                    </div>
+                  </div>
+                  <div
+                    class="flex justify-center text-center text-sm text-neutral-700 dark:text-neutral-200"
+                  >
+                    <div>
+                      {{ surveyEndTimeStamp ? "Survey End" : "Last Updated" }}
+                      <br />
+                      {{ surveyEndTimeStamp ? surveyEndTime : lastUpdateTime }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </UPageCard>
+
+            <!-- Progress Line Chart Card -->
+
+            <UPageCard
+              v-if="progressData.length > 0"
+              spotlight
+              spotlight-color="success"
+              class="h-fit col-span-2"
+              :ui="{
+                root: 'overflow-hidden shadow-md',
+                container: 'sm:p-0 gap-2!',
+                header: 'w-full p-3 bg-primary mb-0',
+              }"
+            >
+              <template #header>
+                <div
+                  class="bg-primary w-full flex items-center justify-between"
+                >
+                  <span>Total Survey Time</span>
+                  <span
+                    class="text-lg font-bold text-amber-600 dark:text-amber-400 font-mono"
+                    >{{ totalSurveyTime }}</span
+                  >
+                </div>
+              </template>
+              <div class="h-40">
+                <Bar
+                  :data="progressChartData"
+                  :options="progressChartOptions"
+                />
+              </div>
+            </UPageCard>
             <!-- Active Phase Legend Grid - Visible when selected phase has configs -->
             <UPageCard
               v-if="selectedPhase && colorCapLegend.length > 0"
@@ -894,69 +996,6 @@
               </div>
             </UPageCard>
 
-            <!-- Add Comment Section -->
-            <div v-if="selectedIds.size > 0" class="space-y-2">
-              <div v-if="!showCommentInput" class="flex justify-end">
-                <UButton
-                  label="Add Comment"
-                  color="primary"
-                  variant="outline"
-                  icon="i-lucide-message-square-plus"
-                  size="sm"
-                  @click="showCommentInput = true"
-                />
-              </div>
-              <UPageCard
-                v-if="showCommentInput"
-                spotlight
-                spotlight-color="info"
-                class="h-fit"
-                :ui="{
-                  root: 'overflow-hidden shadow-md',
-                  container: 'sm:p-0 gap-0! h-full',
-                  header: 'w-full p-3 bg-primary mb-0',
-                }"
-              >
-                <template #header>
-                  <div class="bg-primary w-full">
-                    <div
-                      class="text-sm font-medium text-neutral-700 dark:text-neutral-200"
-                    >
-                      Add comment for tube: {{ [...selectedIds].join(", ") }}
-                    </div>
-                  </div>
-                </template>
-                <div class="p-4">
-                  <UTextarea
-                    v-model="commentText"
-                    placeholder="Enter your comment..."
-                    :rows="3"
-                    class="w-full"
-                  />
-                  <div class="flex justify-end gap-2 mt-2">
-                    <UButton
-                      label="Cancel"
-                      color="neutral"
-                      variant="outline"
-                      size="sm"
-                      @click="
-                        showCommentInput = false;
-                        commentText = '';
-                      "
-                    />
-                    <UButton
-                      label="Add Comment"
-                      color="primary"
-                      size="sm"
-                      :loading="addingComment"
-                      :disabled="!commentText.trim()"
-                      @click="submitComment"
-                    />
-                  </div>
-                </div>
-              </UPageCard>
-            </div>
-
             <UPageCard
               :ui="{ container: 'sm:p-2' }"
               spotlight-color="secondary"
@@ -1022,6 +1061,7 @@
                     class="flex-1 max-h-[312px]"
                     :rows="10"
                     sticky="header"
+                    :meta="{ class: { tr: tubeRowHighlightClass } }"
                   >
                     <template #Activity-cell="{ row }">
                       <span
@@ -1225,6 +1265,7 @@ ChartJS.register(
 
 const loading = ref(false);
 const isRightOpen = ref(true);
+const isFocusMode = ref(false);
 const stopModalOpen = ref(false);
 const successModalOpen = ref(false);
 const successMessage = ref("");
@@ -1613,9 +1654,11 @@ const bodyClass = computed(() => {
     "dark:bg-[linear-gradient(to_right,#2d2d2d_.5px,transparent_.5px),linear-gradient(to_bottom,#2d2d2d_.5px,transparent_.5px)] dark:bg-[size:20px_20px]";
   const bgLight = "bg-white";
   const bgDark = "dark:bg-neutral-950";
+  // In focus mode the header/toolbar are hidden, so let the canvas take the full viewport height
+  const focusOverride = isFocusMode.value ? "max-h-dvh! min-h-dvh!" : "";
 
   if (dualView.value) {
-    return `${base} ${gridLight} ${gridDark} ${bgLight} ${bgDark}`;
+    return `${base} ${gridLight} ${gridDark} ${bgLight} ${bgDark} ${focusOverride}`;
   }
   if (viewDisplay.value === "Back View") {
     // For back view, use a reddish grid to differentiate
@@ -1623,9 +1666,9 @@ const bodyClass = computed(() => {
       "bg-[linear-gradient(to_right,#ffcccc_.5px,transparent_.5px),linear-gradient(to_bottom,#ffcccc_.5px,transparent_.5px)] bg-[size:20px_20px]";
     const gridDarkBack =
       "dark:bg-[linear-gradient(to_right,#4d0000_.5px,transparent_.5px),linear-gradient(to_bottom,#4d0000_.5px,transparent_.5px)] dark:bg-[size:20px_20px]";
-    return `${base} ${gridLightBack} ${gridDarkBack} ${bgLight} ${bgDark}`;
+    return `${base} ${gridLightBack} ${gridDarkBack} ${bgLight} ${bgDark} ${focusOverride}`;
   } else {
-    return `${base} ${gridLight} ${gridDark} ${bgLight} ${bgDark}`;
+    return `${base} ${gridLight} ${gridDark} ${bgLight} ${bgDark} ${focusOverride}`;
   }
 });
 function addCompletedPhase(phaseValue: string) {
@@ -1868,6 +1911,17 @@ const iconMaps = {
   back: new Map<string, SVGGElement>(),
 };
 const selectedIds = ref<Set<string>>(new Set());
+
+// Highlights Progress/Repeat table rows for the currently selected tube(s),
+// fading the rest. No selection means no dimming.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function tubeRowHighlightClass(row: any) {
+  if (selectedIds.value.size === 0) return "";
+  const tubeId = row.original?.tube;
+  return selectedIds.value.has(tubeId)
+    ? "bg-primary-50 dark:bg-primary-950/40 transition-colors duration-200"
+    : "opacity-30 transition-opacity duration-200";
+}
 // Property options
 const propertiesOptions = [
   { label: "Catalyst Tc", value: "CATALYST_TC", color: "#FF6B6B" },
@@ -2616,6 +2670,32 @@ function renderRowLabels(
   }
 }
 let interval: ReturnType<typeof setInterval> | null = null;
+// Clears tube colors and per-survey stats left over from the phase that just
+// finished, so the new phase starts from a blank canvas instead of showing
+// stale data until the next full page load.
+function resetSurveyVisualState() {
+  currentTubes.value.forEach((t) => {
+    t.propertyColor = undefined;
+    t.backColor = undefined;
+    t._backendUpdated = false;
+    t._backendUpdatedBack = false;
+  });
+  tableData.value = [];
+  repeatTableData.value = [];
+  backTableData.value = [];
+  backRepeatTableData.value = [];
+  errorLogsRows.value = [];
+  progressData.value = [];
+  tubeComments.value = [];
+  repeatCount.value = 0;
+  tubeRepeatCounts.value = new Map();
+  lastDetectedTubeId.value = "";
+  lastDetectedFace.value = "front";
+  surveyCreatedAt.value = null;
+  surveyEndTimeStamp.value = null;
+  renderAll();
+}
+
 async function stratSurvey() {
   if (!selectedPhase.value) {
     useToast().add({ title: "Please select a phase", color: "error" });
@@ -2633,6 +2713,7 @@ async function stratSurvey() {
       loading.value = false;
       return;
     }
+    resetSurveyVisualState();
     activeSurveyId.value = data.id;
     await navigateTo({
       path: route.path,
@@ -2747,6 +2828,48 @@ function handleWheel(event: WheelEvent) {
     zoom(factor, centerX, centerY);
   }
 }
+// Click-and-drag panning (works at any zoom level, including right after zoom in/out)
+const isPanning = ref(false);
+let panPointerId: number | null = null;
+let panLastX = 0;
+let panLastY = 0;
+
+function startPan(event: PointerEvent) {
+  if (event.button !== 0) return;
+  // Don't start a pan on a tube marker (they have their own click-to-select handler)
+  if ((event.target as Element).closest?.("[data-name]")) return;
+  const svg = event.currentTarget as SVGSVGElement;
+  isPanning.value = true;
+  panPointerId = event.pointerId;
+  panLastX = event.clientX;
+  panLastY = event.clientY;
+  svg.setPointerCapture(event.pointerId);
+}
+
+function movePan(event: PointerEvent) {
+  if (!isPanning.value || event.pointerId !== panPointerId) return;
+  const svg = event.currentTarget as SVGSVGElement;
+  const rect = svg.getBoundingClientRect();
+  const dx = ((event.clientX - panLastX) / rect.width) * svgWidth;
+  const dy = ((event.clientY - panLastY) / rect.height) * svgHeight;
+  panLastX = event.clientX;
+  panLastY = event.clientY;
+
+  // The back-view SVG is mirrored via a CSS scale(-1, 1), so drag direction must flip too
+  const isBackViewSvg =
+    svg === svgBackRef.value || viewDisplay.value === "Back View";
+  pan(isBackViewSvg ? -dx : dx, dy);
+}
+
+function endPan(event: PointerEvent) {
+  if (event.pointerId !== panPointerId) return;
+  const svg = event.currentTarget as SVGSVGElement;
+  if (svg.hasPointerCapture(event.pointerId))
+    svg.releasePointerCapture(event.pointerId);
+  isPanning.value = false;
+  panPointerId = null;
+}
+
 function resetView() {
   if (initialViewportState.value) {
     setZoom(initialViewportState.value.scale);
@@ -2756,6 +2879,37 @@ function resetView() {
     resetWithoutRotation();
   }
 }
+
+// Big screen / focus mode: fullscreen, showing only the reactor and the progress panel
+function handleFullscreenChange() {
+  if (!document.fullscreenElement) isFocusMode.value = false;
+}
+
+async function enterFocusMode() {
+  try {
+    await document.documentElement.requestFullscreen?.();
+  } catch (err) {
+    console.error("Failed to enter full screen", err);
+  }
+  dualView.value = false;
+  showDetails.value = false;
+  isEditingCameras.value = false;
+  isRightOpen.value = true;
+  isFocusMode.value = true;
+}
+
+async function exitFocusMode() {
+  try {
+    if (document.fullscreenElement) await document.exitFullscreen();
+  } catch (err) {
+    console.error("Failed to exit full screen", err);
+  }
+  isFocusMode.value = false;
+}
+
+onMounted(() => {
+  document.addEventListener("fullscreenchange", handleFullscreenChange);
+});
 
 // Keyboard handler for arrow keys
 // Shift + Arrow = move reactor, Arrow only (up/down) = scroll right panel
@@ -3691,5 +3845,6 @@ onUnmounted(() => {
   if (interval) clearInterval(interval);
   // Remove keyboard listener
   window.removeEventListener("keydown", handleKeyDown);
+  document.removeEventListener("fullscreenchange", handleFullscreenChange);
 });
 </script>
