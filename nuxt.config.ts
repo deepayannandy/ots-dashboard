@@ -16,8 +16,8 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       axios: {
-        // baseURL: 'https://apiots.dnyindia.in'
-        baseURL: "http://localhost:6621",
+        baseURL: "https://apiots.dnyindia.in",
+        // baseURL: "http://localhost:6621",
       },
     },
   },

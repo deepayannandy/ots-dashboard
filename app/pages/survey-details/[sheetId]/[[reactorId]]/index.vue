@@ -171,6 +171,26 @@
               background-position: center;
             "
           />
+          <!-- Fullscreen Mode Header (Reactor Name & Running Survey) -->
+          <div
+            v-if="isFocusMode && (tubeSheetDetails?.equipmentId || runningSurveyName)"
+            class="absolute top-4 left-4 z-40 flex items-center gap-2.5 bg-white/90 dark:bg-neutral-900/90 backdrop-blur-md px-3.5 py-2 rounded-xl border border-neutral-200/80 dark:border-neutral-800/80 shadow-md transition-all duration-200"
+          >
+            <div class="flex items-center gap-2">
+              <span class="font-bold text-base text-neutral-800 dark:text-neutral-100 tracking-tight">
+                {{ tubeSheetDetails?.equipmentId || 'Reactor' }}
+              </span>
+              <template v-if="runningSurveyName">
+                <span class="text-neutral-300 dark:text-neutral-700 font-medium">/</span>
+                <span
+                  class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary-50 dark:bg-primary-950/60 text-primary-600 dark:text-primary-400 border border-primary-200 dark:border-primary-800/60"
+                >
+                  <span class="size-1.5 rounded-full bg-primary-500 animate-pulse" />
+                  {{ runningSurveyName }}
+                </span>
+              </template>
+            </div>
+          </div>
           <!-- Pie View Legend Card -->
           <div
             v-if="showBirdEyeView"
@@ -794,7 +814,37 @@
                 <div
                   class="bg-primary w-full flex items-center justify-between"
                 >
-                  Survey Progress
+                  <div class="flex items-center gap-2">
+                    Survey Progress
+                    <!-- View mode toggle: only show when sections exist -->
+                    <div
+                      v-if="sectionProgressData.length > 0"
+                      class="flex items-center bg-white/15 rounded-full p-0.5 ml-2"
+                    >
+                      <button
+                        class="px-2 py-0.5 text-[10px] font-semibold rounded-full transition-all duration-200"
+                        :class="
+                          progressViewMode === 'overall'
+                            ? 'bg-white text-primary-700 shadow-sm'
+                            : 'text-white/80 hover:text-white'
+                        "
+                        @click="progressViewMode = 'overall'"
+                      >
+                        Overall
+                      </button>
+                      <button
+                        class="px-2 py-0.5 text-[10px] font-semibold rounded-full transition-all duration-200"
+                        :class="
+                          progressViewMode === 'section'
+                            ? 'bg-white text-primary-700 shadow-sm'
+                            : 'text-white/80 hover:text-white'
+                        "
+                        @click="progressViewMode = 'section'"
+                      >
+                        By Section
+                      </button>
+                    </div>
+                  </div>
                   <div
                     class="text-sm w-[120px] text-left text-neutral-700 dark:text-neutral-200"
                   >
@@ -802,7 +852,9 @@
                   </div>
                 </div>
               </template>
-              <div class="grid grid-cols-2 p-2">
+
+              <!-- Overall View (default) -->
+              <div v-if="progressViewMode === 'overall'" class="grid grid-cols-2 p-2">
                 <div>
                   <Pie
                     :data="chartData"
@@ -869,6 +921,135 @@
                       <br />
                       {{ surveyEndTimeStamp ? surveyEndTime : lastUpdateTime }}
                     </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- By Section View (carousel) -->
+              <div v-else class="p-2 space-y-3">
+                <!-- Section Carousel Card -->
+                <div
+                  v-if="currentSection"
+                  class="relative rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 overflow-hidden"
+                >
+                  <!-- Section header with navigation -->
+                  <div
+                    class="flex items-center justify-between px-3 py-2 border-b border-neutral-200 dark:border-neutral-700"
+                  >
+                    <button
+                      class="p-1 rounded-full hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
+                      @click="prevSection"
+                    >
+                      <UIcon name="i-lucide-chevron-left" class="size-4" />
+                    </button>
+                    <div class="flex items-center gap-2 text-center">
+                      <span
+                        class="size-3 rounded-full border border-neutral-300 dark:border-neutral-600"
+                        :style="{ backgroundColor: currentSection.color }"
+                      />
+                      <span
+                        class="text-sm font-bold text-neutral-800 dark:text-neutral-100"
+                      >
+                        {{ currentSection.label }}
+                      </span>
+                      <span
+                        class="text-[10px] text-neutral-500 dark:text-neutral-400 italic"
+                      >
+                        ({{ currentSection.cameraName }})
+                      </span>
+                    </div>
+                    <button
+                      class="p-1 rounded-full hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
+                      @click="nextSection"
+                    >
+                      <UIcon name="i-lucide-chevron-right" class="size-4" />
+                    </button>
+                  </div>
+
+                  <!-- Section body: pie + stats -->
+                  <div class="grid grid-cols-2 gap-2 p-3">
+                    <div class="flex items-center justify-center">
+                      <Pie
+                        :data="sectionChartData"
+                        :options="chartOptions"
+                        class="max-h-28"
+                      />
+                    </div>
+                    <div class="grid grid-cols-2 gap-1 text-center">
+                      <div
+                        class="text-xs text-neutral-700 dark:text-neutral-200 flex flex-col items-center justify-center"
+                      >
+                        <span class="text-[10px] text-neutral-500 dark:text-neutral-400">Total</span>
+                        <span class="font-bold text-sm">{{ currentSection.total }}</span>
+                      </div>
+                      <div
+                        class="text-xs text-neutral-700 dark:text-neutral-200 flex flex-col items-center justify-center"
+                      >
+                        <span class="text-[10px] text-neutral-500 dark:text-neutral-400">Special</span>
+                        <span class="font-bold text-sm">{{ currentSection.special }}</span>
+                      </div>
+                      <div
+                        class="text-xs flex flex-col items-center justify-center"
+                      >
+                        <span class="text-[10px] text-neutral-500 dark:text-neutral-400">Completed</span>
+                        <span class="font-bold text-sm text-green-600 dark:text-green-400">{{ currentSection.completed }}</span>
+                      </div>
+                      <div
+                        class="text-xs flex flex-col items-center justify-center"
+                      >
+                        <span class="text-[10px] text-neutral-500 dark:text-neutral-400">Remaining</span>
+                        <span class="font-bold text-sm text-amber-600 dark:text-amber-400">{{ currentSection.remaining }}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Progress bar -->
+                  <div class="px-3 pb-3">
+                    <div class="flex items-center justify-between mb-1">
+                      <span class="text-[10px] font-medium text-neutral-500 dark:text-neutral-400">
+                        Progress
+                      </span>
+                      <span class="text-xs font-bold" :class="currentSection.percentage === 100 ? 'text-green-600 dark:text-green-400' : 'text-neutral-700 dark:text-neutral-200'">
+                        {{ currentSection.percentage }}%
+                      </span>
+                    </div>
+                    <div class="w-full bg-neutral-200 dark:bg-neutral-700 rounded-full h-2 overflow-hidden">
+                      <div
+                        class="h-full rounded-full transition-all duration-500 ease-out"
+                        :class="currentSection.percentage === 100 ? 'bg-green-500' : 'bg-primary-500'"
+                        :style="{ width: `${currentSection.percentage}%` }"
+                      />
+                    </div>
+                  </div>
+
+                  <!-- Dot indicators -->
+                  <div class="flex items-center justify-center gap-1.5 pb-2">
+                    <button
+                      v-for="(sec, idx) in sectionProgressData"
+                      :key="sec.sliceIndex"
+                      class="rounded-full transition-all duration-200"
+                      :class="
+                        idx === currentSectionIndex
+                          ? 'size-2.5 bg-primary-500'
+                          : 'size-1.5 bg-neutral-300 dark:bg-neutral-600 hover:bg-neutral-400 dark:hover:bg-neutral-500'
+                      "
+                      @click="currentSectionIndex = idx"
+                    />
+                  </div>
+                </div>
+
+                <!-- Section Overview Bar Chart -->
+                <div
+                  class="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 p-2"
+                >
+                  <div class="text-[10px] font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1 px-1">
+                    All Sections Overview
+                  </div>
+                  <div :style="{ height: `${Math.max(80, sectionProgressData.length * 22)}px` }">
+                    <Bar
+                      :data="sectionOverviewChartData"
+                      :options="sectionOverviewChartOptions"
+                    />
                   </div>
                 </div>
               </div>
@@ -1315,6 +1496,14 @@ const tubeSheetDetails = ref<any>(null);
 const phasesData = ref<any[]>([]);
 const selectedPhase = ref<string>("");
 const currentSurvey = ref("");
+const runningSurveyName = computed(() => {
+  if (currentSurvey.value) return currentSurvey.value;
+  if (selectedPhase.value) {
+    const item = allTypeOfPhasesItems.find((p) => p.value === selectedPhase.value);
+    return item?.label || selectedPhase.value;
+  }
+  return "";
+});
 
 const showDetails = ref(false);
 const items = ref(["Top / Front View", "Bottom / Back View"]);
@@ -1910,6 +2099,19 @@ const iconMaps = {
   front: new Map<string, SVGGElement>(),
   back: new Map<string, SVGGElement>(),
 };
+/** Clear all cached SVG element references (single-view + dual-view).
+ *  Must be called whenever the SVG host element is destroyed/recreated by v-if
+ *  so that renderAll will create fresh DOM elements instead of reusing orphaned ones.
+ */
+function clearAllElMaps() {
+  elById.clear();
+  iconElById.clear();
+  elMaps.front.clear();
+  elMaps.back.clear();
+  iconMaps.front.clear();
+  iconMaps.back.clear();
+}
+
 const selectedIds = ref<Set<string>>(new Set());
 
 // Highlights Progress/Repeat table rows for the currently selected tube(s),
@@ -2039,12 +2241,38 @@ function updateCircleVisualForSvg(
   const cy = centerY + t.y * scalePx;
   const r = t.r * scalePx;
 
+  // Section highlight: dim tubes outside the highlighted section
+  const hlIdx = highlightedSectionIndex.value;
+  const isSectionHighlighted = hlIdx >= 0;
+  const isInHighlightedSection =
+    isSectionHighlighted && t.pieSlice === hlIdx;
+  const isOutsideHighlightedSection =
+    isSectionHighlighted && t.pieSlice !== hlIdx;
+
   c.setAttribute("cx", String(cx));
   c.setAttribute("cy", String(cy));
   c.setAttribute("r", String(r));
   c.setAttribute("fill", fillColor);
-  c.setAttribute("stroke", isSelected ? "#FF0000" : "#0f172a");
-  c.setAttribute("stroke-width", isSelected ? "1.5" : "0.3");
+
+  // Stroke: highlighted section gets a colored ring, selected gets red
+  if (isSelected) {
+    c.setAttribute("stroke", "#FF0000");
+    c.setAttribute("stroke-width", "1.5");
+  } else if (isInHighlightedSection) {
+    const sectionColor = pieColors[hlIdx % pieColors.length] || "#3B82F6";
+    c.setAttribute("stroke", sectionColor);
+    c.setAttribute("stroke-width", "1.2");
+  } else {
+    c.setAttribute("stroke", "#0f172a");
+    c.setAttribute("stroke-width", "0.3");
+  }
+
+  // Opacity: dim tubes outside the highlighted section
+  c.setAttribute(
+    "opacity",
+    isOutsideHighlightedSection ? "0.15" : "1",
+  );
+
   c.setAttribute(
     "filter",
     isBackView && t.backColor ? "url(#invert-filter)" : "none",
@@ -2164,6 +2392,11 @@ function updateTubeIconsForSvg(
   }
 
   iconGroup.innerHTML = "";
+
+  // Dim icon overlays for tubes outside highlighted section (matches circle opacity)
+  const hlIdx = highlightedSectionIndex.value;
+  const isOutsideHighlight = hlIdx >= 0 && t.pieSlice !== hlIdx;
+  iconGroup.setAttribute("opacity", isOutsideHighlight ? "0.15" : "1");
 
   // Helper: choose readable text color (black or white) based on hole fill color
   const getContrastColor = (colorNameOrHex: string) => {
@@ -2882,10 +3115,14 @@ function resetView() {
 
 // Big screen / focus mode: fullscreen, showing only the reactor and the progress panel
 function handleFullscreenChange() {
-  if (!document.fullscreenElement) isFocusMode.value = false;
+  if (!document.fullscreenElement) {
+    isFocusMode.value = false;
+    nextTick(() => renderAll());
+  }
 }
 
 async function enterFocusMode() {
+  const wasDual = dualView.value;
   try {
     await document.documentElement.requestFullscreen?.();
   } catch (err) {
@@ -2896,6 +3133,14 @@ async function enterFocusMode() {
   isEditingCameras.value = false;
   isRightOpen.value = true;
   isFocusMode.value = true;
+
+  // If we were in dual view, the single-view SVG is freshly recreated —
+  // clear stale element caches so renderAll rebuilds circles from scratch.
+  if (wasDual) {
+    clearAllElMaps();
+  }
+  await nextTick();
+  renderAll();
 }
 
 async function exitFocusMode() {
@@ -2905,6 +3150,8 @@ async function exitFocusMode() {
     console.error("Failed to exit full screen", err);
   }
   isFocusMode.value = false;
+  await nextTick();
+  renderAll();
 }
 
 onMounted(() => {
@@ -3119,21 +3366,19 @@ watch(viewDisplay, () => {
   renderAll();
 });
 
-watch(dualView, () => {
+watch(dualView, (newVal, oldVal) => {
+  // When toggling between dual and single view, the v-if causes SVG elements
+  // to be destroyed and recreated. Clear all stale element caches so
+  // renderAll rebuilds circles from scratch in the new SVG(s).
+  if (newVal !== oldVal) {
+    clearAllElMaps();
+  }
   nextTick(() => renderAll());
 });
 
 function toggleDualView() {
-  const was = dualView.value;
   dualView.value = !dualView.value;
-  // When entering or exiting dual view, wait for DOM update then render.
-  nextTick(() => renderAll());
-
-  // If we just exited Both View (was true, now false), perform a full page refresh
-  // to ensure single-view SVG state and caches fully reset.
-  if (was && !dualView.value) {
-    window.location.reload();
-  }
+  // The watch(dualView) handler above clears maps and re-renders via nextTick.
 }
 
 async function fetchUpdatedTubeColors(surveyId: string) {
@@ -3615,6 +3860,230 @@ const completed = computed(() =>
 const remaining = computed(() =>
   Math.max(0, effectiveTotal.value - completed.value),
 );
+
+// --- Survey Progress: Overall vs Per-Section carousel ---
+const progressViewMode = ref<"overall" | "section">("overall");
+const currentSectionIndex = ref(0);
+/** Index of the section currently highlighted on the reactor SVG (-1 = none) */
+const highlightedSectionIndex = ref(-1);
+
+/** Per-section (pie slice) progress stats */
+const sectionProgressData = computed(() => {
+  const totalSlices = config.value.totalPieSlice || 0;
+  if (totalSlices === 0) return [];
+
+  const isBackView = viewDisplay.value === "Back View";
+  const activeTubes = currentTubes.value.filter((t) => !t.deleted);
+
+  const sections: {
+    sliceIndex: number;
+    label: string;
+    cameraName: string;
+    color: string;
+    total: number;
+    special: number;
+    completed: number;
+    remaining: number;
+    percentage: number;
+  }[] = [];
+
+  for (let i = 0; i < totalSlices; i++) {
+    const sliceTubes = activeTubes.filter((t) => t.pieSlice === i);
+    const total = sliceTubes.length;
+    const special = sliceTubes.filter((t) =>
+      propertiesOptions.some((p) => p.value === t.property),
+    ).length;
+    const effectiveSliceTotal = total - special;
+    const completedInSlice = sliceTubes.filter((t) => {
+      const isSpecial = propertiesOptions.some((p) => p.value === t.property);
+      if (isSpecial) return false;
+      return isBackView ? t._backendUpdatedBack : t._backendUpdated;
+    }).length;
+    const remainingInSlice = Math.max(0, effectiveSliceTotal - completedInSlice);
+    const pct =
+      effectiveSliceTotal > 0
+        ? Math.round((completedInSlice / effectiveSliceTotal) * 100)
+        : 0;
+
+    sections.push({
+      sliceIndex: i,
+      label: `Section ${i + 1}`,
+      cameraName: getCameraNameForSlice(i),
+      color: pieColors[i % pieColors.length],
+      total,
+      special,
+      completed: completedInSlice,
+      remaining: remainingInSlice,
+      percentage: pct,
+    });
+  }
+
+  return sections;
+});
+
+const currentSection = computed(
+  () => sectionProgressData.value[currentSectionIndex.value] || null,
+);
+
+const sectionChartData = computed(() => {
+  const sec = currentSection.value;
+  if (!sec) return { labels: [] as string[], datasets: [] as { data: number[]; backgroundColor: string[]; borderWidth: number }[] };
+  return {
+    labels: ["Completed", "Remaining", "Special"],
+    datasets: [
+      {
+        data: [sec.completed, sec.remaining, sec.special],
+        backgroundColor: ["#4CAF50", "#FFC107", "#9C27B0"],
+        borderWidth: 1,
+      },
+    ],
+  };
+});
+
+/** Section overview: horizontal bar data showing all slices at once */
+const sectionOverviewChartData = computed(() => {
+  const sections = sectionProgressData.value;
+  if (sections.length === 0) return { labels: [] as string[], datasets: [] as { label: string; data: number[]; backgroundColor: string; borderRadius: number }[] };
+  return {
+    labels: sections.map((s) => `S${s.sliceIndex + 1}`),
+    datasets: [
+      {
+        label: "Completed",
+        data: sections.map((s) => s.completed),
+        backgroundColor: "#4CAF50",
+        borderRadius: 3,
+      },
+      {
+        label: "Remaining",
+        data: sections.map((s) => s.remaining),
+        backgroundColor: "#FFC107",
+        borderRadius: 3,
+      },
+    ],
+  };
+});
+
+const sectionOverviewChartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  indexAxis: "y" as const,
+  plugins: {
+    legend: {
+      display: true,
+      position: "bottom" as const,
+      labels: { boxWidth: 8, font: { size: 9 } },
+    },
+    tooltip: {
+      callbacks: {
+        title: function (items: TooltipItem<"bar">[]) {
+          const idx = items[0]?.dataIndex ?? 0;
+          const sec = sectionProgressData.value[idx];
+          return sec ? `${sec.label} — ${sec.cameraName}` : "";
+        },
+      },
+    },
+  },
+  scales: {
+    x: {
+      stacked: true,
+      ticks: { font: { size: 9 } },
+      title: { display: true, text: "Tubes", font: { size: 9 } },
+    },
+    y: {
+      stacked: true,
+      ticks: { font: { size: 9 } },
+    },
+  },
+};
+
+function prevSection() {
+  const len = sectionProgressData.value.length;
+  if (len === 0) return;
+  currentSectionIndex.value =
+    (currentSectionIndex.value - 1 + len) % len;
+}
+
+function nextSection() {
+  const len = sectionProgressData.value.length;
+  if (len === 0) return;
+  currentSectionIndex.value =
+    (currentSectionIndex.value + 1) % len;
+}
+
+/** Zoom the SVG viewport to fit the tubes of a given pie-slice section. */
+function zoomToSection(sliceIndex: number) {
+  const activeTubes = currentTubes.value.filter(
+    (t) => !t.deleted && t.pieSlice === sliceIndex,
+  );
+  if (activeTubes.length === 0) return;
+
+  // Compute bounding box of section tubes in SVG coordinates
+  let minX = Infinity,
+    minY = Infinity,
+    maxX = -Infinity,
+    maxY = -Infinity;
+  for (const t of activeTubes) {
+    const cx = centerX + t.x * scalePx;
+    const cy = centerY + t.y * scalePx;
+    const r = t.r * scalePx;
+    if (cx - r < minX) minX = cx - r;
+    if (cy - r < minY) minY = cy - r;
+    if (cx + r > maxX) maxX = cx + r;
+    if (cy + r > maxY) maxY = cy + r;
+  }
+
+  // Add padding around the bounding box
+  const padding = 40;
+  minX -= padding;
+  minY -= padding;
+  maxX += padding;
+  maxY += padding;
+
+  const bboxW = maxX - minX;
+  const bboxH = maxY - minY;
+  const bboxCx = (minX + maxX) / 2;
+  const bboxCy = (minY + maxY) / 2;
+
+  // Compute zoom level to fit the section within the viewport
+  const scaleX = svgWidth / bboxW;
+  const scaleY = svgHeight / bboxH;
+  const fitScale = Math.min(scaleX, scaleY);
+  const finalScale = Math.max(0.3, Math.min(fitScale, 5.0));
+
+  setZoom(finalScale);
+
+  // Pan so the bounding-box center maps to the SVG center
+  const newTx = svgWidth / 2 - bboxCx * finalScale;
+  const newTy = svgHeight / 2 - bboxCy * finalScale;
+  setPan(newTx, newTy);
+}
+
+/** Remove section highlighting and restore the default viewport. */
+function clearSectionHighlight() {
+  if (highlightedSectionIndex.value < 0) return;
+  highlightedSectionIndex.value = -1;
+  renderAll();
+  resetView();
+}
+
+// Watch section index changes — zoom + highlight when in section view
+watch(currentSectionIndex, (newIdx) => {
+  if (progressViewMode.value !== "section") return;
+  highlightedSectionIndex.value = newIdx;
+  renderAll();
+  zoomToSection(newIdx);
+});
+
+// Watch view mode — activate/deactivate section highlighting
+watch(progressViewMode, (mode) => {
+  if (mode === "section") {
+    highlightedSectionIndex.value = currentSectionIndex.value;
+    renderAll();
+    zoomToSection(currentSectionIndex.value);
+  } else {
+    clearSectionHighlight();
+  }
+});
 
 const chartData = computed(() => ({
   labels: ["Completed", "Remaining", "Special Tubes"],
