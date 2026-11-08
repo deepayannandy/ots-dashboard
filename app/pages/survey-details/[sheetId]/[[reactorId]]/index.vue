@@ -191,6 +191,40 @@
               </template>
             </div>
           </div>
+          <!-- Fullscreen Mode View Toggle (Front / Back / Both Views) -->
+          <div
+            v-if="isFocusMode"
+            class="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center bg-white/90 dark:bg-neutral-900/90 backdrop-blur-md p-1 rounded-xl border border-neutral-200/80 dark:border-neutral-800/80 shadow-md gap-1"
+          >
+            <UButton
+              :color="!dualView && (viewDisplay === 'Front View' || viewDisplay === 'Top / Front View') ? 'primary' : 'neutral'"
+              :variant="!dualView && (viewDisplay === 'Front View' || viewDisplay === 'Top / Front View') ? 'solid' : 'ghost'"
+              size="xs"
+              label="Front View"
+              icon="i-lucide-arrow-up-circle"
+              class="font-medium px-3 py-1.5 rounded-lg transition-all"
+              @click="setFullscreenView('front')"
+            />
+            <UButton
+              :color="!dualView && (viewDisplay === 'Back View' || viewDisplay === 'Bottom / Back View') ? 'primary' : 'neutral'"
+              :variant="!dualView && (viewDisplay === 'Back View' || viewDisplay === 'Bottom / Back View') ? 'solid' : 'ghost'"
+              size="xs"
+              label="Back View"
+              icon="i-lucide-arrow-down-circle"
+              class="font-medium px-3 py-1.5 rounded-lg transition-all"
+              @click="setFullscreenView('back')"
+            />
+            <UButton
+              :color="dualView ? 'primary' : 'neutral'"
+              :variant="dualView ? 'solid' : 'ghost'"
+              size="xs"
+              label="Both Views"
+              icon="i-lucide-columns-2"
+              class="font-medium px-3 py-1.5 rounded-lg transition-all"
+              @click="setFullscreenView('both')"
+            />
+          </div>
+
           <!-- Pie View Legend Card -->
           <div
             v-if="showBirdEyeView"
@@ -341,10 +375,15 @@
 
           <div
             ref="containerRef"
-            class="h-full p-10 w-full flex justify-center items-center"
+            class="relative h-full p-10 w-full flex justify-center items-center overflow-hidden"
+            @click="handleCanvasClick"
           >
-            <!-- SVG Canvas -->
-            <div v-if="!dualView" class="w-full h-full">
+            <!-- SVG Canvas (tilts back in 3D while a tube is spotlighted) -->
+            <div
+              v-if="!dualView"
+              class="w-full h-full"
+              :style="spotlightTiltStyle"
+            >
               <svg
                 ref="svgRef"
                 :viewBox="`0 0 ${svgWidth} ${svgHeight}`"
@@ -355,7 +394,7 @@
                   height: '100%',
                   touchAction: 'none',
                   cursor: isPanning ? 'grabbing' : 'grab',
-                  ...(viewDisplay === 'Back View'
+                  ...(viewDisplay === 'Back View' || viewDisplay === 'Bottom / Back View'
                     ? {
                         transform: 'scale(-1,1)',
                         transformOrigin: 'center',
@@ -372,7 +411,64 @@
                 <g id="viewport" :transform="transformStr"></g>
               </svg>
             </div>
-            <div v-else class="w-full h-full flex gap-4">
+            <!-- Spotlighted tube lifted out of its hole -->
+            <div
+              v-if="spotlightLift"
+              class="pointer-events-none absolute z-30"
+              :style="{
+                left: `${spotlightLift.x}px`,
+                top: `${spotlightLift.y}px`,
+                filter: 'drop-shadow(0 10px 10px rgba(0, 0, 0, 0.5))',
+              }"
+            >
+              <!-- Empty hole left behind in the tubesheet -->
+              <div
+                class="absolute rounded-[50%] bg-black/80 shadow-[inset_0_2px_6px_rgba(0,0,0,0.9)]"
+                :style="{
+                  width: `${spotlightLift.w}px`,
+                  height: `${spotlightLift.h}px`,
+                  left: `${-spotlightLift.w / 2}px`,
+                  top: `${-spotlightLift.h / 2}px`,
+                }"
+              />
+              <!-- Tube body -->
+              <div
+                class="absolute"
+                :style="{
+                  width: `${spotlightLift.w}px`,
+                  left: `${-spotlightLift.w / 2}px`,
+                  top: `${-spotlightLiftHeight}px`,
+                  height: `${spotlightLiftHeight + spotlightLift.h / 2}px`,
+                  borderRadius: `0 0 50% 50% / 0 0 ${spotlightLift.h / 2}px ${spotlightLift.h / 2}px`,
+                  background:
+                    'linear-gradient(90deg, #374151 0%, #d1d5db 30%, #f3f4f6 45%, #9ca3af 75%, #374151 100%)',
+                  transition: spotlightLiftTransition,
+                }"
+              />
+              <!-- Tube end -->
+              <div
+                class="absolute rounded-[50%] border border-black/40 shadow-[inset_0_-3px_6px_rgba(0,0,0,0.3)]"
+                :style="{
+                  width: `${spotlightLift.w}px`,
+                  height: `${spotlightLift.h}px`,
+                  left: `${-spotlightLift.w / 2}px`,
+                  top: `${-spotlightLiftHeight - spotlightLift.h / 2}px`,
+                  background: spotlightLift.color,
+                  transition: spotlightLiftTransition,
+                }"
+              />
+              <div
+                class="absolute -translate-x-1/2 -translate-y-full whitespace-nowrap rounded-md bg-primary px-2 py-0.5 text-xs font-bold text-white shadow"
+                :style="{
+                  top: `${-spotlightLiftHeight - spotlightLift.h / 2 - 8}px`,
+                  opacity: spotlightRaised ? 1 : 0,
+                  transition: `${spotlightLiftTransition}, opacity 200ms`,
+                }"
+              >
+                {{ spotlightTubeId }}
+              </div>
+            </div>
+            <div v-else-if="dualView" class="w-full h-full flex gap-4">
               <div
                 class="flex-1 flex flex-col items-center justify-center h-full relative"
               >
@@ -1158,10 +1254,7 @@
                   class="flex flex-col items-center justify-between p-1 border border-gray-300 transition-colors"
                 >
                   <div class="flex items-center gap-1">
-                    <div
-                      class="size-2 rounded border border-neutral-300 dark:border-neutral-600"
-                      :style="{ backgroundColor: item.color }"
-                    />
+                    <UIcon :name="item.icon" class="size-3.5 shrink-0" />
                     <span
                       class="text-[12px] font-medium text-neutral-700 dark:text-neutral-200"
                     >
@@ -1849,7 +1942,10 @@ const bodyClass = computed(() => {
   if (dualView.value) {
     return `${base} ${gridLight} ${gridDark} ${bgLight} ${bgDark} ${focusOverride}`;
   }
-  if (viewDisplay.value === "Back View") {
+  if (
+    viewDisplay.value === "Back View" ||
+    viewDisplay.value === "Bottom / Back View"
+  ) {
     // For back view, use a reddish grid to differentiate
     const gridLightBack =
       "bg-[linear-gradient(to_right,#ffcccc_.5px,transparent_.5px),linear-gradient(to_bottom,#ffcccc_.5px,transparent_.5px)] bg-[size:20px_20px]";
@@ -2030,6 +2126,8 @@ function loadViewportState() {
 
 function persistViewportState() {
   if (typeof localStorage === "undefined") return;
+  // The spotlight zoom is temporary; keep the view the user will return to
+  if (spotlightTubeId.value) return;
   const payload = {
     scale: scale.value,
     tx: tx.value,
@@ -2132,7 +2230,7 @@ const propertiesOptions = [
   { label: "Bend", value: "BEND", color: "#C7F464" },
   { label: "Salt Tc", value: "SALT_TC", color: "#FFA500" },
   { label: "Blocked", value: "BLOCKED", color: "#1E90FF" },
-];
+].map((p) => ({ ...p, icon: `i-lucide-${tubeSymbols[p.value]}` }));
 
 /* ----------------------------
    UTIL: Find mirrored IDs
@@ -2208,6 +2306,27 @@ function updateCircleVisual(
   );
 }
 
+function getHoleColor(
+  t: Tube & { backColor?: string; _backendUpdatedBack?: boolean },
+  isBackView: boolean,
+  newPropertyColor = "",
+) {
+  if (showBirdEyeView.value && t.pieSlice !== undefined) {
+    return pieColors[t.pieSlice % pieColors.length] || "#fff";
+  }
+  const specialPropertyColor = propertiesOptions.find(
+    (p) => p.value === t.property,
+  )?.color;
+  const surveyColor = isBackView ? t.backColor : t.propertyColor;
+  // create-reactor saves the special tube colour in propertyColor; special
+  // tubes are marked with a symbol, so only real survey colours fill the hole
+  return (
+    newPropertyColor ||
+    (surveyColor !== specialPropertyColor && surveyColor) ||
+    "#fff"
+  );
+}
+
 function updateCircleVisualForSvg(
   t: Tube & { backColor?: string; _backendUpdatedBack?: boolean },
   svg: SVGSVGElement | null,
@@ -2219,22 +2338,7 @@ function updateCircleVisualForSvg(
   if (!svg) return;
   const c = elMap.get(t.id);
   if (!c) return;
-  const specialPropertyColor = propertiesOptions.find(
-    (p) => p.value === t.property,
-  )?.color;
-  const surveyColor = isBackView ? t.backColor : t.propertyColor;
-  let fillColor = newPropertyColor || surveyColor || "#fff";
-
-  if (showBirdEyeView.value && t.pieSlice !== undefined) {
-    fillColor = pieColors[t.pieSlice % pieColors.length] || "#fff";
-  } else if (
-    t.property &&
-    !surveyColor &&
-    !newPropertyColor &&
-    specialPropertyColor
-  ) {
-    fillColor = specialPropertyColor;
-  }
+  const fillColor = getHoleColor(t, isBackView, newPropertyColor);
 
   const isSelected = selectedIds.value.has(t.id);
   const cx = centerX + t.x * scalePx;
@@ -2357,7 +2461,10 @@ function updateTubeIconsForSvg(
     lastDetectedTubeId.value === t.id &&
     ((isBackView && lastDetectedFace.value === "back") ||
       (!isBackView && lastDetectedFace.value !== "back"));
-  const needsIcons = hasComment || repeatCount > 1 || isLastDetected;
+  // The repeat count takes the centre of the hole, so it replaces the symbol
+  const showSymbol = repeatCount <= 1 && !!tubeSymbols[t.property ?? ""];
+  const needsIcons =
+    hasComment || repeatCount > 1 || isLastDetected || showSymbol;
 
   if (!needsIcons) {
     if (iconGroup) {
@@ -2440,6 +2547,18 @@ function updateTubeIconsForSvg(
   /** Lucide overlay icons: solid fill + larger than tube-relative `iconSize`. */
   const arrowOverlaySize = Math.max(r * 2.1, 22);
   const penOverlaySize = Math.max(r * 1.35, 14);
+  const holeContrastColor = getContrastColor(getHoleColor(t, isBackView));
+
+  // INSIDE TUBE — Special tube symbol
+  if (showSymbol) {
+    const symbol = createTubeSymbol(t.property, cx, cy, r, holeContrastColor);
+    if (symbol) {
+      // Match the hole, which is inverted when it has a back face colour
+      if (isBackView && t.backColor)
+        symbol.setAttribute("filter", "url(#invert-filter)");
+      iconGroup.appendChild(symbol);
+    }
+  }
 
   // INSIDE TUBE — Repeat count
   if (repeatCount > 1) {
@@ -2448,13 +2567,7 @@ function updateTubeIconsForSvg(
     text.setAttribute("y", String(cy));
     text.setAttribute("text-anchor", "middle");
     text.setAttribute("dominant-baseline", "central");
-    // Compute hole fill color similarly to updateCircleVisualForSvg to pick readable font
-    const specialPropertyColor = propertiesOptions.find(
-      (p) => p.value === t.property,
-    )?.color;
-    const surveyColor = isBackView ? t.backColor : t.propertyColor;
-    const holeColor = surveyColor || specialPropertyColor || "#ffffff";
-    text.setAttribute("fill", getContrastColor(holeColor));
+    text.setAttribute("fill", holeContrastColor);
     text.setAttribute("font-size", String(Math.max(r * 1.1, 4)));
     text.setAttribute("font-weight", "bold");
     text.setAttribute("font-family", "Arial, sans-serif");
@@ -2573,9 +2686,161 @@ function deselectAll() {
 ----------------------------- */
 function handleTubeClick(e: MouseEvent, id: string) {
   e.stopPropagation();
-  if (selectedIds.value.has(id)) deselect(id);
-  else selectOnly(id);
+  if (selectedIds.value.has(id)) {
+    deselect(id);
+    exitSpotlight();
+  } else {
+    selectOnly(id);
+    spotlightTube(id);
+  }
 }
+
+// Clicking empty canvas (not the end of a drag) brings the tubesheet back
+function handleCanvasClick() {
+  if (panMoved) return;
+  exitSpotlight();
+}
+
+/* ----------------------------
+   TUBE SPOTLIGHT: tilt the sheet in 3D, zoom in and lift the tube
+----------------------------- */
+const SPOTLIGHT_MS = 600;
+// On-screen diameter the spotlighted hole is zoomed to
+const SPOTLIGHT_HOLE_PX = 60;
+const spotlightTubeId = ref<string | null>(null);
+const spotlightRaised = ref(false);
+const spotlightLift = ref<{
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  color: string;
+} | null>(null);
+let spotlightRestoreView: { scale: number; tx: number; ty: number } | null =
+  null;
+let spotlightTimer: ReturnType<typeof setTimeout> | undefined;
+let viewAnimationFrame = 0;
+
+const spotlightTiltStyle = computed(() => ({
+  transform: spotlightTubeId.value
+    ? "perspective(1600px) rotateX(50deg)"
+    : "none",
+  transition: `transform ${SPOTLIGHT_MS}ms cubic-bezier(0.22, 1, 0.36, 1)`,
+}));
+const spotlightLiftHeight = computed(() =>
+  spotlightRaised.value && spotlightLift.value
+    ? spotlightLift.value.w * 1.6
+    : 0,
+);
+const spotlightLiftTransition =
+  "top 500ms cubic-bezier(0.34, 1.56, 0.64, 1), height 500ms cubic-bezier(0.34, 1.56, 0.64, 1)";
+
+function animateView(target: { scale: number; tx: number; ty: number }) {
+  cancelAnimationFrame(viewAnimationFrame);
+  const from = { scale: scale.value, tx: tx.value, ty: ty.value };
+  const start = performance.now();
+  const step = (now: number) => {
+    const p = Math.min((now - start) / SPOTLIGHT_MS, 1);
+    const e = 1 - Math.pow(1 - p, 3);
+    setZoom(from.scale + (target.scale - from.scale) * e);
+    setPan(
+      from.tx + (target.tx - from.tx) * e,
+      from.ty + (target.ty - from.ty) * e,
+    );
+    if (p < 1) viewAnimationFrame = requestAnimationFrame(step);
+  };
+  viewAnimationFrame = requestAnimationFrame(step);
+}
+
+// View that puts the tube in the middle of the SVG at the given scale
+function viewCenteredOnTube(t: Tube, s: number) {
+  // Same rotate(rotation, centerX, centerY) as transformStr
+  const a = (rotation.value * Math.PI) / 180;
+  const px = t.x * scalePx;
+  const py = t.y * scalePx;
+  const rx = centerX + px * Math.cos(a) - py * Math.sin(a);
+  const ry = centerY + px * Math.sin(a) + py * Math.cos(a);
+  return { scale: s, tx: svgWidth / 2 - rx * s, ty: svgHeight / 2 - ry * s };
+}
+
+function spotlightTube(id: string) {
+  if (dualView.value) return;
+  const t = currentTubes.value.find((tube) => tube.id === id);
+  const svg = svgRef.value;
+  if (!t || !svg) return;
+
+  if (!spotlightTubeId.value)
+    spotlightRestoreView = { scale: scale.value, tx: tx.value, ty: ty.value };
+  spotlightTubeId.value = id;
+  spotlightRaised.value = false;
+  spotlightLift.value = null;
+  clearTimeout(spotlightTimer);
+
+  // svg clientWidth/Height ignore the CSS tilt, unlike getBoundingClientRect
+  const pxPerUnit = Math.min(svg.clientWidth, svg.clientHeight) / svgWidth;
+  const holePx = 2 * t.r * scalePx * pxPerUnit;
+  const s = Math.min(Math.max(SPOTLIGHT_HOLE_PX / holePx, 1.5), 8);
+  animateView(viewCenteredOnTube(t, s));
+
+  // Lift the tube once the tilt and zoom have settled
+  spotlightTimer = setTimeout(() => {
+    updateSpotlightLift();
+    // Two frames so the tube is painted in its hole before it rises
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => (spotlightRaised.value = true)),
+    );
+  }, SPOTLIGHT_MS);
+}
+
+function updateSpotlightLift() {
+  const id = spotlightTubeId.value;
+  const t = currentTubes.value.find((tube) => tube.id === id);
+  const circle = id ? elById.get(id) : undefined;
+  const container = containerRef.value;
+  if (!t || !circle || !container) {
+    spotlightLift.value = null;
+    return;
+  }
+  // The projected (tilted) hole, relative to the canvas container
+  const c = circle.getBoundingClientRect();
+  const box = container.getBoundingClientRect();
+  spotlightLift.value = {
+    x: c.left + c.width / 2 - box.left,
+    y: c.top + c.height / 2 - box.top,
+    w: c.width,
+    h: c.height,
+    color: getHoleColor(t, viewDisplay.value === "Back View"),
+  };
+}
+
+function exitSpotlight(restoreView = true) {
+  if (!spotlightTubeId.value) return;
+  clearTimeout(spotlightTimer);
+  const wasLifted = !!spotlightLift.value;
+  // Sink the tube back into its hole, then flatten the sheet
+  spotlightRaised.value = false;
+  spotlightTimer = setTimeout(
+    () => {
+      spotlightLift.value = null;
+      spotlightTubeId.value = null;
+      if (restoreView && spotlightRestoreView)
+        animateView(spotlightRestoreView);
+      spotlightRestoreView = null;
+    },
+    wasLifted ? 250 : 0,
+  );
+}
+
+// Keep the lifted tube on its hole while the view moves
+watch([scale, tx, ty, rotation, viewDisplay], () => {
+  if (spotlightLift.value) nextTick(updateSpotlightLift);
+});
+watch(dualView, (isDual) => {
+  if (isDual) exitSpotlight();
+});
+useEventListener(window, "resize", () => {
+  if (spotlightLift.value) updateSpotlightLift();
+});
 
 /* ----------------------------
    SEARCH SINGLE TUBE WITH ZOOM
@@ -2602,6 +2867,15 @@ function searchTubes() {
 
   const tube = currentTubes.value.find((t) => t.id === searchValue.value);
   if (!tube) return;
+
+  if (!dualView.value) {
+    selectOnly(tube.id);
+    spotlightTube(tube.id);
+    postData("https://apiots.dnyindia.in/api/v2/actions/searchActions", {
+      holeId: tube.id,
+    });
+    return;
+  }
 
   // Zoom to a reasonable level for viewing a single tube
   const zoomLevel = 3;
@@ -3051,6 +3325,17 @@ function panXY(dx: number, dy: number) {
 function handleWheel(event: WheelEvent) {
   // Slower zoom factor (1.03 instead of 1.1) for smoother control
   const factor = event.deltaY < 0 ? 1.03 : 1 / 1.03;
+  if (spotlightTubeId.value) {
+    // Zoom about the middle, where the spotlighted tube sits
+    cancelAnimationFrame(viewAnimationFrame);
+    const next = scale.value * factor;
+    setPan(
+      svgWidth / 2 - (svgWidth / 2 - tx.value) * factor,
+      svgHeight / 2 - (svgHeight / 2 - ty.value) * factor,
+    );
+    setZoom(next);
+    return;
+  }
   const svg = (event.currentTarget as SVGSVGElement) || svgRef.value;
   if (svg) {
     const rect = svg.getBoundingClientRect();
@@ -3066,12 +3351,16 @@ const isPanning = ref(false);
 let panPointerId: number | null = null;
 let panLastX = 0;
 let panLastY = 0;
+// Set once a drag moves, so the click that ends it doesn't exit the spotlight
+let panMoved = false;
 
 function startPan(event: PointerEvent) {
   if (event.button !== 0) return;
   // Don't start a pan on a tube marker (they have their own click-to-select handler)
   if ((event.target as Element).closest?.("[data-name]")) return;
   const svg = event.currentTarget as SVGSVGElement;
+  cancelAnimationFrame(viewAnimationFrame);
+  panMoved = false;
   isPanning.value = true;
   panPointerId = event.pointerId;
   panLastX = event.clientX;
@@ -3085,6 +3374,7 @@ function movePan(event: PointerEvent) {
   const rect = svg.getBoundingClientRect();
   const dx = ((event.clientX - panLastX) / rect.width) * svgWidth;
   const dy = ((event.clientY - panLastY) / rect.height) * svgHeight;
+  if (dx || dy) panMoved = true;
   panLastX = event.clientX;
   panLastY = event.clientY;
 
@@ -3104,6 +3394,8 @@ function endPan(event: PointerEvent) {
 }
 
 function resetView() {
+  cancelAnimationFrame(viewAnimationFrame);
+  exitSpotlight(false);
   if (initialViewportState.value) {
     setZoom(initialViewportState.value.scale);
     setPan(initialViewportState.value.tx, initialViewportState.value.ty);
@@ -3122,23 +3414,16 @@ function handleFullscreenChange() {
 }
 
 async function enterFocusMode() {
-  const wasDual = dualView.value;
   try {
     await document.documentElement.requestFullscreen?.();
   } catch (err) {
     console.error("Failed to enter full screen", err);
   }
-  dualView.value = false;
   showDetails.value = false;
   isEditingCameras.value = false;
   isRightOpen.value = true;
   isFocusMode.value = true;
 
-  // If we were in dual view, the single-view SVG is freshly recreated —
-  // clear stale element caches so renderAll rebuilds circles from scratch.
-  if (wasDual) {
-    clearAllElMaps();
-  }
   await nextTick();
   renderAll();
 }
@@ -3154,6 +3439,18 @@ async function exitFocusMode() {
   renderAll();
 }
 
+function setFullscreenView(mode: "front" | "back" | "both") {
+  if (mode === "both") {
+    dualView.value = true;
+  } else if (mode === "back") {
+    dualView.value = false;
+    viewDisplay.value = "Back View";
+  } else {
+    dualView.value = false;
+    viewDisplay.value = "Front View";
+  }
+}
+
 onMounted(() => {
   document.addEventListener("fullscreenchange", handleFullscreenChange);
 });
@@ -3161,6 +3458,10 @@ onMounted(() => {
 // Keyboard handler for arrow keys
 // Shift + Arrow = move reactor, Arrow only (up/down) = scroll right panel
 function handleKeyDown(event: KeyboardEvent) {
+  if (event.key === "Escape" && spotlightTubeId.value) {
+    exitSpotlight();
+    return;
+  }
   const arrowKeys = ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"];
   if (!arrowKeys.includes(event.key)) return;
 
@@ -3773,7 +4074,7 @@ const propertyLegend = computed(() => {
   return propertiesOptions.map((prop) => ({
     label: prop.label,
     value: prop.value,
-    color: prop.color,
+    icon: prop.icon,
     count: counts[prop.value] || 0,
   }));
 });
@@ -4312,6 +4613,8 @@ const catalystOutageChartOptions = {
 
 onUnmounted(() => {
   if (interval) clearInterval(interval);
+  clearTimeout(spotlightTimer);
+  cancelAnimationFrame(viewAnimationFrame);
   // Remove keyboard listener
   window.removeEventListener("keydown", handleKeyDown);
   document.removeEventListener("fullscreenchange", handleFullscreenChange);

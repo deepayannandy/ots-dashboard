@@ -74,6 +74,7 @@ export function appendLucideIconToSvgGroup(
     stroke?: string
     fill?: string
     opacity?: string
+    strokeWidth?: string
     /** `solid` fills stroke-based paths (Lucide default is outline-only). */
     variant?: 'outline' | 'solid'
   } = {},
@@ -104,6 +105,9 @@ export function appendLucideIconToSvgGroup(
     }
     if (options.opacity != null) {
       el.setAttribute('opacity', options.opacity)
+    }
+    if (options.strokeWidth != null) {
+      el.setAttribute('stroke-width', options.strokeWidth)
     }
     group.appendChild(el)
   }

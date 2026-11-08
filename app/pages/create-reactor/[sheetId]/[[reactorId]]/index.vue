@@ -102,7 +102,19 @@
             value-key="value"
             class="min-w-80"
             :disabled="layoutLoading"
-          />
+          >
+            <template #item-trailing="{ item }">
+              <UButton
+                icon="i-lucide-trash-2"
+                aria-label="Delete layout"
+                color="error"
+                variant="ghost"
+                size="xs"
+                square
+                @click.stop="layoutToDelete = item"
+              />
+            </template>
+          </USelectMenu>
           <USwitch
             v-model="settingsInput.mirrorX"
             label="Mirror X (Top ↔ Bottom)"
@@ -198,6 +210,16 @@
             </div>
           </div>
 
+          <CanvasControls
+            class="absolute bottom-4 left-4 z-20"
+            :drag-mode="dragMode"
+            @zoom-in="zoomIn"
+            @zoom-out="zoomOut"
+            @reset="resetView"
+            @fit-to-screen="fitToScreenHandler"
+            @toggle-drag="dragMode = !dragMode"
+          />
+
           <!--  @click="deselectAll"
             @contextmenu.prevent -->
           <div
@@ -213,15 +235,21 @@
               :style="{
                 width: '100%',
                 height: '100%',
-                transform: viewDisplay === 'Back View' ? 'scale(-1,1)' : 'none',
+                transform: isBackView ? 'scale(-1,1)' : 'none',
                 transformOrigin: 'center',
                 transformBox: 'fill-box',
+                touchAction: 'none',
+                cursor: isPanning ? 'grabbing' : dragMode ? 'grab' : undefined,
               }"
-              :class="viewDisplay === 'Back View' ? 'invert' : ''"
+              :class="isBackView ? 'invert' : ''"
               @wheel.prevent="handleWheel"
+              @pointerdown="startPan"
+              @pointermove="movePan"
+              @pointerup="endPan"
+              @pointercancel="endPan"
             >
-              <g id="viewport" :transform="transformStr">
-                <!-- Compass overlay on reactor (plus sign lines) - inside viewport to move/zoom with reactor -->
+              <!-- Compass (plus sign lines) - own group behind #viewport so the reactor always covers it; same transform so it moves/zooms with the reactor -->
+              <g id="compass" :transform="transformStr">
                 <g :transform="`rotate(${rotation} ${centerX} ${centerY})`">
                   <!-- Vertical line (North-South) -->
                   <line
@@ -324,6 +352,7 @@
                   </g>
                 </g>
               </g>
+              <g id="viewport" :transform="transformStr"></g>
             </svg>
 
             <!-- Compass Legend - Top Left -->
@@ -437,10 +466,7 @@
                     "
                     @click="editModal.property = p.value"
                   >
-                    <div
-                      class="w-3 h-3 rounded-full"
-                      :style="{ backgroundColor: p.color }"
-                    />
+                    <UIcon :name="p.icon" class="size-4" />
                     <span class="text-sm">{{ p.label }}</span>
                   </div>
                 </div>
@@ -478,6 +504,34 @@
                       variant="outline"
                       icon="i-lucide-download"
                       @click="saveAndExportReport"
+                    />
+                  </div>
+                </div>
+              </template>
+            </UModal>
+            <UModal
+              :open="!!layoutToDelete"
+              @update:open="layoutToDelete = null"
+            >
+              <template #content>
+                <div class="text-center space-y-4 p-6">
+                  <h2 class="text-xl font-semibold">Delete this layout?</h2>
+                  <p class="text-sm text-muted">
+                    {{ layoutToDelete?.label }} will be removed from the list.
+                  </p>
+
+                  <div class="flex justify-center gap-4 pt-2">
+                    <UButton
+                      label="Cancel"
+                      color="neutral"
+                      variant="soft"
+                      @click="layoutToDelete = null"
+                    />
+                    <UButton
+                      label="Delete"
+                      color="error"
+                      :loading="deletingLayout"
+                      @click="deleteLayout"
                     />
                   </div>
                 </div>
@@ -689,6 +743,8 @@ const axios = useAxios();
 const layoutItems = ref<ReactorLayoutOption[]>([]);
 const selectedLayoutId = ref<string | null>(null);
 const layoutLoading = ref(false);
+const layoutToDelete = ref<ReactorLayoutOption | null>(null);
+const deletingLayout = ref(false);
 
 function formatLayoutLabel(item: ReactorLayoutItem) {
   const date = new Date(item.createdAt);
@@ -724,6 +780,33 @@ async function loadReactorLayouts() {
     });
   } finally {
     layoutLoading.value = false;
+  }
+}
+
+async function deleteLayout() {
+  const layout = layoutToDelete.value;
+  if (!layout) return;
+
+  deletingLayout.value = true;
+  try {
+    await axios.$delete(
+      `https://apiots.dnyindia.in/api/v2/metadata/deleteMetadata/${layout.value}`,
+    );
+    layoutItems.value = layoutItems.value.filter(
+      (item) => item.value !== layout.value,
+    );
+    if (selectedLayoutId.value === layout.value) selectedLayoutId.value = null;
+    layoutToDelete.value = null;
+    useToast().add({
+      title: "Layout deleted",
+      description: `Deleted ${layout.label}`,
+      color: "success",
+    });
+  } catch (error) {
+    // The axios plugin already shows the error toast
+    console.error("Failed to delete reactor layout", error);
+  } finally {
+    deletingLayout.value = false;
   }
 }
 
@@ -963,6 +1046,7 @@ const searchValue = ref<string[]>([]);
 const searchRow = ref<string>("R1");
 const items = ref(["Top / Front View", "Bottom / Back View"]);
 const viewDisplay = ref("Top / Front View");
+const isBackView = computed(() => viewDisplay.value === "Bottom / Back View");
 const showPieView = ref(false);
 const pieColors = ["#3B82F6", "#10B981", "#EC4899", "#8B5CF6", "#F59E0B", "#EF4444", "#06B6D4"];
 
@@ -1032,7 +1116,7 @@ const bodyClass = computed(() => {
   const bgLight = "bg-white";
   const bgDark = "dark:bg-neutral-950";
 
-  if (viewDisplay.value === "Back View") {
+  if (isBackView.value) {
     // For back view, use a reddish grid to differentiate
     const gridLightBack =
       "bg-[linear-gradient(to_right,#ffcccc_.5px,transparent_.5px),linear-gradient(to_bottom,#ffcccc_.5px,transparent_.5px)] bg-[size:20px_20px]";
@@ -1076,7 +1160,7 @@ const propertiesOptions = [
   { label: "Bend", value: "BEND", color: "#C7F464" },
   { label: "Salt Tc", value: "SALT_TC", color: "#FFA500" },
   { label: "Blocked", value: "BLOCKED", color: "#1E90FF" },
-];
+].map((p) => ({ ...p, icon: `i-lucide-${tubeSymbols[p.value]}` }));
 
 // Modal state
 const editModal = reactive({
@@ -1146,9 +1230,6 @@ const iconElById = new Map<string, SVGGElement>();
 function updateCircleVisual(t: Tube) {
   const c = elById.get(t.id);
   if (!c) return;
-  const propertyColor = propertiesOptions.find(
-    (p) => p.value === t.property,
-  )?.color;
   const isSelected = selectedIds.value.has(t.id);
   const hasComment = !!t.comment;
 
@@ -1163,8 +1244,6 @@ function updateCircleVisual(t: Tube) {
   let fill = "#fff";
   if (showPieView.value && t.pieSlice !== undefined) {
     fill = pieColors[t.pieSlice % pieColors.length] || "#fff";
-  } else if (propertyColor) {
-    fill = propertyColor;
   } else if (isSelected) {
     fill = "#FFA500";
   }
@@ -1173,7 +1252,7 @@ function updateCircleVisual(t: Tube) {
   c.setAttribute("stroke", isSelected ? "#FFA500" : "#0f172a");
   c.setAttribute("stroke-width", isSelected ? "1.5" : "0.3");
 
-  // Update comment icon overlay
+  // Update property symbol and comment icon overlay
   updateTubeIcons(t, cx, cy, r, hasComment);
 }
 
@@ -1185,8 +1264,9 @@ function updateTubeIcons(
   hasComment: boolean,
 ) {
   let iconGroup = iconElById.get(t.id);
+  const symbol = createTubeSymbol(t.property, cx, cy, r, "#0f172a");
 
-  if (!hasComment) {
+  if (!hasComment && !symbol) {
     if (iconGroup) {
       iconGroup.remove();
       iconElById.delete(t.id);
@@ -1216,6 +1296,11 @@ function updateTubeIcons(
   }
 
   iconGroup.innerHTML = "";
+
+  // CENTER — Property symbol
+  if (symbol) iconGroup.appendChild(symbol);
+
+  if (!hasComment) return;
 
   const iconSize = Math.max(r * 0.7, 3);
 
@@ -1450,17 +1535,17 @@ function zoomOut() {
 }
 function panXY(dx: number, dy: number) {
   // Invert X direction when in Back View (mirrored) mode
-  const adjustedDx = viewDisplay.value === "Back View" ? -dx : dx;
+  const adjustedDx = isBackView.value ? -dx : dx;
   pan(adjustedDx, dy);
 }
 function rotateLeft() {
   // Invert rotation direction when in Back View (mirrored) mode
-  const direction = viewDisplay.value === "Back View" ? 15 : -15;
+  const direction = isBackView.value ? 15 : -15;
   rotate(direction);
 }
 function rotateRight() {
   // Invert rotation direction when in Back View (mirrored) mode
-  const direction = viewDisplay.value === "Back View" ? -15 : 15;
+  const direction = isBackView.value ? -15 : 15;
   rotate(direction);
 }
 function handleWheel(event: WheelEvent) {
@@ -1470,6 +1555,46 @@ function handleWheel(event: WheelEvent) {
 }
 function resetView() {
   resetWithoutRotation();
+}
+
+// Click-and-drag panning. Empty canvas space always pans; with drag mode on,
+// dragging over tubes pans too (pointer capture stops the tube click firing).
+const dragMode = ref(false);
+const isPanning = ref(false);
+let panPointerId: number | null = null;
+let panLastX = 0;
+let panLastY = 0;
+
+function startPan(event: PointerEvent) {
+  if (event.button !== 0) return;
+  if (!dragMode.value && (event.target as Element).closest?.("[data-name]"))
+    return;
+  const svg = event.currentTarget as SVGSVGElement;
+  isPanning.value = true;
+  panPointerId = event.pointerId;
+  panLastX = event.clientX;
+  panLastY = event.clientY;
+  svg.setPointerCapture(event.pointerId);
+}
+
+function movePan(event: PointerEvent) {
+  if (!isPanning.value || event.pointerId !== panPointerId) return;
+  const rect = (event.currentTarget as SVGSVGElement).getBoundingClientRect();
+  const dx = ((event.clientX - panLastX) / rect.width) * svgWidth;
+  const dy = ((event.clientY - panLastY) / rect.height) * svgHeight;
+  panLastX = event.clientX;
+  panLastY = event.clientY;
+  // panXY flips X for the mirrored Back View
+  panXY(dx, dy);
+}
+
+function endPan(event: PointerEvent) {
+  if (event.pointerId !== panPointerId) return;
+  const svg = event.currentTarget as SVGSVGElement;
+  if (svg.hasPointerCapture(event.pointerId))
+    svg.releasePointerCapture(event.pointerId);
+  isPanning.value = false;
+  panPointerId = null;
 }
 
 // Arrow key shortcuts for panning reactor (no shift required on this page)

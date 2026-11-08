@@ -61,7 +61,7 @@ const links = [
       children: [
         {
           label: "Circle",
-          to: "https://jsoncircle.dnyindia.in",
+          to: "https://swiftcircle.ot-software.com",
           target: "_blank",
           onSelect: () => {
             open.value = false;
@@ -69,7 +69,7 @@ const links = [
         },
         {
           label: "Line",
-          to: "https://jsonline.dnyindia.in",
+          to: "https://swiftgrid.ot-software.com",
           target: "_blank",
           onSelect: () => {
             open.value = false;
