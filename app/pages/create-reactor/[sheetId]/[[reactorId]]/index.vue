@@ -198,7 +198,7 @@
                   <div class="flex items-center gap-2">
                     <span
                       class="size-3.5 rounded-full border border-neutral-300 dark:border-neutral-700"
-                      :style="{ backgroundColor: pieColors[(idx - 1) % pieColors.length] }"
+                      :style="{ backgroundColor: getPieColor(idx - 1, config.totalPieSlice) }"
                     />
                     <span class="font-medium text-neutral-700 dark:text-neutral-300">Slice {{ idx }}</span>
                   </div>
@@ -964,7 +964,7 @@ function generateReactorFromJson(jsonData: ReactorJson) {
         }
       }
 
-      const pieSliceMatch = pieSliceVal ? String(pieSliceVal).match(/\d+/) : null;
+      const pieSliceMatch = pieSliceVal != null ? String(pieSliceVal).match(/\d+/) : null;
       const parsedPieSlice = pieSliceMatch ? parseInt(pieSliceMatch[0], 10) : undefined;
 
       tubes.push({
@@ -1048,7 +1048,6 @@ const items = ref(["Top / Front View", "Bottom / Back View"]);
 const viewDisplay = ref("Top / Front View");
 const isBackView = computed(() => viewDisplay.value === "Bottom / Back View");
 const showPieView = ref(false);
-const pieColors = ["#3B82F6", "#10B981", "#EC4899", "#8B5CF6", "#F59E0B", "#EF4444", "#06B6D4"];
 
 function togglePieView() {
   showPieView.value = !showPieView.value;
@@ -1243,7 +1242,7 @@ function updateCircleVisual(t: Tube) {
 
   let fill = "#fff";
   if (showPieView.value && t.pieSlice !== undefined) {
-    fill = pieColors[t.pieSlice % pieColors.length] || "#fff";
+    fill = getPieColor(t.pieSlice, config.value.totalPieSlice);
   } else if (isSelected) {
     fill = "#FFA500";
   }
@@ -1302,27 +1301,21 @@ function updateTubeIcons(
 
   if (!hasComment) return;
 
-  const iconSize = Math.max(r * 0.7, 3);
-
-  // RIGHT — Comment icon
+  // RIGHT — Comment icon (same pen as the survey view), scaled to the hole
+  const penSize = r * 0.9;
   const commentIcon = document.createElementNS(
     "http://www.w3.org/2000/svg",
     "g",
   );
-  const s = iconSize;
   commentIcon.setAttribute(
     "transform",
-    `translate(${cx + r + 1}, ${cy - s * 0.6})`,
+    `translate(${cx + r * 1.1}, ${cy - penSize * 0.55}) scale(${penSize / 24})`,
   );
-
-  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-  path.setAttribute(
-    "d",
-    `M0,0 h${s * 1.2} q${s * 0.3},0 ${s * 0.3},${s * 0.3} v${s * 0.5} q0,${s * 0.3} -${s * 0.3},${s * 0.3} h-${s * 0.5} l-${s * 0.3},${s * 0.3} v-${s * 0.3} h-${s * 0.1} q-${s * 0.3},0 -${s * 0.3},-${s * 0.3} v-${s * 0.5} q0,-${s * 0.3} ${s * 0.3},-${s * 0.3} z`,
-  );
-  path.setAttribute("fill", "#3b82f6");
-  path.setAttribute("opacity", "0.9");
-  commentIcon.appendChild(path);
+  appendLucideIconToSvgGroup(commentIcon, "pen", {
+    stroke: "#3b82f6",
+    opacity: "0.95",
+    variant: "solid",
+  });
 
   iconGroup.appendChild(commentIcon);
 }
@@ -1471,11 +1464,13 @@ function handleTubeContextMenu(e: MouseEvent, id: string) {
   const idsToEdit = selectedIds.value.size > 1 ? [...selectedIds.value] : [id];
   editModal.visible = true;
   editModal.targetIds = idsToEdit;
+  prefillEditModal(idsToEdit);
+}
 
-  // Prefill comment & property if all share the same values
-  const selectedTubes = currentTubes.value.filter((t) =>
-    idsToEdit.includes(t.id),
-  );
+// Prefill comment & property from the given tubes if they all share the same
+// values, so saving a comment doesn't wipe an existing property (and vice versa).
+function prefillEditModal(ids: string[]) {
+  const selectedTubes = currentTubes.value.filter((t) => ids.includes(t.id));
   const first = selectedTubes[0];
   const allSameComment =
     !!first && selectedTubes.every((t) => t.comment === first.comment);
@@ -1784,6 +1779,7 @@ onMounted(async () => {
 ----------------------------- */
 watch(() => config.value, renderAll, { deep: true, immediate: true });
 watch(() => currentTubes.value.length, renderAll);
+watch(selectedIds, (ids) => prefillEditModal([...ids]), { deep: true });
 // const { start, stop } = useInterval(() => {
 //   saveReactorData(true)
 // }, 5000)

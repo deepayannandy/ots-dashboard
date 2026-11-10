@@ -268,7 +268,7 @@
                         class="size-3.5 rounded-full border border-neutral-300 dark:border-neutral-700"
                         :style="{
                           backgroundColor:
-                            pieColors[(idx - 1) % pieColors.length],
+                            getPieColor(idx - 1, config.totalPieSlice),
                         }"
                       />
                       <span
@@ -338,7 +338,7 @@
                         <span
                           class="size-3 rounded-full border border-neutral-300 dark:border-neutral-700"
                           :style="{
-                            backgroundColor: pieColors[(idx - 1) % pieColors.length],
+                            backgroundColor: getPieColor(idx - 1, config.totalPieSlice),
                           }"
                         />
                         <span class="font-medium text-neutral-700 dark:text-neutral-300">Slice {{ idx }}</span>
@@ -855,6 +855,25 @@
                       class="text-sm text-neutral-700 dark:text-neutral-200"
                     >
                       Not detected.
+                    </div>
+                    <div
+                      v-if="getLayoutComment(id)"
+                      class="mt-3 space-y-2 border-t border-neutral-200 dark:border-neutral-800 pt-2"
+                    >
+                      <div
+                        class="text-[11px] font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider"
+                      >
+                        Comment while layout creation
+                      </div>
+                      <div
+                        class="text-sm bg-neutral-100/50 dark:bg-neutral-900/50 p-2 rounded-md border border-neutral-200/60 dark:border-neutral-800/80"
+                      >
+                        <p
+                          class="text-blue-600 dark:text-blue-400 font-medium break-words whitespace-pre-wrap"
+                        >
+                          {{ getLayoutComment(id) }}
+                        </p>
+                      </div>
                     </div>
                     <div
                       v-if="
@@ -1602,15 +1621,6 @@ const showDetails = ref(false);
 const items = ref(["Top / Front View", "Bottom / Back View"]);
 const viewDisplay = ref("Top / Front View");
 const showBirdEyeView = ref(false);
-const pieColors = [
-  "#3B82F6",
-  "#10B981",
-  "#EC4899",
-  "#8B5CF6",
-  "#F59E0B",
-  "#EF4444",
-  "#06B6D4",
-];
 
 function toggleBirdEyeView() {
   showBirdEyeView.value = !showBirdEyeView.value;
@@ -1820,6 +1830,11 @@ const tubeComments = ref<
     _id: string;
   }[]
 >([]);
+
+/** Comment added to the tube while creating the reactor layout. */
+function getLayoutComment(id: string): string {
+  return currentTubes.value.find((t) => t.id === id)?.comment?.trim() || "";
+}
 
 // Track repeat counts per tube and last detected tube
 const tubeRepeatCounts = ref<Map<string, number>>(new Map());
@@ -2312,7 +2327,7 @@ function getHoleColor(
   newPropertyColor = "",
 ) {
   if (showBirdEyeView.value && t.pieSlice !== undefined) {
-    return pieColors[t.pieSlice % pieColors.length] || "#fff";
+    return getPieColor(t.pieSlice, config.value.totalPieSlice);
   }
   const specialPropertyColor = propertiesOptions.find(
     (p) => p.value === t.property,
@@ -2363,7 +2378,7 @@ function updateCircleVisualForSvg(
     c.setAttribute("stroke", "#FF0000");
     c.setAttribute("stroke-width", "1.5");
   } else if (isInHighlightedSection) {
-    const sectionColor = pieColors[hlIdx % pieColors.length] || "#3B82F6";
+    const sectionColor = getPieColor(hlIdx, config.value.totalPieSlice);
     c.setAttribute("stroke", sectionColor);
     c.setAttribute("stroke-width", "1.2");
   } else {
@@ -2546,7 +2561,8 @@ function updateTubeIconsForSvg(
   const iconSize = Math.max(r * 0.7, 3);
   /** Lucide overlay icons: solid fill + larger than tube-relative `iconSize`. */
   const arrowOverlaySize = Math.max(r * 2.1, 22);
-  const penOverlaySize = Math.max(r * 1.35, 14);
+  /** Comment pen scales with the hole only, so it never dwarfs small tubes. */
+  const penOverlaySize = r * 0.9;
   const holeContrastColor = getContrastColor(getHoleColor(t, isBackView));
 
   // INSIDE TUBE — Special tube symbol
@@ -2603,7 +2619,7 @@ function updateTubeIconsForSvg(
     );
     commentIcon.setAttribute(
       "transform",
-      `translate(${cx + r + 2}, ${cy - penOverlaySize * 0.55}) scale(${penOverlaySize / 24})`,
+      `translate(${cx + r * 1.1}, ${cy - penOverlaySize * 0.55}) scale(${penOverlaySize / 24})`,
     );
 
     appendLucideIconToSvgGroup(commentIcon, "pen", {
@@ -3058,7 +3074,7 @@ function renderAllForSvg(
         const camDevice = availableCamerasList.value.find((c) => c._id === cameraId);
         const label = camDevice ? camDevice.name : `Cam ${camIndex + 1}`;
         const fullName = camDevice ? `${camDevice.name} (${camDevice.ipAddress})` : `Camera ${camIndex + 1}`;
-        const color = pieColors[idx % pieColors.length] || "#3B82F6";
+        const color = getPieColor(idx, totalSlices);
 
         cameraGroups.push({
           cameraId,
@@ -3074,7 +3090,7 @@ function renderAllForSvg(
           label: `Camera ${idx + 1}`,
           fullName: "No Camera Configured",
           slices: [idx],
-          color: pieColors[idx % pieColors.length] || "#3B82F6",
+          color: getPieColor(idx, totalSlices),
         });
       }
     }
@@ -4210,7 +4226,7 @@ const sectionProgressData = computed(() => {
       sliceIndex: i,
       label: `Section ${i + 1}`,
       cameraName: getCameraNameForSlice(i),
-      color: pieColors[i % pieColors.length],
+      color: getPieColor(i, totalSlices),
       total,
       special,
       completed: completedInSlice,
