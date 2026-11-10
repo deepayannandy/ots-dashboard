@@ -158,7 +158,7 @@
         <template #footer>
           <div class="flex justify-between w-full">
             <UButton
-              v-if="editingRuleId"
+              v-if="editingRuleId && canDelete"
               color="error"
               variant="ghost"
               @click="handleDeleteRule"
@@ -401,8 +401,10 @@ async function handleSaveRule() {
   }
 }
 
+const { canDelete } = usePermissions()
+
 async function handleDeleteRule() {
-  if (!editingRuleId.value) return
+  if (!editingRuleId.value || !canDelete.value) return
   await axios.$delete(`/api/v2/phase/removePhase/${editingRuleId.value}`)
   await fetchPhaseRules()
   closeModal()

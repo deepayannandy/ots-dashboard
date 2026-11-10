@@ -87,6 +87,32 @@ export interface User {
   email: string
   password: string
 }
+
+export type UserRole = 'user' | 'admin' | 'superAdmin' | 'guest'
+
+/** The logged-in user as kept in the auth store (never holds the password). */
+export interface SessionUser {
+  email: string
+  fullName?: string
+  role?: UserRole
+  isGuest?: boolean
+  /** ISO date; guests are logged out automatically once this passes */
+  validTill?: string | null
+}
+
+/** A user as returned by /api/v2/users */
+export interface ManagedUser {
+  _id: string
+  fullName: string
+  email: string
+  role: UserRole
+  isGuest?: boolean
+  validTill?: string | null
+  isExpired?: boolean
+  lastLoginTime?: string
+  createdAt?: string
+  updatedAt?: string
+}
 export interface AxiosConfigInterface {
   axios: CreateAxiosDefaults
   RoutesWithoutLoader: string[]

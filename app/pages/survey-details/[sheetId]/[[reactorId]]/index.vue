@@ -837,7 +837,7 @@
                               Show Evidence
                             </UButton>
                             <UButton
-                              v-if="index === 0"
+                              v-if="index === 0 && canDelete"
                               size="xs"
                               color="error"
                               variant="subtle"
@@ -3989,7 +3989,10 @@ function openImageModal(row: TubeDataTable) {
   imageModalOpen.value = true;
 }
 
+const { canDelete } = usePermissions();
+
 async function removeFalseDetection(row: TubeDataTable) {
+  if (!canDelete.value) return;
   if (!activeSurveyId.value) {
     useToast().add({
       title: "Error",

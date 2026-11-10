@@ -7,7 +7,7 @@ import type {
   InternalAxiosRequestConfig
 } from 'axios'
 import axios from 'axios'
-import { useAuth } from '~/stores/auth'
+import { ACCOUNT_EXPIRED, useAuth } from '~/stores/auth'
 
 export default defineNuxtPlugin(() => {
   const { logout } = useAuth()
@@ -36,11 +36,18 @@ export default defineNuxtPlugin(() => {
   interface ErrorResponseData {
     error?: string
     message?: string
+    code?: string
   }
 
   async function onError(error: AxiosError) {
     if (!axios.isAxiosError(error) || !error.config)
       return Promise.reject(error)
+
+    // Guest validity ended: log out and let the login page explain why.
+    if ((error.response?.data as ErrorResponseData | undefined)?.code === ACCOUNT_EXPIRED) {
+      if (useAuth().isLoggedIn) logout('expired')
+      return Promise.reject(error)
+    }
 
     if (error?.response?.status === 401) {
       useToast().add({ title: 'Logging Out…', color: 'success' })

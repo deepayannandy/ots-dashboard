@@ -2,6 +2,7 @@
 import type { NavigationMenuItem } from "@nuxt/ui";
 import { useTubeSheets } from "@/stores/tubesheets";
 import { useCompany } from "@/stores/company";
+import { useAuth } from "@/stores/auth";
 
 const route = useRoute();
 const open = ref(false);
@@ -36,7 +37,20 @@ onMounted(async () => {
   await companyStore.fetchCompanyDetails();
 });
 
-const links = [
+const auth = useAuth();
+
+const adminLinks = [
+  {
+    label: "User Management",
+    icon: "i-lucide-users",
+    to: "/user-management",
+    onSelect: () => {
+      open.value = false;
+    },
+  },
+] satisfies NavigationMenuItem[];
+
+const links = computed(() => [
   [
     {
       label: "Dashboard",
@@ -101,8 +115,9 @@ const links = [
         open.value = false;
       },
     },
+    ...(auth.isAdmin ? adminLinks : []),
   ],
-] satisfies NavigationMenuItem[][];
+] satisfies NavigationMenuItem[][]);
 </script>
 
 <template>

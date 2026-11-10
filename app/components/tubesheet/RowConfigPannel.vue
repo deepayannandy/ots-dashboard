@@ -44,6 +44,7 @@
                     @update:model-value="(val) => onRowCountEdit(idx, Number(val))"
                   />
                   <UButton
+                    v-if="canDelete"
                     icon="i-lucide-trash"
                     square
                     variant="outline"
@@ -112,6 +113,7 @@ const { config, tubes: currentTubes, handleUpdateTubes } = useReactorGenerator()
 const rowCountsArrayInput = ref<string>('')
 const selectedRowIndices = ref<number[]>([])
 const rowsToDelete = ref<number[]>([])
+const { canDelete } = usePermissions()
 const rowCountsEdits = ref<number[]>([])
 const midRowIndex = computed(() =>
   rows.value.length ? Math.floor((rows.value.length - 1) / 2) : -1
@@ -154,6 +156,7 @@ function toggleRowSelection(idx: number) {
 // }
 
 function toggleDeleteRow(idx: number) {
+  if (!canDelete.value) return
   const pos = rowsToDelete.value.indexOf(idx)
   if (pos >= 0) rowsToDelete.value.splice(pos, 1)
   else rowsToDelete.value.push(idx)

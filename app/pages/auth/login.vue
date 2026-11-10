@@ -16,6 +16,17 @@
             Login to your account
           </h1>
         </template>
+
+        <template #validation>
+          <UAlert
+            v-if="accountExpired"
+            color="error"
+            variant="subtle"
+            icon="i-lucide-lock"
+            title="Account locked"
+            description="Your guest access has expired. Please contact the administrator to unlock your account."
+          />
+        </template>
       </UAuthForm>
     </UPageCard>
   </div>
@@ -24,7 +35,7 @@
 <script setup lang="ts">
 import * as z from 'zod'
 import type { FormSubmitEvent, AuthFormField } from '@nuxt/ui'
-import { useAuth } from '~/stores/auth'
+import { ACCOUNT_EXPIRED, useAuth } from '~/stores/auth'
 import { useCompany } from '~/stores/company'
 import { useRouter } from '#app'
 
@@ -37,6 +48,9 @@ const auth = useAuth()
 const companyStore = useCompany()
 
 const companyLogo = computed(() => companyStore.logoUrl)
+
+// Set when a guest was auto-logged out, or tries to log in after expiry.
+const accountExpired = ref(useRoute().query.reason === 'expired')
 
 const fields: AuthFormField[] = [
   {
@@ -94,7 +108,8 @@ async function onSubmit({ data }: FormSubmitEvent<Schema>) {
       email: data.email,
       password: data.password
     })
-    if (result?.isLoggedIn) router.push('/')
+    accountExpired.value = result.code === ACCOUNT_EXPIRED
+    if (result.isLoggedIn) router.push('/')
   } finally {
     loading.value = false
   }

@@ -105,6 +105,7 @@
           >
             <template #item-trailing="{ item }">
               <UButton
+                v-if="canDelete"
                 icon="i-lucide-trash-2"
                 aria-label="Delete layout"
                 color="error"
@@ -745,6 +746,7 @@ const selectedLayoutId = ref<string | null>(null);
 const layoutLoading = ref(false);
 const layoutToDelete = ref<ReactorLayoutOption | null>(null);
 const deletingLayout = ref(false);
+const { canDelete } = usePermissions();
 
 function formatLayoutLabel(item: ReactorLayoutItem) {
   const date = new Date(item.createdAt);
@@ -785,7 +787,7 @@ async function loadReactorLayouts() {
 
 async function deleteLayout() {
   const layout = layoutToDelete.value;
-  if (!layout) return;
+  if (!layout || !canDelete.value) return;
 
   deletingLayout.value = true;
   try {
