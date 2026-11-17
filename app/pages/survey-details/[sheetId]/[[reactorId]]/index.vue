@@ -409,6 +409,15 @@
                 @pointercancel="endPan"
               >
                 <g id="viewport" :transform="transformStr"></g>
+                <FirstRowMarker
+                  :tubes="currentTubes"
+                  :edge="compassSize"
+                  :center-x="centerX"
+                  :center-y="centerY"
+                  :transform="transformStr"
+                  :rotation="rotation"
+                  :mirrored="viewDisplay === 'Back View' || viewDisplay === 'Bottom / Back View'"
+                />
               </svg>
             </div>
             <!-- Spotlighted tube lifted out of its hole -->
@@ -490,6 +499,15 @@
                   @pointercancel="endPan"
                 >
                   <g id="viewport" :transform="transformStr"></g>
+                  <FirstRowMarker
+                    :tubes="currentTubes"
+                    :edge="compassSize"
+                    :center-x="centerX"
+                    :center-y="centerY"
+                    :transform="transformStr"
+                    :rotation="rotation"
+                    :mirrored="false"
+                  />
                 </svg>
                 <div
                   class="h-8 flex items-center justify-center text-xs font-bold text-neutral-600 dark:text-neutral-300 uppercase tracking-wider bg-neutral-100/80 dark:bg-neutral-900/80 px-4 py-1 rounded-full border border-neutral-200/50 dark:border-neutral-800/50 shadow-sm mt-2 select-none"
@@ -520,6 +538,15 @@
                   @pointercancel="endPan"
                 >
                   <g id="viewport" :transform="transformStr"></g>
+                  <FirstRowMarker
+                    :tubes="currentTubes"
+                    :edge="compassSize"
+                    :center-x="centerX"
+                    :center-y="centerY"
+                    :transform="transformStr"
+                    :rotation="rotation"
+                    :mirrored="true"
+                  />
                 </svg>
                 <div
                   class="h-8 flex items-center justify-center text-xs font-bold text-neutral-600 dark:text-neutral-300 uppercase tracking-wider bg-neutral-100/80 dark:bg-neutral-900/80 px-4 py-1 rounded-full border border-neutral-200/50 dark:border-neutral-800/50 shadow-sm mt-2 select-none"

@@ -1,12 +1,13 @@
 import { defineStore } from 'pinia'
 
-import type { ReactorConfig, Tube } from '~/types'
+import type { ReactorConfig, SolidHole, Tube } from '~/types'
 import { useTubeSheets } from './tubesheets'
 
 export interface Reactor {
   reactorId: string
   config: ReactorConfig
   tubes: Tube[]
+  solidHoles?: SolidHole[]
   sheetId: string
   updatedAt?: string | Date
   createdAt?: string | Date

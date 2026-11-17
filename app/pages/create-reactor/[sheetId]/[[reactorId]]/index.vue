@@ -81,6 +81,16 @@
               @click="redo"
             />
           </UButtonGroup>
+          <UTooltip text="Clear all special hole details">
+            <UButton
+              color="error"
+              variant="subtle"
+              icon="i-lucide-eraser"
+              aria-label="Clear all special hole details"
+              :disabled="totalSpecialCount === 0"
+              @click="clearSpecialHolesModal = true"
+            />
+          </UTooltip>
           <RowConfigPannel
             class="right-0 z-20 bg-white dark:bg-black"
             :disabled="isReactorCreated"
@@ -354,6 +364,15 @@
                 </g>
               </g>
               <g id="viewport" :transform="transformStr"></g>
+              <FirstRowMarker
+                :tubes="currentTubes"
+                :edge="compassSize"
+                :center-x="centerX"
+                :center-y="centerY"
+                :transform="transformStr"
+                :rotation="rotation"
+                :mirrored="isBackView"
+              />
             </svg>
 
             <!-- Compass Legend - Top Left -->
@@ -477,6 +496,55 @@
                 </div>
               </div>
             </UPageCard>
+            <UModal v-model:open="clearSpecialHolesModal">
+              <template #content>
+                <div class="text-center space-y-4 p-6">
+                  <div class="flex justify-center">
+                    <div class="rounded-full bg-error/10 p-3">
+                      <UIcon name="i-lucide-eraser" class="size-6 text-error" />
+                    </div>
+                  </div>
+                  <h2 class="text-xl font-semibold">
+                    Clear all special hole details?
+                  </h2>
+                  <p class="text-sm text-muted">
+                    Every hole will be reset to a plain tube:
+                  </p>
+                  <ul class="text-sm text-left inline-block space-y-1">
+                    <li v-if="specialHoleCount">
+                      • Remove property, colour and comment from
+                      <span class="font-semibold text-highlighted">{{ specialHoleCount }}</span>
+                      {{ specialHoleCount === 1 ? "hole" : "holes" }}
+                    </li>
+                    <li v-if="solidHoleCount">
+                      • Bring back
+                      <span class="font-semibold text-highlighted">{{ solidHoleCount }}</span>
+                      SOLID {{ solidHoleCount === 1 ? "hole" : "holes" }}
+                      (row/column numbers will be updated)
+                    </li>
+                  </ul>
+                  <p class="text-sm text-muted">
+                    You can still use Undo before saving; the change is stored
+                    only when you click Update.
+                  </p>
+
+                  <div class="flex justify-center gap-4 pt-2">
+                    <UButton
+                      label="Cancel"
+                      color="neutral"
+                      variant="soft"
+                      @click="clearSpecialHolesModal = false"
+                    />
+                    <UButton
+                      label="Clear All"
+                      color="error"
+                      icon="i-lucide-eraser"
+                      @click="clearAllSpecialHoles"
+                    />
+                  </div>
+                </div>
+              </template>
+            </UModal>
             <UModal v-model:open="saveChangesModal">
               <template #content>
                 <div class="text-center space-y-4 p-6">
@@ -549,7 +617,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, watch, onMounted, nextTick } from "vue";
-import type { Tube, ReactorConfig } from "@/types";
+import type { Tube, ReactorConfig, SolidHole } from "@/types";
 import RowConfigPannel from "@/components/tubesheet/RowConfigPannel.vue";
 import { useReactorsStore } from "@/stores/reactors";
 import { useTubeSheets } from "@/stores/tubesheets";
@@ -611,7 +679,12 @@ const saveChangesModal = ref(false);
 interface HistoryState {
   config: ReactorConfig;
   tubes: Tube[];
+  solidHoles: SolidHole[];
 }
+
+// Original positions of holes marked SOLID (they are removed from the tube
+// list and rows renumbered), so "Clear all special holes" can bring them back.
+const solidHoles = ref<SolidHole[]>([]);
 
 const MAX_HISTORY = 50;
 const undoStack = ref<HistoryState[]>([]);
@@ -624,6 +697,7 @@ function cloneState(): HistoryState {
   return {
     config: JSON.parse(JSON.stringify(config.value)),
     tubes: JSON.parse(JSON.stringify(currentTubes.value)),
+    solidHoles: JSON.parse(JSON.stringify(solidHoles.value)),
   };
 }
 
@@ -646,6 +720,7 @@ function undo() {
   const prevState = undoStack.value.pop()!;
   setConfig(prevState.config);
   currentTubes.value = prevState.tubes;
+  solidHoles.value = prevState.solidHoles;
   renderAll();
 }
 
@@ -659,6 +734,7 @@ function redo() {
   const nextState = redoStack.value.pop()!;
   setConfig(nextState.config);
   currentTubes.value = nextState.tubes;
+  solidHoles.value = nextState.solidHoles;
   renderAll();
 }
 
@@ -987,6 +1063,7 @@ function generateReactorFromJson(jsonData: ReactorJson) {
   }
 
   currentTubes.value = tubes;
+  solidHoles.value = []; // fresh layout: nothing marked SOLID yet
   handleUpdateTubes(tubes);
   renderAll();
 
@@ -1502,8 +1579,15 @@ function saveChanges() {
     tube.comment = comment || "";
     tube.property = property || "";
     tube.propertyColor = propertyColor ?? tube.propertyColor;
-    if (property === "SOLID") {
+    if (property === "SOLID" && !tube.deleted) {
       tube.deleted = true;
+      solidHoles.value.push({
+        id: tube.id,
+        x: tube.x,
+        y: tube.y,
+        r: tube.r,
+        pieSlice: tube.pieSlice,
+      });
     }
     updateCircleVisual(tube);
   }
@@ -1519,6 +1603,111 @@ function saveChanges() {
   editModal.property = "";
   editModal.targetIds = [];
   selectedIds.value.clear();
+}
+
+/* ----------------------------
+   CLEAR ALL SPECIAL HOLES
+----------------------------- */
+const clearSpecialHolesModal = ref(false);
+
+function hasSpecialDetails(t: Tube) {
+  return !!(
+    t.property ||
+    t.propertyColor ||
+    t.comment ||
+    t.capped ||
+    t.capColor ||
+    t.blocked
+  );
+}
+
+const specialHoleCount = computed(
+  () => currentTubes.value.filter((t) => !t.deleted && hasSpecialDetails(t)).length,
+);
+const solidHoleCount = computed(() => solidHoles.value.length);
+const totalSpecialCount = computed(
+  () => specialHoleCount.value + solidHoleCount.value,
+);
+
+// True if a hole at (x, y) would overlap a tube that is already on the layout
+// (e.g. the rows were reconfigured after the hole was marked SOLID).
+function overlapsExistingTube(hole: SolidHole, tubes: Tube[]) {
+  return tubes.some(
+    (t) => Math.hypot(t.x - hole.x, t.y - hole.y) < Math.max(t.r, hole.r),
+  );
+}
+
+// Resets every hole to a plain tube and brings SOLID holes back.
+// Undoable until saved.
+function clearAllSpecialHoles() {
+  clearSpecialHolesModal.value = false;
+  if (totalSpecialCount.value === 0) return;
+
+  pushHistory();
+  const cleared = specialHoleCount.value;
+
+  const cleaned: Tube[] = currentTubes.value
+    .filter((t) => !t.deleted)
+    .map((t) =>
+      hasSpecialDetails(t)
+        ? {
+            ...t,
+            property: null,
+            propertyColor: null,
+            comment: null,
+            capped: false,
+            capColor: null,
+            blocked: false,
+          }
+        : t,
+    );
+
+  const restored: Tube[] = [];
+  let skipped = 0;
+  for (const hole of solidHoles.value) {
+    if (overlapsExistingTube(hole, [...cleaned, ...restored])) {
+      skipped++;
+      continue;
+    }
+    restored.push({
+      id: hole.id || `SOLID_${restored.length}`, // renumbered below
+      x: hole.x,
+      y: hole.y,
+      r: hole.r,
+      capped: false,
+      capColor: null,
+      blocked: false,
+      deleted: false,
+      property: null,
+      propertyColor: null,
+      comment: null,
+      pieSlice: hole.pieSlice,
+    });
+  }
+  solidHoles.value = [];
+
+  // Re-group rows and renumber IDs so restored holes get their row/column back.
+  if (restored.length) handleUpdateTubes([...cleaned, ...restored]);
+  else currentTubes.value = cleaned;
+
+  editModal.visible = false;
+  editModal.comment = "";
+  editModal.property = "";
+  editModal.targetIds = [];
+  selectedIds.value.clear();
+  renderAll();
+
+  const parts = [];
+  if (cleared) parts.push(`${cleared} ${cleared === 1 ? "hole" : "holes"} reset`);
+  if (restored.length)
+    parts.push(`${restored.length} SOLID ${restored.length === 1 ? "hole" : "holes"} restored`);
+  if (skipped) parts.push(`${skipped} skipped (position now occupied)`);
+
+  useToast().add({
+    title: "Special holes cleared",
+    description: `${parts.join(", ")}. Click Update to save.`,
+    color: "success",
+  });
 }
 
 /* ----------------------------
@@ -1665,6 +1854,7 @@ function saveReactorData(autoUPdate = false) {
         },
       },
       tubes: currentTubes.value,
+      solidHoles: solidHoles.value,
     },
     !autoUPdate,
   );
@@ -1767,6 +1957,10 @@ onMounted(async () => {
           if (typeof savedRotation === "number") setRotation(savedRotation);
         }
       }
+
+      solidHoles.value = Array.isArray(reactor.solidHoles)
+        ? [...reactor.solidHoles]
+        : [];
 
       if (reactor.tubes && reactor.tubes.length > 0) {
         currentTubes.value = [...reactor.tubes];

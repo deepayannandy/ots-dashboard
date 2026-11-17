@@ -76,10 +76,20 @@ export interface TubeSheet {
 
 }
 
+/** Original position of a hole that was marked SOLID (and removed from `tubes`). */
+export interface SolidHole {
+  id?: string
+  x: number
+  y: number
+  r: number
+  pieSlice?: number
+}
+
 export interface Reactor {
   id: string
   config: ReactorConfig
   tubes: Tube[]
+  solidHoles?: SolidHole[]
 }
 
 export interface User {
