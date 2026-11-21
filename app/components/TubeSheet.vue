@@ -131,10 +131,42 @@
     @click="handleCardClick"
   >
     <!-- Header -->
-    <div class="flex items-center justify-between">
+    <div class="flex items-center justify-between gap-2">
       <h3 class="font-semibold text-neutral-900 dark:text-neutral-100 truncate">
         {{ localState.clientName }}
       </h3>
+      <!-- Admins: toggle protection. Others: show a badge when protected. -->
+      <div
+        v-if="isAdmin"
+        class="flex items-center gap-1.5 shrink-0"
+        @click.stop
+      >
+        <UIcon
+          :name="localState.protected ? 'i-lucide-lock' : 'i-lucide-lock-open'"
+          class="size-3.5"
+          :class="localState.protected ? 'text-warning' : 'text-neutral-400'"
+        />
+        <span class="text-xs text-neutral-600 dark:text-neutral-400">
+          Protected
+        </span>
+        <USwitch
+          size="xs"
+          :model-value="!!localState.protected"
+          :loading="isTogglingProtected"
+          :disabled="isTogglingProtected"
+          aria-label="Protect project"
+          @update:model-value="toggleProtected"
+        />
+      </div>
+      <UBadge
+        v-else-if="localState.protected"
+        color="warning"
+        variant="subtle"
+        size="sm"
+        icon="i-lucide-lock"
+        label="Protected"
+        class="shrink-0"
+      />
     </div>
 
     <!-- Info -->
@@ -218,7 +250,7 @@
     <!-- Edit Buttons -->
     <div class="flex gap-2 mt-2">
       <UButton
-        v-if="shouldShowEditTubesheet(localState.status)"
+        v-if="!isReadOnly && shouldShowEditTubesheet(localState.status)"
         block
         size="xs"
         label="Edit Project"
@@ -232,7 +264,7 @@
         v-if="shouldShowEditReactor(localState.status)"
         block
         size="xs"
-        label="Edit Layout"
+        :label="isReadOnly ? 'View Layout' : 'Edit Layout'"
         color="neutral"
         variant="soft"
         icon="i-lucide-box"
@@ -244,6 +276,7 @@
         "
       />
       <UButton
+        v-if="!isReadOnly"
         block
         size="xs"
         label="Clone"
@@ -428,7 +461,42 @@ watch(
 
 const isEditing = computed(() => !!props.modelValue._id);
 
+/* Protection: admins toggle it; guests get a view-only card when it is on. */
+const { isAdmin, isGuest } = usePermissions();
+const isReadOnly = computed(() => isGuest.value && !!localState.protected);
+const isTogglingProtected = ref(false);
+
+function notifyReadOnly() {
+  useToast().add({
+    title: "Protected project",
+    description: "Guest users can view this project but cannot modify it.",
+    color: "warning",
+    icon: "i-lucide-lock",
+  });
+}
+
+async function toggleProtected(value: boolean) {
+  if (!localState._id) return;
+  isTogglingProtected.value = true;
+  try {
+    await store.setProtected(localState._id, value);
+    localState.protected = value;
+    useToast().add({
+      title: value ? "Project protected" : "Protection removed",
+      description: value
+        ? "Guest users can now only view this project."
+        : "Guest users can modify this project again.",
+      color: "primary",
+    });
+  } catch {
+    // Error toast is shown by the axios plugin; switch stays at the old value.
+  } finally {
+    isTogglingProtected.value = false;
+  }
+}
+
 const handleCardClick = () => {
+  if (isReadOnly.value) return notifyReadOnly();
   if (localState.status === "TUBE_SHEET_CREATED") {
     currentSheet.value = localState;
     console.log("hello");
@@ -648,6 +716,7 @@ const handleNextStep = (
   }
 
   if (status === "TUBE_SHEET_CREATED") {
+    if (isReadOnly.value) return notifyReadOnly();
     currentSheet.value = localState;
     emit("update:openConfigCamera", localState);
     return;

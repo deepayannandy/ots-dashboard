@@ -70,6 +70,16 @@ export const useTubeSheets = defineStore('tubesheets', {
       }
     },
 
+    /** Admin only: mark a project as protected (guests become view-only). */
+    async setProtected(id: string, value: boolean) {
+      const { data } = await useAxios().$patch(`/api/v2/tubeSheet/setProtected/${id}`, {
+        protected: value
+      })
+      const sheet = this.list.find(s => s._id === id)
+      if (sheet) sheet.protected = data?.protected ?? value
+      return data
+    },
+
     deleteTubeSheet(id?: string) {
       this.list = this.list.filter(s => s._id !== id)
     }

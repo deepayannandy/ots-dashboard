@@ -138,6 +138,7 @@ const links = computed(() => [
       <template #header>
         <img
           :src="companyLogo"
+          @error="companyStore.useFallbackLogo()"
           class="size-12 rounded-lg elevation-1 cursor-pointer"
           :class="collapsed && 'size-8!'"
           @click="useRouter().push('/')"

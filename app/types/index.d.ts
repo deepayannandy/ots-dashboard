@@ -73,7 +73,8 @@ export interface TubeSheet {
   dayStart?: string
   dayEnd?: string
   timeZoneOffset?: number
-
+  /** Admin-controlled. When true, guest users can view but not modify the project. */
+  protected?: boolean
 }
 
 /** Original position of a hole that was marked SOLID (and removed from `tubes`). */

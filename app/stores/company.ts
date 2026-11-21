@@ -1,5 +1,7 @@
 import { defineStore } from 'pinia'
 
+const DEFAULT_LOGO = '/ots.jpeg'
+
 interface CompanyData {
   _id: string
   companyName: string
@@ -15,7 +17,7 @@ interface CompanyData {
 export const useCompany = defineStore('company', {
   state: () => ({
     data: null as CompanyData | null,
-    logoUrl: '/ots.jpeg',
+    logoUrl: DEFAULT_LOGO,
     loading: false,
     error: null as string | null
   }),
@@ -48,9 +50,14 @@ export const useCompany = defineStore('company', {
       }
     },
 
+    // Called when the company logo fails to load (e.g. 404) — fall back to the OTS logo
+    useFallbackLogo() {
+      if (this.logoUrl !== DEFAULT_LOGO) this.logoUrl = DEFAULT_LOGO
+    },
+
     clearCompanyData() {
       this.data = null
-      this.logoUrl = '/ots.jpeg'
+      this.logoUrl = DEFAULT_LOGO
       this.error = null
     }
   },

@@ -10,7 +10,7 @@
       >
         <template #title>
           <div class="flex justify-center w-full">
-            <img :src="companyLogo" class="size-20 rounded-xl elevation-2">
+            <img :src="companyLogo" class="size-20 rounded-xl elevation-2" @error="companyStore.useFallbackLogo()">
           </div>
           <h1 class="text-xl font-bold text-center">
             Login to your account
